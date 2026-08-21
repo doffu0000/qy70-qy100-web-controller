@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QY70 Web Controller</title>
+<link rel="stylesheet" href="./css/style.css?v=5">
+</head>
+<body>
+<header>
+  <h1>QY70 Web Controller</h1>
+  <div id="connect-bar">
+    <label>MIDI In
+      <select id="input-select"><option value="">(none)</option></select>
+    </label>
+    <label>MIDI Out
+      <select id="output-select"><option value="">(none)</option></select>
+    </label>
+    <label>Channel
+      <select id="channel-select"></select>
+    </label>
+    <button id="connect-btn">Connect</button>
+    <span id="status">Not connected</span>
+  </div>
+</header>
+
+<main>
+  <section id="voice-browser">
+    <h2>Voice Browser</h2>
+    <p class="hint">Entries marked <span class="qy100-badge">QY100</span> aren't present on the QY70.</p>
+    <p class="hint">
+      To get <strong>editable</strong> drum sounds, select "Ds1" or "Ds2" as
+      that track's voice in Song mode, or "Ds3" in Pattern mode, directly on
+      the QY100 itself - this can't be selected over MIDI. Once set on the
+      device, use Parameters &gt; Drum Setup below to edit that kit's
+      per-note sound.
+    </p>
+    <div id="voice-controls">
+      <select id="bank-select">
+        <option value="normal">Normal</option>
+        <option value="sfx">SFX Voice</option>
+        <option value="drum">Drum Kit</option>
+        <option value="sfxkit">SFX Kit</option>
+      </select>
+      <select id="category-select"><option value="">All categories</option></select>
+      <input id="search-box" type="text" placeholder="Search voice name...">
+    </div>
+    <ul id="voice-list"></ul>
+  </section>
+
+  <section id="parameters">
+    <h2>Parameters</h2>
+    <p class="hint">Sent as XG Parameter Change SysEx (F0 43 1n 4C aa aa aa dd..dd F7).</p>
+    <p class="hint required">
+      Click <strong>Send XG System On</strong> once after connecting (or after
+      any power cycle) before adjusting anything below - the QY100 silently
+      ignores Parameter Change messages until it's been put into XG mode.
+    </p>
+
+    <div id="param-controls">
+      <select id="section-select">
+        <option value="system">System</option>
+        <option value="reverb">Reverb</option>
+        <option value="chorus">Chorus</option>
+        <option value="variation">Variation</option>
+        <option value="multiPart">Multi Part</option>
+        <option value="drumSetup">Drum Setup</option>
+      </select>
+      <select id="part-select" class="context-select" hidden></select>
+      <select id="drumkit-select" class="context-select" hidden></select>
+      <select id="note-select" class="context-select" hidden></select>
+      <p class="hint" id="drum-setup-hint" hidden>
+        Drum Setup edits whatever kit is currently playing on the
+        <strong>Channel</strong> selected above, not the kit picker here -
+        that dropdown only picks which note <em>names</em> to display.
+      </p>
+      <button id="xg-on-btn">Send XG System On</button>
+    </div>
+
+    <div id="param-list"></div>
+  </section>
+
+  <section id="log">
+    <h2>MIDI Log</h2>
+    <button id="clear-log-btn">Clear</button>
+    <pre id="log-output"></pre>
+  </section>
+</main>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

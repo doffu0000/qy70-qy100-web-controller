@@ -1,0 +1,362 @@
+{
+  "13": {
+    "standard": "Surdo Mute",
+    "standard2": "Surdo Mute",
+    "dry": "Surdo Mute"
+  },
+  "14": {
+    "standard": "Surdo Open",
+    "standard2": "Surdo Open",
+    "dry": "Surdo Open"
+  },
+  "15": {
+    "standard": "Hi Q",
+    "standard2": "Hi Q",
+    "dry": "Hi Q"
+  },
+  "16": {
+    "standard": "Whip Slap",
+    "standard2": "Whip Slap",
+    "dry": "Whip Slap"
+  },
+  "17": {
+    "standard": "Scratch H",
+    "standard2": "Scratch H",
+    "dry": "Scratch H"
+  },
+  "18": {
+    "standard": "Scratch L",
+    "standard2": "Scratch L",
+    "dry": "Scratch L"
+  },
+  "19": {
+    "standard": "Finger Snap",
+    "standard2": "Finger Snap",
+    "dry": "Finger Snap"
+  },
+  "20": {
+    "standard": "Click Noise",
+    "standard2": "Click Noise",
+    "dry": "Click Noise"
+  },
+  "21": {
+    "standard": "Metronome Click",
+    "standard2": "Metronome Click",
+    "dry": "Metronome Click"
+  },
+  "22": {
+    "standard": "Metronome Bell",
+    "standard2": "Metronome Bell",
+    "dry": "Metronome Bell"
+  },
+  "23": {
+    "standard": "Seq Click L",
+    "standard2": "Seq Click L",
+    "dry": "Seq Click L"
+  },
+  "24": {
+    "standard": "Seq Click H",
+    "standard2": "Seq Click H",
+    "dry": "Seq Click H"
+  },
+  "25": {
+    "standard": "Brush Tap",
+    "standard2": "Brush Tap",
+    "dry": "Brush Tap"
+  },
+  "26": {
+    "standard": "Brush Swirl",
+    "standard2": "Brush Swirl",
+    "dry": "Brush Swirl"
+  },
+  "27": {
+    "standard": "Brush Slap",
+    "standard2": "Brush Slap",
+    "dry": "Brush Slap"
+  },
+  "28": {
+    "standard": "Brush Tap Swirl",
+    "standard2": "Brush Tap Swirl",
+    "dry": "Brush Tap Swirl"
+  },
+  "29": {
+    "standard": "Snare Roll",
+    "standard2": "Snare Roll 2",
+    "dry": "Snare Roll"
+  },
+  "30": {
+    "standard": "Castanet",
+    "standard2": "Castanet",
+    "dry": "Castanet"
+  },
+  "31": {
+    "standard": "Snare Soft",
+    "standard2": "Snare Soft 2",
+    "dry": "Snare Dry Soft"
+  },
+  "32": {
+    "standard": "Sticks",
+    "standard2": "Sticks",
+    "dry": "Sticks"
+  },
+  "33": {
+    "standard": "Kick Soft",
+    "standard2": "Kick Soft",
+    "dry": "Kick Dry Soft"
+  },
+  "34": {
+    "standard": "Open Rim Shot",
+    "standard2": "Open Rim Shot H Short",
+    "dry": "Open Rim Shot Dry"
+  },
+  "35": {
+    "standard": "Kick Tight",
+    "standard2": "Kick Tight Short",
+    "dry": "Kick Dry Tight"
+  },
+  "36": {
+    "standard": "Kick",
+    "standard2": "Kick Short",
+    "dry": "Kick Dry Mute"
+  },
+  "37": {
+    "standard": "Side Stick",
+    "standard2": "Side Stick",
+    "dry": "Side Stick Dry"
+  },
+  "38": {
+    "standard": "Snare",
+    "standard2": "Snare Short",
+    "dry": "Snare Dry"
+  },
+  "39": {
+    "standard": "Hand Clap",
+    "standard2": "Hand Clap",
+    "dry": "Hand Clap"
+  },
+  "40": {
+    "standard": "Snare Tight",
+    "standard2": "Snare Tight H",
+    "dry": "Snare Dry Mute"
+  },
+  "41": {
+    "standard": "Floor Tom L",
+    "standard2": "Floor Tom L",
+    "dry": "Floor Tom L Short"
+  },
+  "42": {
+    "standard": "Hi-Hat Closed",
+    "standard2": "Hi-Hat Closed",
+    "dry": "Hi-Hat Closed"
+  },
+  "43": {
+    "standard": "Floor Tom H",
+    "standard2": "Floor Tom H",
+    "dry": "Floor Tom H Short"
+  },
+  "44": {
+    "standard": "Hi-Hat Pedal",
+    "standard2": "Hi-Hat Pedal",
+    "dry": "Hi-Hat Pedal"
+  },
+  "45": {
+    "standard": "Low Tom",
+    "standard2": "Low Tom",
+    "dry": "Low Tom Short"
+  },
+  "46": {
+    "standard": "Hi-Hat Open",
+    "standard2": "Hi-Hat Open",
+    "dry": "Hi-Hat Open"
+  },
+  "47": {
+    "standard": "Mid Tom L",
+    "standard2": "Mid Tom L",
+    "dry": "Mid Tom L Short"
+  },
+  "48": {
+    "standard": "Mid Tom H",
+    "standard2": "Mid Tom H",
+    "dry": "Mid Tom H Short"
+  },
+  "49": {
+    "standard": "Crash Cymbal 1",
+    "standard2": "Crash Cymbal 1",
+    "dry": "Crash Cymbal 1"
+  },
+  "50": {
+    "standard": "High Tom",
+    "standard2": "High Tom",
+    "dry": "High Tom Short"
+  },
+  "51": {
+    "standard": "Ride Cymbal 1",
+    "standard2": "Ride Cymbal 1",
+    "dry": "Ride Cymbal 1"
+  },
+  "52": {
+    "standard": "Chinese Cymbal",
+    "standard2": "Chinese Cymbal",
+    "dry": "Chinese Cymbal"
+  },
+  "53": {
+    "standard": "Ride Cymbal Cup",
+    "standard2": "Ride Cymbal Cup",
+    "dry": "Ride Cymbal Cup"
+  },
+  "54": {
+    "standard": "Tambourine",
+    "standard2": "Tambourine",
+    "dry": "Tambourine"
+  },
+  "55": {
+    "standard": "Splash Cymbal",
+    "standard2": "Splash Cymbal",
+    "dry": "Splash Cymbal"
+  },
+  "56": {
+    "standard": "Cowbell",
+    "standard2": "Cowbell",
+    "dry": "Cowbell"
+  },
+  "57": {
+    "standard": "Crash Cymbal 2",
+    "standard2": "Crash Cymbal 2",
+    "dry": "Crash Cymbal 2"
+  },
+  "58": {
+    "standard": "Vibraslap",
+    "standard2": "Vibraslap",
+    "dry": "Vibraslap"
+  },
+  "59": {
+    "standard": "Ride Cymbal 2",
+    "standard2": "Ride Cymbal 2",
+    "dry": "Ride Cymbal 2"
+  },
+  "60": {
+    "standard": "Bongo H",
+    "standard2": "Bongo H",
+    "dry": "Bongo H"
+  },
+  "61": {
+    "standard": "Bongo L",
+    "standard2": "Bongo L",
+    "dry": "Bongo L"
+  },
+  "62": {
+    "standard": "Conga H Mute",
+    "standard2": "Conga H Mute",
+    "dry": "Conga H Mute"
+  },
+  "63": {
+    "standard": "Conga H Open",
+    "standard2": "Conga H Open",
+    "dry": "Conga H Open"
+  },
+  "64": {
+    "standard": "Conga L",
+    "standard2": "Conga L",
+    "dry": "Conga L"
+  },
+  "65": {
+    "standard": "Timbale H",
+    "standard2": "Timbale H",
+    "dry": "Timbale H"
+  },
+  "66": {
+    "standard": "Timbale L",
+    "standard2": "Timbale L",
+    "dry": "Timbale L"
+  },
+  "67": {
+    "standard": "Agogo H",
+    "standard2": "Agogo H",
+    "dry": "Agogo H"
+  },
+  "68": {
+    "standard": "Agogo L",
+    "standard2": "Agogo L",
+    "dry": "Agogo L"
+  },
+  "69": {
+    "standard": "Cabasa",
+    "standard2": "Cabasa",
+    "dry": "Cabasa"
+  },
+  "70": {
+    "standard": "Maracas",
+    "standard2": "Maracas",
+    "dry": "Maracas"
+  },
+  "71": {
+    "standard": "Samba Whistle H",
+    "standard2": "Samba Whistle H",
+    "dry": "Samba Whistle H"
+  },
+  "72": {
+    "standard": "Samba Whistle L",
+    "standard2": "Samba Whistle L",
+    "dry": "Samba Whistle L"
+  },
+  "73": {
+    "standard": "Guiro Short",
+    "standard2": "Guiro Short",
+    "dry": "Guiro Short"
+  },
+  "74": {
+    "standard": "Guiro Long",
+    "standard2": "Guiro Long",
+    "dry": "Guiro Long"
+  },
+  "75": {
+    "standard": "Claves",
+    "standard2": "Claves",
+    "dry": "Claves"
+  },
+  "76": {
+    "standard": "Wood Block H",
+    "standard2": "Wood Block H",
+    "dry": "Wood Block H"
+  },
+  "77": {
+    "standard": "Wood Block L",
+    "standard2": "Wood Block L",
+    "dry": "Wood Block L"
+  },
+  "78": {
+    "standard": "Cuica Mute",
+    "standard2": "Cuica Mute",
+    "dry": "Cuica Mute"
+  },
+  "79": {
+    "standard": "Cuica Open",
+    "standard2": "Cuica Open",
+    "dry": "Cuica Open"
+  },
+  "80": {
+    "standard": "Triangle Mute",
+    "standard2": "Triangle Mute",
+    "dry": "Triangle Mute"
+  },
+  "81": {
+    "standard": "Triangle Open",
+    "standard2": "Triangle Open",
+    "dry": "Triangle Open"
+  },
+  "82": {
+    "standard": "Shaker",
+    "standard2": "Shaker",
+    "dry": "Shaker"
+  },
+  "83": {
+    "standard": "Jingle Bells",
+    "standard2": "Jingle Bells",
+    "dry": "Jingle Bells"
+  },
+  "84": {
+    "standard": "Bell Tree",
+    "standard2": "Bell Tree",
+    "dry": "Bell Tree"
+  }
+}
