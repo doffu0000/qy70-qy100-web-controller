@@ -1,5 +1,5 @@
-// QY70 / XG SysEx message builders, built directly from the byte formats in
-// the QY70 Data List's "MIDI Data Format" section (pages 40-49, 54-56):
+// QY70 / XG SysEx message builders, matching the QY70 Data List's "MIDI
+// Data Format" section:
 //
 //   XG Bulk Dump           F0 43 0n 4C bb bb aa aa aa dd..dd cc F7
 //   XG Parameter Change    F0 43 1n 4C aa aa aa dd..dd F7

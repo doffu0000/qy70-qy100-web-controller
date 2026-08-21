@@ -4,11 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QY70 Web Controller</title>
-<link rel="stylesheet" href="./css/style.css?v=5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
+<div id="brand-bar"></div>
 <header>
   <h1>QY70 Web Controller</h1>
+  <p class="hint required" id="no-midi-banner" hidden>
+    This browser doesn't support Web MIDI, so this app can't reach your
+    device. Open this page in <strong>Chrome</strong> or <strong>Edge</strong>
+    instead.
+  </p>
   <div id="connect-bar">
     <label>MIDI In
       <select id="input-select"><option value="">(none)</option></select>

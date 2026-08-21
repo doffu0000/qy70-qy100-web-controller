@@ -20,6 +20,13 @@ const searchBox = el('search-box');
 const voiceListEl = el('voice-list');
 const logOutput = el('log-output');
 
+// Web MIDI is Chromium-only (no Safari, historically no Firefox) - flag it
+// up front instead of only surfacing an error once someone clicks Connect.
+if (!navigator.requestMIDIAccess) {
+  el('no-midi-banner').hidden = false;
+  connectBtn.disabled = true;
+}
+
 for (let i = 1; i <= 16; i++) {
   const opt = document.createElement('option');
   opt.value = i - 1;
@@ -47,10 +54,9 @@ link.send = (bytes) => {
 };
 link.onMessage = (bytes) => log('IN ', bytes);
 
-// MIDIAccess fires onstatechange for reasons unrelated to what the user is
-// doing (e.g. a port re-announcing itself); rebuilding the <select> options
-// was resetting the visible selection even when the same device was still
-// selected underneath. Preserve the previous value across rebuilds.
+// MIDIAccess fires onstatechange for reasons unrelated to the user (e.g. a
+// port re-announcing itself), so preserve the selected device across a
+// rebuild of the <select> options instead of resetting to "(none)".
 function refreshDeviceLists() {
   const inputs = link.listInputs();
   const outputs = link.listOutputs();
@@ -180,8 +186,8 @@ function populateDrumkitSelect() {
 }
 
 // Only DR1 (Standard), DR2 (Standard2), and DR3 (Dry) have per-note
-// instrument names extracted from the manual so far; other kits fall back
-// to the Standard kit's names as the closest available reference.
+// instrument names; other kits fall back to the Standard kit's names as
+// the closest available reference.
 const DRUM_KIT_NOTE_KEYS = ['standard', 'standard2', 'dry'];
 
 function populateNoteSelect() {
@@ -201,10 +207,10 @@ function currentContext(sectionKey) {
     return { part: Number(partSelect.value || 0) };
   }
   if (sectionKey === 'drumSetup') {
-    // The "3n" address high nibble only has 16 possible values (0-F) - not
-    // enough to index by kit name (20+ kits). Confirmed on hardware: it
-    // indexes by MIDI channel instead, always affecting whatever kit is
-    // actually playing on that channel regardless of kit name selected here.
+    // The "3n" address high nibble only has 16 possible values (0-F), so it
+    // indexes by MIDI channel rather than by kit name (there are 20+ kits) -
+    // it always affects whatever kit is playing on that channel, regardless
+    // of the kit name selected in the dropdown below.
     return { drumHigh: 0x30 + currentChannel(), note: Number(noteSelect.value || 0) };
   }
   return {};
