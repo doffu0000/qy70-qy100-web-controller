@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QY70/QY100 Web Controller</title>
+<title>QY70 / QY100 Web Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,13 +12,14 @@
 <body>
 <div id="brand-bar"></div>
 <header>
-  <h1>QY70/QY100 Web Controller</h1>
+  <h1>QY70 / QY100 Web Console</h1>
   <p class="hint required" id="no-midi-banner" hidden>
     This browser doesn't support Web MIDI, so this app can't reach your
     device. Open this page in <strong>Chrome</strong> or <strong>Edge</strong>
     instead.
   </p>
   <div id="connect-bar">
+    <button id="connect-btn">Find Devices</button>
     <label>MIDI In
       <select id="input-select"><option value="">(none)</option></select>
     </label>
@@ -28,8 +29,8 @@
     <label>Channel
       <select id="channel-select"></select>
     </label>
-    <button id="connect-btn">Connect</button>
-    <span id="status">Not connected</span>
+    <button id="xg-on-btn" class="btn-warning">Send XG System On</button>
+    <span id="status"></span>
   </div>
 </header>
 
@@ -37,13 +38,32 @@
   <section id="voice-browser">
     <h2>Voice Browser</h2>
     <p class="hint">Entries marked <span class="qy100-badge">QY100</span> aren't present on the QY70.</p>
-    <p class="hint">
-      To get <strong>editable</strong> drum sounds, select "Ds1" or "Ds2" as
-      that track's voice in Song mode, or "Ds3" in Pattern mode, directly on
-      the QY100 itself - this can't be selected over MIDI. Once set on the
-      device, use Parameters &gt; Drum Setup below to edit that kit's
-      per-note sound.
-    </p>
+    <details id="drum-kit-hint" hidden>
+      <summary>About editing drum kits</summary>
+      <p>
+        Drum Kit and SFX Kit voices can be edited per-note (including every
+        drum kit element).
+      </p>
+      <p>
+        Begin by navigating to the Drum Edit screen on the QY70/QY100 -
+        Selecting a drum kit there will automatically update the web
+        console if MIDI is configured.
+      </p>
+      <p>
+        Ds1/Ds2 (Song mode) and Ds3 (Pattern mode) are separate editable
+        slots that can only be selected on the device itself, not over MIDI
+        - Select one of these on the QY70/QY100, then open its Drum Edit
+        screen before proceeding to edit parameters in the web console.
+      </p>
+      <p>
+        Note: Even elements that look locked on the device's own screen can
+        still be edited from the web console.
+      </p>
+      <p>
+        Tip: Playing a note on the device automatically will update the web
+        console to display that kit element's editable parameters.
+      </p>
+    </details>
     <div id="voice-controls">
       <select id="bank-select">
         <option value="normal">Normal</option>
@@ -60,11 +80,6 @@
   <section id="parameters">
     <h2>Parameters</h2>
     <p class="hint">Sent as XG Parameter Change SysEx (F0 43 1n 4C aa aa aa dd..dd F7).</p>
-    <p class="hint required">
-      Click <strong>Send XG System On</strong> once after connecting (or after
-      any power cycle) before adjusting anything below - the QY100 silently
-      ignores Parameter Change messages until it's been put into XG mode.
-    </p>
 
     <div id="param-controls">
       <select id="section-select">
@@ -83,7 +98,6 @@
         <strong>Channel</strong> selected above, not the kit picker here -
         that dropdown only picks which note <em>names</em> to display.
       </p>
-      <button id="xg-on-btn">Send XG System On</button>
     </div>
 
     <div id="param-list"></div>
@@ -91,10 +105,23 @@
 
   <section id="log">
     <h2>MIDI Log</h2>
-    <button id="clear-log-btn">Clear</button>
+    <div id="log-controls">
+      <label id="log-enable-label"><input type="checkbox" id="log-enabled" checked> Enabled</label>
+      <button id="clear-log-btn">Clear</button>
+    </div>
+    <p class="hint">History of the last 30 messages.</p>
     <pre id="log-output"></pre>
   </section>
 </main>
+
+<dialog id="confirm-dialog">
+  <h3 id="confirm-dialog-title"></h3>
+  <p id="confirm-dialog-message"></p>
+  <div id="confirm-dialog-actions">
+    <button id="confirm-dialog-cancel">Cancel</button>
+    <button id="confirm-dialog-ok" class="btn-warning">Send</button>
+  </div>
+</dialog>
 
 <script type="module" src="./js/app.js"></script>
 </body>

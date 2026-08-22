@@ -23,10 +23,14 @@ export function voiceDisplayName(v) {
 
 // Sends Bank Select MSB/LSB + Program Change for a voice entry from voices.json.
 // voices.json stores the 1-128 "Program #" as printed in the manual; the wire
-// value is 0-127, so the -1 conversion happens here, once.
+// value is 0-127, so the -1 conversion happens here, once. channel === 'all'
+// sends it on every one of the 16 MIDI channels.
 export function selectVoice(midiLink, channel, voice) {
-  const messages = buildVoiceSelect(channel, voice.bankMsb, voice.bankLsb, voice.program - 1);
-  for (const msg of messages) midiLink.send(msg);
+  const channels = channel === 'all' ? Array.from({ length: 16 }, (_, i) => i) : [channel];
+  for (const ch of channels) {
+    const messages = buildVoiceSelect(ch, voice.bankMsb, voice.bankLsb, voice.program - 1);
+    for (const msg of messages) midiLink.send(msg);
+  }
 }
 
 export function filterVoices(voices, { bank, category, search }) {

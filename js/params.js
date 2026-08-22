@@ -25,8 +25,10 @@ export function nibbleUnpack(bytes) {
 
 // Expands a parameters.json section's `params` array into flat UI rows.
 // Multi-byte non-nibble params (e.g. "Reverb Type" MSB+LSB) become one row
-// per byte since each byte is documented as an independently meaningful
-// 7-bit value, not a single wide integer.
+// per byte so each byte gets its own knob, but they're still one addressable
+// unit on the wire - confirmed against real hardware output, the device
+// sends/expects all bytes together in a single Parameter Change message at
+// the first byte's address, not one message per byte (see sendParamGroup).
 export function expandRows(params) {
   const rows = [];
   for (const p of params) {
@@ -37,6 +39,11 @@ export function expandRows(params) {
           ...p,
           offset: p.offset + i,
           size: 1,
+          // p.default describes the first byte only (e.g. Reverb Type's
+          // documented default is MSB=1 - the basic type of whatever MSB
+          // is selected always has LSB=0); later bytes default to 0
+          // rather than inheriting that same raw number.
+          default: i === 0 ? p.default : 0,
           name: `${p.name} (${labels[i]})`,
           key: `${p.offset}:${i}`,
         });
@@ -59,4 +66,15 @@ export function sendParam(midiLink, deviceNumber, section, context, row, value) 
   const address = [base[0], base[1], base[2] + row.offset];
   const data = row.encoding === 'nibble' ? nibblePack(value, row.size) : [value & 0x7f];
   midiLink.send(buildParameterChange(deviceNumber, address, data));
+}
+
+// For a group of same-origin split rows (e.g. Reverb Type's MSB+LSB, or a
+// Variation Param's MSB+LSB), sends all bytes together in one Parameter
+// Change message addressed to the first row's offset - the device rejects
+// (XG Address Error) a lone message addressed to a later byte, since that
+// address only exists as part of the combined multi-byte value.
+export function sendParamGroup(midiLink, deviceNumber, section, context, rows, values) {
+  const base = resolveAddressBase(section.addressBase, context);
+  const address = [base[0], base[1], base[2] + rows[0].offset];
+  midiLink.send(buildParameterChange(deviceNumber, address, values.map((v) => v & 0x7f)));
 }

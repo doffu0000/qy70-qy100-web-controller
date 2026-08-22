@@ -1,362 +1,627 @@
 {
   "13": {
-    "standard": "Surdo Mute",
-    "standard2": "Surdo Mute",
-    "dry": "Surdo Mute"
+    "127_1": "Surdo Mute",
+    "127_4": "Surdo Mute B"
   },
   "14": {
-    "standard": "Surdo Open",
-    "standard2": "Surdo Open",
-    "dry": "Surdo Open"
+    "127_1": "Surdo Open",
+    "127_4": "Surdo Open B"
   },
   "15": {
-    "standard": "Hi Q",
-    "standard2": "Hi Q",
-    "dry": "Hi Q"
+    "127_1": "Hi Q",
+    "127_4": "Hi Q B"
   },
   "16": {
-    "standard": "Whip Slap",
-    "standard2": "Whip Slap",
-    "dry": "Whip Slap"
+    "127_1": "Whip Slap",
+    "127_4": "Whip Slap B"
   },
   "17": {
-    "standard": "Scratch H",
-    "standard2": "Scratch H",
-    "dry": "Scratch H"
+    "127_1": "Scratch H",
+    "127_4": "Scratch H B"
   },
   "18": {
-    "standard": "Scratch L",
-    "standard2": "Scratch L",
-    "dry": "Scratch L"
+    "127_1": "Scratch L",
+    "127_4": "Scratch L B"
   },
   "19": {
-    "standard": "Finger Snap",
-    "standard2": "Finger Snap",
-    "dry": "Finger Snap"
+    "127_1": "Finger Snap",
+    "127_4": "Finger Snap B"
   },
   "20": {
-    "standard": "Click Noise",
-    "standard2": "Click Noise",
-    "dry": "Click Noise"
+    "127_1": "Click Noise",
+    "127_4": "Click Noise B"
   },
   "21": {
-    "standard": "Metronome Click",
-    "standard2": "Metronome Click",
-    "dry": "Metronome Click"
+    "127_1": "Metronome Click",
+    "127_4": "Metronome Click B"
   },
   "22": {
-    "standard": "Metronome Bell",
-    "standard2": "Metronome Bell",
-    "dry": "Metronome Bell"
+    "127_1": "Metronome Bell",
+    "127_4": "Metronome Bell B"
   },
   "23": {
-    "standard": "Seq Click L",
-    "standard2": "Seq Click L",
-    "dry": "Seq Click L"
+    "127_1": "Seq Click L",
+    "127_4": "Seq Click L B"
   },
   "24": {
-    "standard": "Seq Click H",
-    "standard2": "Seq Click H",
-    "dry": "Seq Click H"
+    "127_1": "Seq Click H",
+    "127_4": "Seq Click H B"
   },
   "25": {
-    "standard": "Brush Tap",
-    "standard2": "Brush Tap",
-    "dry": "Brush Tap"
+    "127_1": "Brush Tap",
+    "127_4": "Brush Tap B"
   },
   "26": {
-    "standard": "Brush Swirl",
-    "standard2": "Brush Swirl",
-    "dry": "Brush Swirl"
+    "127_1": "Brush Swirl",
+    "127_4": "Brush Swirl B"
   },
   "27": {
-    "standard": "Brush Slap",
-    "standard2": "Brush Slap",
-    "dry": "Brush Slap"
+    "127_1": "Brush Slap",
+    "127_4": "Brush Slap B"
   },
   "28": {
-    "standard": "Brush Tap Swirl",
-    "standard2": "Brush Tap Swirl",
-    "dry": "Brush Tap Swirl"
+    "127_1": "Brush Tap Swirl",
+    "127_113": "Reverse Cymbal",
+    "127_25": "Reverse Cymbal",
+    "127_26": "Reverse Cymbal",
+    "127_27": "Reverse Cymbal",
+    "127_28": "Reverse Cymbal",
+    "127_4": "Brush Tap Swirl B"
   },
   "29": {
-    "standard": "Snare Roll",
-    "standard2": "Snare Roll 2",
-    "dry": "Snare Roll"
+    "127_1": "Snare Roll",
+    "127_4": "Snare Roll B"
   },
   "30": {
-    "standard": "Castanet",
-    "standard2": "Castanet",
-    "dry": "Castanet"
+    "127_1": "Castanet",
+    "127_113": "Hi Q 2",
+    "127_25": "Hi Q 2",
+    "127_26": "Hi Q 2",
+    "127_27": "Hi Q 2",
+    "127_28": "Hi Q 2",
+    "127_4": "Castanet B"
   },
   "31": {
-    "standard": "Snare Soft",
-    "standard2": "Snare Soft 2",
-    "dry": "Snare Dry Soft"
+    "127_1": "Snare Soft",
+    "127_113": "Snare R&B 1",
+    "127_114": "Snare Rock 3",
+    "127_17": "Snare Noisy",
+    "127_18": "Snare Noisy 5",
+    "127_2": "Snare Soft 2",
+    "127_25": "Snare Snappy Electro",
+    "127_26": "Snare Noisy 4",
+    "127_27": "Snare Analog 3",
+    "127_28": "Snare Techno",
+    "127_29": "Open Rim Shot 2 Soft",
+    "127_3": "Snare Dry Soft",
+    "127_30": "Rim Gate 2",
+    "127_33": "Snare Jazz H",
+    "127_34": "Snare Jazz H",
+    "127_4": "Snare Soft B",
+    "127_41": "Brush Slap 2"
   },
   "32": {
-    "standard": "Sticks",
-    "standard2": "Sticks",
-    "dry": "Sticks"
+    "127_1": "Sticks",
+    "127_4": "Sticks B"
   },
   "33": {
-    "standard": "Kick Soft",
-    "standard2": "Kick Soft",
-    "dry": "Kick Dry Soft"
+    "127_1": "Kick Soft",
+    "127_113": "Kick R&B 1",
+    "127_114": "Kick Rock 1",
+    "127_18": "Kick Tight 2",
+    "127_25": "Kick 3",
+    "127_26": "Kick 3",
+    "127_27": "Kick Techno Soft",
+    "127_28": "Kick Techno Q",
+    "127_29": "Kick Dry Soft 2",
+    "127_3": "Kick Dry Soft",
+    "127_30": "Kick Cough",
+    "127_4": "Kick Soft B",
+    "127_49": "Kick Soft 2"
   },
   "34": {
-    "standard": "Open Rim Shot",
-    "standard2": "Open Rim Shot H Short",
-    "dry": "Open Rim Shot Dry"
+    "127_1": "Open Rim Shot",
+    "127_113": "Snare R&B 2",
+    "127_114": "Open Rim Shot Rock",
+    "127_2": "Open Rim Shot H Short",
+    "127_27": "Open Rim Shot Dry",
+    "127_28": "Rim Gate",
+    "127_29": "Open Rim Shot 2",
+    "127_3": "Open Rim Shot Dry",
+    "127_30": "Rim Gate 3",
+    "127_4": "Open Rim Shot B",
+    "127_41": "Open Rim Shot Light"
   },
   "35": {
-    "standard": "Kick Tight",
-    "standard2": "Kick Tight Short",
-    "dry": "Kick Dry Tight"
+    "127_1": "Kick Tight",
+    "127_10": "Kick Dark",
+    "127_113": "Kick R&B 2",
+    "127_114": "Kick Rock 2",
+    "127_17": "Kick 2",
+    "127_18": "Kick 4",
+    "127_25": "Kick Gate",
+    "127_26": "Kick Analog Short",
+    "127_27": "Kick Techno Tight",
+    "127_28": "Kick Techno L",
+    "127_29": "Kick Dim",
+    "127_3": "Kick Dry Tight",
+    "127_30": "Kick Zap",
+    "127_4": "Kick Tight B",
+    "127_49": "Gran Cassa"
   },
   "36": {
-    "standard": "Kick",
-    "standard2": "Kick Short",
-    "dry": "Kick Dry Mute"
+    "126_1": "Cutting Noise",
+    "126_2": "Phone Call",
+    "127_1": "Kick",
+    "127_10": "Kick Room Gate",
+    "127_113": "Kick R&B 3",
+    "127_114": "Kick Rock 3",
+    "127_17": "Kick Gate",
+    "127_18": "Kick Gate 2",
+    "127_2": "Kick Short",
+    "127_25": "Kick Gate Heavy",
+    "127_26": "Kick Analog",
+    "127_27": "Kick Techno",
+    "127_28": "Kick Techno 2",
+    "127_29": "Kick Boon",
+    "127_3": "Kick Dry Mute",
+    "127_30": "Kick Dawn",
+    "127_33": "Kick Jazz",
+    "127_34": "Kick Jazz L",
+    "127_4": "Kick B",
+    "127_41": "Kick Jazz",
+    "127_49": "Gran Cassa Mute"
   },
   "37": {
-    "standard": "Side Stick",
-    "standard2": "Side Stick",
-    "dry": "Side Stick Dry"
+    "126_1": "Cutting Noise 2",
+    "126_2": "Door Squeak",
+    "127_1": "Side Stick",
+    "127_113": "Side Stick Analog 2",
+    "127_114": "Side Stick Rock",
+    "127_2": "Side Stick Light",
+    "127_26": "Side Stick Analog",
+    "127_27": "Side Stick Analog",
+    "127_28": "Side Stick Analog",
+    "127_29": "Side Stick Dry",
+    "127_3": "Side Stick Dry",
+    "127_30": "Side Stick Dry",
+    "127_33": "Side Stick Light",
+    "127_34": "Side Stick Light",
+    "127_4": "Side Stick B",
+    "127_41": "Side Stick Light"
   },
   "38": {
-    "standard": "Snare",
-    "standard2": "Snare Short",
-    "dry": "Snare Dry"
+    "126_1": "Distorted Cutting Noise",
+    "126_2": "Door Slam",
+    "127_1": "Snare",
+    "127_10": "Snare Snappy 2",
+    "127_113": "Snare R&B 3",
+    "127_114": "Snare Rock 4",
+    "127_17": "Snare Rock",
+    "127_18": "Snare Rock 2",
+    "127_2": "Snare Short",
+    "127_25": "Snare Noisy 2",
+    "127_26": "Snare Analog",
+    "127_27": "Snare Techno",
+    "127_28": "Snare Clap",
+    "127_29": "Snare Dry Mute",
+    "127_3": "Snare Dry",
+    "127_30": "Snare Tin",
+    "127_33": "Snare Jazz L",
+    "127_34": "Snare Jazz H 2",
+    "127_4": "Snare B",
+    "127_41": "Brush Slap 3",
+    "127_49": "Band Snare",
+    "127_9": "Snare Snappy"
   },
   "39": {
-    "standard": "Hand Clap",
-    "standard2": "Hand Clap",
-    "dry": "Hand Clap"
+    "126_1": "String Slap",
+    "126_2": "Scratch Cut",
+    "127_1": "Hand Clap",
+    "127_4": "Hand Clap B"
   },
   "40": {
-    "standard": "Snare Tight",
-    "standard2": "Snare Tight H",
-    "dry": "Snare Dry Mute"
+    "126_1": "Bass Slide",
+    "126_2": "Scratch H 3",
+    "127_1": "Snare Tight",
+    "127_10": "Snare Tight Snappy 2",
+    "127_113": "Snare R&B 4",
+    "127_114": "Snare Rock 5",
+    "127_17": "Snare Rock Tight",
+    "127_18": "Snare Rock Rim Q",
+    "127_2": "Snare Tight H",
+    "127_25": "Snare Noisy 3",
+    "127_26": "Snare Analog 2",
+    "127_27": "Snare Techno 2",
+    "127_28": "Snare Dry",
+    "127_29": "Snare White",
+    "127_3": "Snare Dry Mute",
+    "127_30": "Snare Can",
+    "127_33": "Snare Jazz M",
+    "127_34": "Snare Tight L",
+    "127_4": "Snare Tight B",
+    "127_41": "Brush Tap 2",
+    "127_49": "Band Snare 2",
+    "127_9": "Snare Tight Snappy"
   },
   "41": {
-    "standard": "Floor Tom L",
-    "standard2": "Floor Tom L",
-    "dry": "Floor Tom L Short"
+    "126_1": "Pick Scrape",
+    "126_2": "Wind Chime",
+    "127_1": "Floor Tom L",
+    "127_10": "Tom Room 1 Q",
+    "127_113": "Floor Tom L Dark",
+    "127_114": "Floor Tom L Rock",
+    "127_17": "Tom Rock 1",
+    "127_18": "Tom Rock Hard 1",
+    "127_25": "Tom Electro 1",
+    "127_26": "Tom Analog 1",
+    "127_27": "Tom Analog 1",
+    "127_28": "Tom Analog 1",
+    "127_29": "Floor Tom L Short",
+    "127_3": "Floor Tom L Short",
+    "127_30": "Floor Tom L Short",
+    "127_4": "Floor Tom L B",
+    "127_41": "Tom Brush 1",
+    "127_9": "Tom Room 1"
   },
   "42": {
-    "standard": "Hi-Hat Closed",
-    "standard2": "Hi-Hat Closed",
-    "dry": "Hi-Hat Closed"
+    "126_2": "Telephone 2",
+    "127_1": "Hi-Hat Closed",
+    "127_10": "Hi-Hat Closed Q",
+    "127_113": "Hi-Hat Closed 4",
+    "127_114": "Hi-Hat Closed 5",
+    "127_18": "Hi-Hat Closed 2",
+    "127_26": "Hi-Hat Closed Analog",
+    "127_27": "Hi-Hat Closed Analog",
+    "127_28": "Hi-Hat Closed 3",
+    "127_29": "Hi-Hat Closed 2 H",
+    "127_30": "Hi-Hat Closed 2 Soft",
+    "127_34": "Hi-Hat Closed L",
+    "127_4": "Hi-Hat Closed L B"
   },
   "43": {
-    "standard": "Floor Tom H",
-    "standard2": "Floor Tom H",
-    "dry": "Floor Tom H Short"
+    "127_1": "Floor Tom H",
+    "127_10": "Tom Room 2 Q",
+    "127_113": "Floor Tom H Dark",
+    "127_114": "Floor Tom H Rock",
+    "127_17": "Tom Rock 2",
+    "127_18": "Tom Rock Hard 2",
+    "127_25": "Tom Electro 2",
+    "127_26": "Tom Analog 2",
+    "127_27": "Tom Analog 2",
+    "127_28": "Tom Analog 2",
+    "127_29": "Floor Tom H Short",
+    "127_3": "Floor Tom H Short",
+    "127_30": "Floor Tom H Short",
+    "127_4": "Floor Tom H B",
+    "127_41": "Tom Brush 2",
+    "127_9": "Tom Room 2"
   },
   "44": {
-    "standard": "Hi-Hat Pedal",
-    "standard2": "Hi-Hat Pedal",
-    "dry": "Hi-Hat Pedal"
+    "127_1": "Hi-Hat Pedal",
+    "127_10": "Hi-Hat Pedal Q",
+    "127_113": "Hi-Hat Closed Analog 2",
+    "127_114": "Hi-Hat Pedal 5",
+    "127_18": "Hi-Hat Pedal 2",
+    "127_26": "Hi-Hat Closed Analog 2",
+    "127_27": "Hi-Hat Closed Analog 2",
+    "127_28": "Hi-Hat Closed Analog 3",
+    "127_29": "Hi-Hat Pedal 2 H",
+    "127_30": "Hi-Hat Pedal 2 Soft",
+    "127_34": "Hi-Hat Pedal L",
+    "127_4": "Hi-Hat Pedal B"
   },
   "45": {
-    "standard": "Low Tom",
-    "standard2": "Low Tom",
-    "dry": "Low Tom Short"
+    "127_1": "Low Tom",
+    "127_10": "Tom Room 3 Q",
+    "127_113": "Low Tom Dark",
+    "127_114": "Low Tom Rock",
+    "127_17": "Tom Rock 3",
+    "127_18": "Tom Rock Hard 3",
+    "127_25": "Tom Electro 3",
+    "127_26": "Tom Analog 3",
+    "127_27": "Tom Analog 3",
+    "127_28": "Tom Analog 3",
+    "127_29": "Low Tom Short",
+    "127_3": "Low Tom Short",
+    "127_30": "Low Tom Short",
+    "127_4": "Low Tom B",
+    "127_41": "Tom Brush 3",
+    "127_9": "Tom Room 3"
   },
   "46": {
-    "standard": "Hi-Hat Open",
-    "standard2": "Hi-Hat Open",
-    "dry": "Hi-Hat Open"
+    "127_1": "Hi-Hat Open",
+    "127_10": "Hi-Hat Open L",
+    "127_113": "Hi-Hat Open 4",
+    "127_114": "Hi-Hat Open 5",
+    "127_18": "Hi-Hat Open 2",
+    "127_26": "Hi-Hat Open Analog",
+    "127_27": "Hi-Hat Open Analog",
+    "127_28": "Hi-Hat Open 3",
+    "127_29": "Hi-Hat Open 2 L",
+    "127_30": "Hi-Hat Open 2 Soft",
+    "127_34": "Hi-Hat Open L",
+    "127_4": "Hi-Hat Open B"
   },
   "47": {
-    "standard": "Mid Tom L",
-    "standard2": "Mid Tom L",
-    "dry": "Mid Tom L Short"
+    "127_1": "Mid Tom L",
+    "127_10": "Tom Room 4 Dark",
+    "127_113": "Mid Tom L Dark",
+    "127_114": "Mid Tom L Rock",
+    "127_17": "Tom Rock 4",
+    "127_18": "Tom Rock Hard 4",
+    "127_25": "Tom Electro 4",
+    "127_26": "Tom Analog 4",
+    "127_27": "Tom Analog 4",
+    "127_28": "Tom Analog 4",
+    "127_29": "Mid Tom L Short",
+    "127_3": "Mid Tom L Short",
+    "127_30": "Mid Tom L Short",
+    "127_4": "Mid Tom L B",
+    "127_41": "Tom Brush 4",
+    "127_9": "Tom Room 4"
   },
   "48": {
-    "standard": "Mid Tom H",
-    "standard2": "Mid Tom H",
-    "dry": "Mid Tom H Short"
+    "127_1": "Mid Tom H",
+    "127_10": "Tom Room 5 L Dark",
+    "127_113": "Mid Tom H Dark",
+    "127_114": "Mid Tom H Rock",
+    "127_17": "Tom Rock 5",
+    "127_18": "Tom Rock Hard 5",
+    "127_25": "Tom Electro 5",
+    "127_26": "Tom Analog 5",
+    "127_27": "Tom Analog 5",
+    "127_28": "Tom Analog 5",
+    "127_29": "Mid Tom H Short",
+    "127_3": "Mid Tom H Short",
+    "127_30": "Mid Tom H Short",
+    "127_4": "Mid Tom H B",
+    "127_41": "Tom Brush 5",
+    "127_9": "Tom Room 5"
   },
   "49": {
-    "standard": "Crash Cymbal 1",
-    "standard2": "Crash Cymbal 1",
-    "dry": "Crash Cymbal 1"
+    "127_1": "Crash Cymbal 1",
+    "127_113": "Crash Analog",
+    "127_26": "Crash Analog",
+    "127_27": "Crash Analog",
+    "127_28": "Crash Analog",
+    "127_4": "Crash Cymbal 1 B"
   },
   "50": {
-    "standard": "High Tom",
-    "standard2": "High Tom",
-    "dry": "High Tom Short"
+    "127_1": "High Tom",
+    "127_10": "Tom Room 6 L Dark",
+    "127_113": "High Tom Dark",
+    "127_114": "High Tom Rock",
+    "127_17": "Tom Rock 6",
+    "127_18": "Tom Rock Hard 6",
+    "127_25": "Tom Electro 6",
+    "127_26": "Tom Analog 6",
+    "127_27": "Tom Analog 6",
+    "127_28": "Tom Analog 6",
+    "127_29": "High Tom Short",
+    "127_3": "High Tom Short",
+    "127_30": "High Tom Short",
+    "127_4": "High Tom B",
+    "127_41": "Tom Brush 6",
+    "127_9": "Tom Room 6"
   },
   "51": {
-    "standard": "Ride Cymbal 1",
-    "standard2": "Ride Cymbal 1",
-    "dry": "Ride Cymbal 1"
+    "127_1": "Ride Cymbal 1",
+    "127_4": "Ride Cymbal 1 B"
   },
   "52": {
-    "standard": "Chinese Cymbal",
-    "standard2": "Chinese Cymbal",
-    "dry": "Chinese Cymbal"
+    "126_1": "Flute Key Click",
+    "126_2": "Car Engine Ignition",
+    "127_1": "Chinese Cymbal",
+    "127_4": "Chinese Cymbal B"
   },
   "53": {
-    "standard": "Ride Cymbal Cup",
-    "standard2": "Ride Cymbal Cup",
-    "dry": "Ride Cymbal Cup"
+    "126_2": "Car Tires Squeal",
+    "127_1": "Ride Cymbal Cup",
+    "127_34": "Ride Cymbal Cup H",
+    "127_4": "Ride Cymbal Cup Short"
   },
   "54": {
-    "standard": "Tambourine",
-    "standard2": "Tambourine",
-    "dry": "Tambourine"
+    "126_2": "Car Passing",
+    "127_1": "Tambourine",
+    "127_113": "Tambourine 2",
+    "127_4": "Tambourine B"
   },
   "55": {
-    "standard": "Splash Cymbal",
-    "standard2": "Splash Cymbal",
-    "dry": "Splash Cymbal"
+    "126_2": "Car Crash",
+    "127_1": "Splash Cymbal",
+    "127_4": "Splash Cymbal B"
   },
   "56": {
-    "standard": "Cowbell",
-    "standard2": "Cowbell",
-    "dry": "Cowbell"
+    "126_2": "Siren",
+    "127_1": "Cowbell",
+    "127_113": "Cowbell Analog",
+    "127_26": "Cowbell Analog",
+    "127_27": "Cowbell Analog",
+    "127_28": "Cowbell Analog",
+    "127_4": "Cowbell L"
   },
   "57": {
-    "standard": "Crash Cymbal 2",
-    "standard2": "Crash Cymbal 2",
-    "dry": "Crash Cymbal 2"
+    "126_2": "Train",
+    "127_1": "Crash Cymbal 2",
+    "127_4": "Crash Cymbal 2 B",
+    "127_49": "Hand Cymbal 2"
   },
   "58": {
-    "standard": "Vibraslap",
-    "standard2": "Vibraslap",
-    "dry": "Vibraslap"
+    "126_2": "Jet Plane",
+    "127_1": "Vibraslap",
+    "127_4": "Vibraslap B"
   },
   "59": {
-    "standard": "Ride Cymbal 2",
-    "standard2": "Ride Cymbal 2",
-    "dry": "Ride Cymbal 2"
+    "126_2": "Starship",
+    "127_1": "Ride Cymbal 2",
+    "127_4": "Ride Cymbal 2 B",
+    "127_49": "Hand Cymbal 2 Short"
   },
   "60": {
-    "standard": "Bongo H",
-    "standard2": "Bongo H",
-    "dry": "Bongo H"
+    "126_2": "Burst",
+    "127_1": "Bongo H",
+    "127_4": "Bongo H B"
   },
   "61": {
-    "standard": "Bongo L",
-    "standard2": "Bongo L",
-    "dry": "Bongo L"
+    "126_2": "Roller Coaster",
+    "127_1": "Bongo L",
+    "127_4": "Bongo L B"
   },
   "62": {
-    "standard": "Conga H Mute",
-    "standard2": "Conga H Mute",
-    "dry": "Conga H Mute"
+    "126_2": "Submarine",
+    "127_1": "Conga H Mute",
+    "127_113": "Conga Analog H",
+    "127_26": "Conga Analog H",
+    "127_27": "Conga Analog H",
+    "127_28": "Conga Analog H",
+    "127_4": "Conga H Mute B"
   },
   "63": {
-    "standard": "Conga H Open",
-    "standard2": "Conga H Open",
-    "dry": "Conga H Open"
+    "127_1": "Conga H Open",
+    "127_113": "Conga Analog M",
+    "127_26": "Conga Analog M",
+    "127_27": "Conga Analog M",
+    "127_28": "Conga Analog M",
+    "127_4": "Conga H Open B"
   },
   "64": {
-    "standard": "Conga L",
-    "standard2": "Conga L",
-    "dry": "Conga L"
+    "127_1": "Conga L",
+    "127_113": "Conga Analog L",
+    "127_26": "Conga Analog L",
+    "127_27": "Conga Analog L",
+    "127_28": "Conga Analog L",
+    "127_4": "Conga L B"
   },
   "65": {
-    "standard": "Timbale H",
-    "standard2": "Timbale H",
-    "dry": "Timbale H"
+    "127_1": "Timbale H",
+    "127_4": "Timbale H B"
   },
   "66": {
-    "standard": "Timbale L",
-    "standard2": "Timbale L",
-    "dry": "Timbale L"
+    "127_1": "Timbale L",
+    "127_4": "Timbale L B"
   },
   "67": {
-    "standard": "Agogo H",
-    "standard2": "Agogo H",
-    "dry": "Agogo H"
+    "127_1": "Agogo H",
+    "127_4": "Agogo H B"
   },
   "68": {
-    "standard": "Agogo L",
-    "standard2": "Agogo L",
-    "dry": "Agogo L"
+    "126_1": "Shower",
+    "126_2": "Laugh",
+    "127_1": "Agogo L",
+    "127_4": "Agogo L B"
   },
   "69": {
-    "standard": "Cabasa",
-    "standard2": "Cabasa",
-    "dry": "Cabasa"
+    "126_1": "Thunder",
+    "126_2": "Scream",
+    "127_1": "Cabasa",
+    "127_113": "Cabasa 2",
+    "127_4": "Cabasa B"
   },
   "70": {
-    "standard": "Maracas",
-    "standard2": "Maracas",
-    "dry": "Maracas"
+    "126_1": "Wind",
+    "126_2": "Punch",
+    "127_1": "Maracas",
+    "127_113": "Maracas 2",
+    "127_26": "Maracas 2",
+    "127_27": "Maracas 2",
+    "127_28": "Maracas 2",
+    "127_4": "Maracas B"
   },
   "71": {
-    "standard": "Samba Whistle H",
-    "standard2": "Samba Whistle H",
-    "dry": "Samba Whistle H"
+    "126_1": "Stream",
+    "126_2": "Heart Beat",
+    "127_1": "Samba Whistle H",
+    "127_4": "Samba Whistle H B"
   },
   "72": {
-    "standard": "Samba Whistle L",
-    "standard2": "Samba Whistle L",
-    "dry": "Samba Whistle L"
+    "126_1": "Bubble",
+    "126_2": "Foot Steps",
+    "127_1": "Samba Whistle L",
+    "127_4": "Samba Whistle L B"
   },
   "73": {
-    "standard": "Guiro Short",
-    "standard2": "Guiro Short",
-    "dry": "Guiro Short"
+    "126_1": "Feed",
+    "127_1": "Guiro Short",
+    "127_4": "Guiro Short B"
   },
   "74": {
-    "standard": "Guiro Long",
-    "standard2": "Guiro Long",
-    "dry": "Guiro Long"
+    "127_1": "Guiro Long",
+    "127_4": "Guiro Long B"
   },
   "75": {
-    "standard": "Claves",
-    "standard2": "Claves",
-    "dry": "Claves"
+    "127_1": "Claves",
+    "127_113": "Claves 2",
+    "127_26": "Claves 2",
+    "127_27": "Claves 2",
+    "127_28": "Claves 2",
+    "127_4": "Claves B"
   },
   "76": {
-    "standard": "Wood Block H",
-    "standard2": "Wood Block H",
-    "dry": "Wood Block H"
+    "127_1": "Wood Block H",
+    "127_4": "Wood Block H B"
   },
   "77": {
-    "standard": "Wood Block L",
-    "standard2": "Wood Block L",
-    "dry": "Wood Block L"
+    "127_1": "Wood Block L",
+    "127_4": "Wood Block L B"
   },
   "78": {
-    "standard": "Cuica Mute",
-    "standard2": "Cuica Mute",
-    "dry": "Cuica Mute"
+    "127_1": "Cuica Mute",
+    "127_113": "Scratch H 2",
+    "127_25": "Scratch H 2",
+    "127_26": "Scratch H 2",
+    "127_27": "Scratch H 2",
+    "127_28": "Scratch H 2",
+    "127_4": "Cuica Mute B"
   },
   "79": {
-    "standard": "Cuica Open",
-    "standard2": "Cuica Open",
-    "dry": "Cuica Open"
+    "127_1": "Cuica Open",
+    "127_113": "Scratch L 2",
+    "127_25": "Scratch L 2",
+    "127_26": "Scratch L 2",
+    "127_27": "Scratch L 2",
+    "127_28": "Scratch L 2",
+    "127_4": "Cuica Open B"
   },
   "80": {
-    "standard": "Triangle Mute",
-    "standard2": "Triangle Mute",
-    "dry": "Triangle Mute"
+    "127_1": "Triangle Mute",
+    "127_4": "Triangle Mute B"
   },
   "81": {
-    "standard": "Triangle Open",
-    "standard2": "Triangle Open",
-    "dry": "Triangle Open"
+    "127_1": "Triangle Open",
+    "127_4": "Triangle Open B"
   },
   "82": {
-    "standard": "Shaker",
-    "standard2": "Shaker",
-    "dry": "Shaker"
+    "127_1": "Shaker",
+    "127_4": "Shaker B"
   },
   "83": {
-    "standard": "Jingle Bells",
-    "standard2": "Jingle Bells",
-    "dry": "Jingle Bells"
+    "127_1": "Jingle Bells",
+    "127_113": "Tambourine 3",
+    "127_4": "Jingle Bells B"
   },
   "84": {
-    "standard": "Bell Tree",
-    "standard2": "Bell Tree",
-    "dry": "Bell Tree"
+    "126_1": "Dog",
+    "126_2": "Machine Gun",
+    "127_1": "Bell Tree",
+    "127_113": "Wind Chime",
+    "127_4": "Bell Tree B"
+  },
+  "85": {
+    "126_1": "Horse",
+    "126_2": "Laser Gun"
+  },
+  "86": {
+    "126_1": "Bird Tweet 2",
+    "126_2": "Explosion"
+  },
+  "87": {
+    "126_2": "Firework"
+  },
+  "90": {
+    "126_1": "Ghost"
+  },
+  "91": {
+    "126_1": "Maou"
   }
 }

@@ -443,7 +443,7 @@
     "program": 12,
     "bankMsb": 0,
     "bankLsb": 1,
-    "name": "Vibes K",
+    "name": "VibesK",
     "elements": 1,
     "category": "Percussion",
     "bank": "normal",
@@ -1143,7 +1143,7 @@
     "program": 29,
     "bankMsb": 0,
     "bankLsb": 0,
-    "name": "Mute.Gtr",
+    "name": "Mute Gtr",
     "elements": 1,
     "category": "Gt",
     "bank": "normal",
@@ -2735,7 +2735,7 @@
     "bankLsb": 0,
     "name": "Alto Sax",
     "elements": 1,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2745,7 +2745,7 @@
     "bankLsb": 40,
     "name": "Sax Sect",
     "elements": 2,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2755,7 +2755,7 @@
     "bankLsb": 43,
     "name": "HyprAlto",
     "elements": 2,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2765,7 +2765,7 @@
     "bankLsb": 0,
     "name": "TenorSax",
     "elements": 1,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2775,7 +2775,7 @@
     "bankLsb": 40,
     "name": "BrthTnSx",
     "elements": 2,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2785,7 +2785,7 @@
     "bankLsb": 41,
     "name": "SoftTenr",
     "elements": 2,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2795,7 +2795,7 @@
     "bankLsb": 64,
     "name": "TnrSax 2",
     "elements": 1,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2805,7 +2805,7 @@
     "bankLsb": 0,
     "name": "Bari.Sax",
     "elements": 1,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2815,7 +2815,7 @@
     "bankLsb": 0,
     "name": "Oboe",
     "elements": 2,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2825,7 +2825,7 @@
     "bankLsb": 0,
     "name": "Eng.Horn",
     "elements": 1,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2835,7 +2835,7 @@
     "bankLsb": 0,
     "name": "Bassoon",
     "elements": 1,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2845,7 +2845,7 @@
     "bankLsb": 0,
     "name": "Clarinet",
     "elements": 1,
-    "category": "(Reed)",
+    "category": "Reed",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2865,7 +2865,7 @@
     "bankLsb": 0,
     "name": "Flute",
     "elements": 1,
-    "category": "(Pipe)",
+    "category": "Pipe",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2875,7 +2875,7 @@
     "bankLsb": 0,
     "name": "Recorder",
     "elements": 1,
-    "category": "(Pipe)",
+    "category": "Pipe",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2885,7 +2885,7 @@
     "bankLsb": 0,
     "name": "PanFlute",
     "elements": 1,
-    "category": "(Pipe)",
+    "category": "Pipe",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2895,7 +2895,7 @@
     "bankLsb": 0,
     "name": "Bottle",
     "elements": 2,
-    "category": "(Pipe)",
+    "category": "Pipe",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2905,7 +2905,7 @@
     "bankLsb": 0,
     "name": "Shakhchi",
     "elements": 2,
-    "category": "(Pipe)",
+    "category": "Pipe",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2915,7 +2915,7 @@
     "bankLsb": 0,
     "name": "Whistle",
     "elements": 1,
-    "category": "(Pipe)",
+    "category": "Pipe",
     "bank": "normal",
     "qy100Only": false
   },
@@ -2925,7 +2925,7 @@
     "bankLsb": 0,
     "name": "Ocarina",
     "elements": 1,
-    "category": "(Pipe)",
+    "category": "Pipe",
     "bank": "normal",
     "qy100Only": false
   },
@@ -4746,7 +4746,7 @@
     "name": "CuttngNz",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
@@ -4756,17 +4756,17 @@
     "name": "CttngNz2",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
     "program": 3,
     "bankMsb": 64,
     "bankLsb": 0,
-    "name": "DstCutNz",
+    "name": "BetterDCNz",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
@@ -4776,7 +4776,7 @@
     "name": "Str Slap",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
@@ -4786,7 +4786,7 @@
     "name": "B.Slide",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
@@ -4796,7 +4796,7 @@
     "name": "P.Scrape",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
@@ -4806,7 +4806,7 @@
     "name": "Fl.KClik",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
@@ -4816,7 +4816,7 @@
     "name": "Shower",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Nature",
     "qy100Only": false
   },
   {
@@ -4826,7 +4826,7 @@
     "name": "Thunder",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Nature",
     "qy100Only": false
   },
   {
@@ -4836,7 +4836,7 @@
     "name": "Wind",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Nature",
     "qy100Only": false
   },
   {
@@ -4846,7 +4846,7 @@
     "name": "Stream",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Nature",
     "qy100Only": false
   },
   {
@@ -4856,7 +4856,7 @@
     "name": "Bubble",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Nature",
     "qy100Only": false
   },
   {
@@ -4866,7 +4866,7 @@
     "name": "Feed",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Animal",
     "qy100Only": false
   },
   {
@@ -4876,7 +4876,7 @@
     "name": "Dog",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Animal",
     "qy100Only": false
   },
   {
@@ -4886,7 +4886,7 @@
     "name": "Horse",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Animal",
     "qy100Only": false
   },
   {
@@ -4896,7 +4896,7 @@
     "name": "Tweet 2",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Animal",
     "qy100Only": false
   },
   {
@@ -4906,7 +4906,7 @@
     "name": "Ghost",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Horror",
     "qy100Only": false
   },
   {
@@ -4916,7 +4916,7 @@
     "name": "Maou",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Horror",
     "qy100Only": false
   },
   {
@@ -4926,7 +4926,7 @@
     "name": "PhonCall",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Household",
     "qy100Only": false
   },
   {
@@ -4936,7 +4936,7 @@
     "name": "DoorSqek",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Household",
     "qy100Only": false
   },
   {
@@ -4946,7 +4946,7 @@
     "name": "DoorSlam",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Household",
     "qy100Only": false
   },
   {
@@ -4956,7 +4956,7 @@
     "name": "ScratchC",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
@@ -4966,7 +4966,7 @@
     "name": "Scratch 2",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Instrument FX",
     "qy100Only": false
   },
   {
@@ -4976,7 +4976,7 @@
     "name": "WindChim",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Nature",
     "qy100Only": false
   },
   {
@@ -4986,7 +4986,7 @@
     "name": "Telphon2",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Household",
     "qy100Only": false
   },
   {
@@ -4996,7 +4996,7 @@
     "name": "CarEIgnt",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5006,7 +5006,7 @@
     "name": "CarTSqel",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5016,7 +5016,7 @@
     "name": "Car Pass",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5026,7 +5026,7 @@
     "name": "CarCrash",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5036,7 +5036,7 @@
     "name": "Siren",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5046,7 +5046,7 @@
     "name": "Train",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5056,7 +5056,7 @@
     "name": "JetPlane",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5066,7 +5066,7 @@
     "name": "Starship",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5076,7 +5076,7 @@
     "name": "Burst",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Action",
     "qy100Only": false
   },
   {
@@ -5086,7 +5086,7 @@
     "name": "Coaster",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5096,7 +5096,7 @@
     "name": "Submarin",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Vehicle",
     "qy100Only": false
   },
   {
@@ -5106,7 +5106,7 @@
     "name": "Laugh",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Human",
     "qy100Only": false
   },
   {
@@ -5116,7 +5116,7 @@
     "name": "Scream",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Human",
     "qy100Only": false
   },
   {
@@ -5126,7 +5126,7 @@
     "name": "Punch",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Human",
     "qy100Only": false
   },
   {
@@ -5136,7 +5136,7 @@
     "name": "Heart",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Human",
     "qy100Only": false
   },
   {
@@ -5146,7 +5146,7 @@
     "name": "Footstep",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Human",
     "qy100Only": false
   },
   {
@@ -5156,7 +5156,7 @@
     "name": "MchinGun",
     "elements": 1,
     "bank": "sfx",
-    "category": null,
+    "category": "Action",
     "qy100Only": false
   },
   {
@@ -5166,7 +5166,7 @@
     "name": "LaserGun",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Action",
     "qy100Only": false
   },
   {
@@ -5176,17 +5176,17 @@
     "name": "Xplosion",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Action",
     "qy100Only": false
   },
   {
     "program": 116,
     "bankMsb": 64,
     "bankLsb": 0,
-    "name": "FireWork",
+    "name": "Firework",
     "elements": 2,
     "bank": "sfx",
-    "category": null,
+    "category": "Action",
     "qy100Only": false
   },
   {
@@ -5195,7 +5195,7 @@
     "bankLsb": 0,
     "name": "DR1 Standard",
     "elements": null,
-    "category": null,
+    "category": "Standard",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5205,7 +5205,7 @@
     "bankLsb": 0,
     "name": "DR2 Standard2",
     "elements": null,
-    "category": null,
+    "category": "Standard",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5215,7 +5215,7 @@
     "bankLsb": 0,
     "name": "DR3 Dry",
     "elements": null,
-    "category": null,
+    "category": "Standard",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5225,7 +5225,7 @@
     "bankLsb": 0,
     "name": "DR4 Bright",
     "elements": null,
-    "category": null,
+    "category": "Standard",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5235,7 +5235,7 @@
     "bankLsb": 0,
     "name": "DR5 Room",
     "elements": null,
-    "category": null,
+    "category": "Room/Ambient",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5245,7 +5245,7 @@
     "bankLsb": 0,
     "name": "DR6 Dark",
     "elements": null,
-    "category": null,
+    "category": "Room/Ambient",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5255,7 +5255,7 @@
     "bankLsb": 0,
     "name": "DR7 Rock",
     "elements": null,
-    "category": null,
+    "category": "Rock",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5265,7 +5265,7 @@
     "bankLsb": 0,
     "name": "DR8 Rock2",
     "elements": null,
-    "category": null,
+    "category": "Rock",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5275,7 +5275,7 @@
     "bankLsb": 0,
     "name": "DR9 Electro",
     "elements": null,
-    "category": null,
+    "category": "Electronic",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5285,7 +5285,7 @@
     "bankLsb": 0,
     "name": "DR10 Analog",
     "elements": null,
-    "category": null,
+    "category": "Electronic",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5295,7 +5295,7 @@
     "bankLsb": 0,
     "name": "DR11 Analog2",
     "elements": null,
-    "category": null,
+    "category": "Electronic",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5305,7 +5305,7 @@
     "bankLsb": 0,
     "name": "DR12 Dance",
     "elements": null,
-    "category": null,
+    "category": "Electronic",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5315,7 +5315,7 @@
     "bankLsb": 0,
     "name": "DR13 HipHop",
     "elements": null,
-    "category": null,
+    "category": "Urban",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5325,7 +5325,7 @@
     "bankLsb": 0,
     "name": "DR14 Jungle",
     "elements": null,
-    "category": null,
+    "category": "Urban",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5335,7 +5335,7 @@
     "bankLsb": 0,
     "name": "DR15 Jazz",
     "elements": null,
-    "category": null,
+    "category": "Jazz/Acoustic",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5345,7 +5345,7 @@
     "bankLsb": 0,
     "name": "DR16 Jazz2",
     "elements": null,
-    "category": null,
+    "category": "Jazz/Acoustic",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5355,7 +5355,7 @@
     "bankLsb": 0,
     "name": "DR17 Brush",
     "elements": null,
-    "category": null,
+    "category": "Jazz/Acoustic",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5365,7 +5365,7 @@
     "bankLsb": 0,
     "name": "DR18 Symphony",
     "elements": null,
-    "category": null,
+    "category": "Orchestral",
     "bank": "drum",
     "qy100Only": false
   },
@@ -5375,7 +5375,7 @@
     "bankLsb": 0,
     "name": "DR19 R&B",
     "elements": null,
-    "category": null,
+    "category": "Urban",
     "bank": "drum",
     "qy100Only": true
   },
@@ -5385,7 +5385,7 @@
     "bankLsb": 0,
     "name": "DR20 Rock3",
     "elements": null,
-    "category": null,
+    "category": "Rock",
     "bank": "drum",
     "qy100Only": true
   },

@@ -1,0 +1,7490 @@
+[
+  {
+    "id": "grandpno-dark-wobble",
+    "name": "Dark Wobble",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 1
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 46
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 72
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 70
+      },
+      {
+        "name": "EG Release Time",
+        "value": 84
+      },
+      {
+        "name": "Reverb Send",
+        "value": 96
+      },
+      {
+        "name": "Chorus Send",
+        "value": 24
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 76
+      },
+      {
+        "name": "Dry Level",
+        "value": 108
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-1-weathered-serenade",
+    "name": "Weathered Serenade",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 1
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 61
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 70
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 56
+      },
+      {
+        "name": "EG Release Time",
+        "value": 76
+      },
+      {
+        "name": "Reverb Send",
+        "value": 79
+      },
+      {
+        "name": "Chorus Send",
+        "value": 10
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 46
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 65
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-18-1-wistful-sonata",
+    "name": "Wistful Sonata",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 18,
+      "program": 1
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 63
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 75
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 66
+      },
+      {
+        "name": "EG Release Time",
+        "value": 89
+      },
+      {
+        "name": "Reverb Send",
+        "value": 95
+      },
+      {
+        "name": "Chorus Send",
+        "value": 16
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 45
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 63
+      },
+      {
+        "name": "Dry Level",
+        "value": 90
+      }
+    ]
+  },
+  {
+    "id": "normal-0-41-1-twilight-confession",
+    "name": "Twilight Confession",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 41,
+      "program": 1
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 62
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 72
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 67
+      },
+      {
+        "name": "EG Release Time",
+        "value": 80
+      },
+      {
+        "name": "Reverb Send",
+        "value": 80
+      },
+      {
+        "name": "Chorus Send",
+        "value": 10
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 75
+      },
+      {
+        "name": "Dry Level",
+        "value": 95
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-2-solemn-elegy",
+    "name": "Solemn Elegy",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 2
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 69
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 60
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 65
+      },
+      {
+        "name": "EG Release Time",
+        "value": 77
+      },
+      {
+        "name": "Reverb Send",
+        "value": 91
+      },
+      {
+        "name": "Chorus Send",
+        "value": 11
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 49
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 73
+      },
+      {
+        "name": "Dry Level",
+        "value": 103
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-2-nostalgic-keys",
+    "name": "Nostalgic Keys",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 2
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 56
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 69
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 55
+      },
+      {
+        "name": "EG Release Time",
+        "value": 93
+      },
+      {
+        "name": "Reverb Send",
+        "value": 87
+      },
+      {
+        "name": "Chorus Send",
+        "value": 25
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 78
+      },
+      {
+        "name": "Dry Level",
+        "value": 92
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-3-warm-analog",
+    "name": "Warm Analog",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 3
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 45
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 70
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 69
+      },
+      {
+        "name": "EG Release Time",
+        "value": 79
+      },
+      {
+        "name": "Reverb Send",
+        "value": 86
+      },
+      {
+        "name": "Chorus Send",
+        "value": 28
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 65
+      },
+      {
+        "name": "Dry Level",
+        "value": 104
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-3-ivory-prelude",
+    "name": "Ivory Prelude",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 3
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 47
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 66
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 75
+      },
+      {
+        "name": "EG Release Time",
+        "value": 86
+      },
+      {
+        "name": "Reverb Send",
+        "value": 98
+      },
+      {
+        "name": "Chorus Send",
+        "value": 22
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 48
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 62
+      },
+      {
+        "name": "Dry Level",
+        "value": 101
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-3-tender-hymn",
+    "name": "Tender Hymn",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 3
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 51
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 55
+      },
+      {
+        "name": "EG Release Time",
+        "value": 86
+      },
+      {
+        "name": "Reverb Send",
+        "value": 80
+      },
+      {
+        "name": "Chorus Send",
+        "value": 22
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 69
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-3-funk-legend",
+    "name": "Funk Legend",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 3
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 47
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 71
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 58
+      },
+      {
+        "name": "EG Release Time",
+        "value": 82
+      },
+      {
+        "name": "Reverb Send",
+        "value": 96
+      },
+      {
+        "name": "Chorus Send",
+        "value": 28
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 60
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 71
+      },
+      {
+        "name": "Dry Level",
+        "value": 116
+      }
+    ]
+  },
+  {
+    "id": "normal-0-41-3-funky-tines",
+    "name": "Funky Tines",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 41,
+      "program": 3
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 61
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 62
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 57
+      },
+      {
+        "name": "EG Release Time",
+        "value": 75
+      },
+      {
+        "name": "Reverb Send",
+        "value": 94
+      },
+      {
+        "name": "Chorus Send",
+        "value": 24
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 46
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 75
+      },
+      {
+        "name": "Dry Level",
+        "value": 104
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-4-red-ear",
+    "name": "Red-Ear",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 4
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 46
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 60
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 59
+      },
+      {
+        "name": "EG Release Time",
+        "value": 86
+      },
+      {
+        "name": "Reverb Send",
+        "value": 96
+      },
+      {
+        "name": "Chorus Send",
+        "value": 23
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 75
+      },
+      {
+        "name": "Dry Level",
+        "value": 118
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-4-memoir",
+    "name": "Memoir",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 4
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 69
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 70
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 73
+      },
+      {
+        "name": "EG Release Time",
+        "value": 94
+      },
+      {
+        "name": "Reverb Send",
+        "value": 80
+      },
+      {
+        "name": "Chorus Send",
+        "value": 19
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 60
+      },
+      {
+        "name": "Dry Level",
+        "value": 91
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-5-the-camera-man",
+    "name": "The Camera Man",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 5
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 55
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 69
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 65
+      },
+      {
+        "name": "EG Release Time",
+        "value": 75
+      },
+      {
+        "name": "Reverb Send",
+        "value": 99
+      },
+      {
+        "name": "Chorus Send",
+        "value": 26
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 47
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 76
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-5-moonside-memory",
+    "name": "Moonside Memory",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 5
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 46
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 69
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 72
+      },
+      {
+        "name": "EG Release Time",
+        "value": 70
+      },
+      {
+        "name": "Reverb Send",
+        "value": 87
+      },
+      {
+        "name": "Chorus Send",
+        "value": 27
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 52
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 74
+      },
+      {
+        "name": "Dry Level",
+        "value": 96
+      }
+    ]
+  },
+  {
+    "id": "normal-0-64-5-save-state",
+    "name": "Save State",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 64,
+      "program": 5
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 54
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 64
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 61
+      },
+      {
+        "name": "EG Release Time",
+        "value": 94
+      },
+      {
+        "name": "Reverb Send",
+        "value": 85
+      },
+      {
+        "name": "Chorus Send",
+        "value": 21
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 45
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 67
+      },
+      {
+        "name": "Dry Level",
+        "value": 90
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-6-come-down",
+    "name": "Come Down",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 6
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 49
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 67
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 62
+      },
+      {
+        "name": "EG Release Time",
+        "value": 71
+      },
+      {
+        "name": "Reverb Send",
+        "value": 77
+      },
+      {
+        "name": "Chorus Send",
+        "value": 10
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 51
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 76
+      },
+      {
+        "name": "Dry Level",
+        "value": 119
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-6-magicant",
+    "name": "Magicant",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 6
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 70
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 71
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 63
+      },
+      {
+        "name": "EG Release Time",
+        "value": 89
+      },
+      {
+        "name": "Reverb Send",
+        "value": 90
+      },
+      {
+        "name": "Chorus Send",
+        "value": 18
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 47
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 66
+      },
+      {
+        "name": "Dry Level",
+        "value": 92
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-6-one-wish",
+    "name": "One Wish",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 6
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 62
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 63
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 59
+      },
+      {
+        "name": "EG Release Time",
+        "value": 74
+      },
+      {
+        "name": "Reverb Send",
+        "value": 74
+      },
+      {
+        "name": "Chorus Send",
+        "value": 15
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 72
+      },
+      {
+        "name": "Dry Level",
+        "value": 91
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-6-winhill",
+    "name": "Winhill",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 6
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 50
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 64
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 59
+      },
+      {
+        "name": "EG Release Time",
+        "value": 93
+      },
+      {
+        "name": "Reverb Send",
+        "value": 99
+      },
+      {
+        "name": "Chorus Send",
+        "value": 25
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 47
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 64
+      },
+      {
+        "name": "Dry Level",
+        "value": 109
+      }
+    ]
+  },
+  {
+    "id": "normal-0-41-6-mute-mod",
+    "name": "Mute Mod",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 41,
+      "program": 6
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 56
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 69
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 72
+      },
+      {
+        "name": "EG Release Time",
+        "value": 82
+      },
+      {
+        "name": "Reverb Send",
+        "value": 89
+      },
+      {
+        "name": "Chorus Send",
+        "value": 17
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 46
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 76
+      },
+      {
+        "name": "Dry Level",
+        "value": 110
+      }
+    ]
+  },
+  {
+    "id": "normal-0-42-6-shiny",
+    "name": "Shiny",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 42,
+      "program": 6
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 65
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 64
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 56
+      },
+      {
+        "name": "EG Release Time",
+        "value": 91
+      },
+      {
+        "name": "Reverb Send",
+        "value": 90
+      },
+      {
+        "name": "Chorus Send",
+        "value": 19
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 61
+      },
+      {
+        "name": "Dry Level",
+        "value": 104
+      }
+    ]
+  },
+  {
+    "id": "normal-0-45-6-toy-town",
+    "name": "Toy Town",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 45,
+      "program": 6
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 54
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 64
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 65
+      },
+      {
+        "name": "EG Release Time",
+        "value": 92
+      },
+      {
+        "name": "Reverb Send",
+        "value": 82
+      },
+      {
+        "name": "Chorus Send",
+        "value": 13
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 52
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 67
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-7-tower",
+    "name": "Tower",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 7
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 48
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 65
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 72
+      },
+      {
+        "name": "EG Release Time",
+        "value": 78
+      },
+      {
+        "name": "Reverb Send",
+        "value": 90
+      },
+      {
+        "name": "Chorus Send",
+        "value": 21
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 49
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 72
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-7-regal",
+    "name": "Regal",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 7
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 60
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 73
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 59
+      },
+      {
+        "name": "EG Release Time",
+        "value": 94
+      },
+      {
+        "name": "Reverb Send",
+        "value": 81
+      },
+      {
+        "name": "Chorus Send",
+        "value": 13
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 63
+      },
+      {
+        "name": "Dry Level",
+        "value": 110
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-8-doze",
+    "name": "Doze",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 8
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 43
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 66
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 56
+      },
+      {
+        "name": "EG Release Time",
+        "value": 91
+      },
+      {
+        "name": "Reverb Send",
+        "value": 94
+      },
+      {
+        "name": "Chorus Send",
+        "value": 17
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 74
+      },
+      {
+        "name": "Dry Level",
+        "value": 101
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-8-hotel",
+    "name": "Hotel",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 8
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 63
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 65
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 62
+      },
+      {
+        "name": "EG Release Time",
+        "value": 84
+      },
+      {
+        "name": "Reverb Send",
+        "value": 97
+      },
+      {
+        "name": "Chorus Send",
+        "value": 17
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 51
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 74
+      },
+      {
+        "name": "Dry Level",
+        "value": 108
+      }
+    ]
+  },
+  {
+    "id": "normal-0-27-8-puff-puff",
+    "name": "Puff Puff",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 27,
+      "program": 8
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 41
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 72
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 55
+      },
+      {
+        "name": "EG Release Time",
+        "value": 86
+      },
+      {
+        "name": "Reverb Send",
+        "value": 79
+      },
+      {
+        "name": "Chorus Send",
+        "value": 24
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 64
+      },
+      {
+        "name": "Dry Level",
+        "value": 104
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-9-little-pedals",
+    "name": "Little Pedals",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 9
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 90
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 65
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 30
+      },
+      {
+        "name": "EG Release Time",
+        "value": 32
+      },
+      {
+        "name": "Reverb Send",
+        "value": 48
+      },
+      {
+        "name": "Chorus Send",
+        "value": 11
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 38
+      },
+      {
+        "name": "Dry Level",
+        "value": 123
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-10-grail",
+    "name": "Grail",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 10
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 80
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 17
+      },
+      {
+        "name": "EG Release Time",
+        "value": 48
+      },
+      {
+        "name": "Reverb Send",
+        "value": 38
+      },
+      {
+        "name": "Chorus Send",
+        "value": 9
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 43
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-11-play-time",
+    "name": "Play Time",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 11
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 86
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 66
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 13
+      },
+      {
+        "name": "EG Release Time",
+        "value": 40
+      },
+      {
+        "name": "Reverb Send",
+        "value": 54
+      },
+      {
+        "name": "Chorus Send",
+        "value": 13
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 49
+      },
+      {
+        "name": "Dry Level",
+        "value": 112
+      }
+    ]
+  },
+  {
+    "id": "normal-0-64-11-frost-world",
+    "name": "Frost World",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 64,
+      "program": 11
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 104
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 72
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 12
+      },
+      {
+        "name": "EG Release Time",
+        "value": 36
+      },
+      {
+        "name": "Reverb Send",
+        "value": 59
+      },
+      {
+        "name": "Chorus Send",
+        "value": 9
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 48
+      },
+      {
+        "name": "Dry Level",
+        "value": 119
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-12-maskerade",
+    "name": "Maskerade",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 12
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 91
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 76
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 11
+      },
+      {
+        "name": "EG Release Time",
+        "value": 38
+      },
+      {
+        "name": "Reverb Send",
+        "value": 57
+      },
+      {
+        "name": "Chorus Send",
+        "value": 20
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 51
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 52
+      },
+      {
+        "name": "Dry Level",
+        "value": 110
+      }
+    ]
+  },
+  {
+    "id": "normal-0-1-12-known",
+    "name": "Known",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 1,
+      "program": 12
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 85
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 17
+      },
+      {
+        "name": "EG Release Time",
+        "value": 31
+      },
+      {
+        "name": "Reverb Send",
+        "value": 59
+      },
+      {
+        "name": "Chorus Send",
+        "value": 11
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 35
+      },
+      {
+        "name": "Dry Level",
+        "value": 119
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-13-proficiency",
+    "name": "Proficiency",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 13
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 105
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 78
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 10
+      },
+      {
+        "name": "EG Release Time",
+        "value": 26
+      },
+      {
+        "name": "Reverb Send",
+        "value": 65
+      },
+      {
+        "name": "Chorus Send",
+        "value": 13
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 53
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "normal-0-64-13-chance-time",
+    "name": "Chance Time",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 64,
+      "program": 13
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 108
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 59
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 14
+      },
+      {
+        "name": "EG Release Time",
+        "value": 42
+      },
+      {
+        "name": "Reverb Send",
+        "value": 48
+      },
+      {
+        "name": "Chorus Send",
+        "value": 16
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 43
+      },
+      {
+        "name": "Dry Level",
+        "value": 119
+      }
+    ]
+  },
+  {
+    "id": "normal-0-97-13-thumb-drum",
+    "name": "Thumb Drum",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 97,
+      "program": 13
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 89
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 75
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 22
+      },
+      {
+        "name": "EG Release Time",
+        "value": 42
+      },
+      {
+        "name": "Reverb Send",
+        "value": 43
+      },
+      {
+        "name": "Chorus Send",
+        "value": 19
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 64
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 49
+      },
+      {
+        "name": "Dry Level",
+        "value": 113
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-15-broken-tube",
+    "name": "Broken Tube",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 15
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 103
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 79
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 28
+      },
+      {
+        "name": "EG Release Time",
+        "value": 33
+      },
+      {
+        "name": "Reverb Send",
+        "value": 58
+      },
+      {
+        "name": "Chorus Send",
+        "value": 16
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 52
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 36
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-96-15-broken-bell",
+    "name": "Broken Bell",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 96,
+      "program": 15
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 86
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 55
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 20
+      },
+      {
+        "name": "EG Release Time",
+        "value": 47
+      },
+      {
+        "name": "Reverb Send",
+        "value": 61
+      },
+      {
+        "name": "Chorus Send",
+        "value": 5
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 62
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 50
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-97-15-broken-carillon",
+    "name": "Broken Carillon",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 97,
+      "program": 15
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 79
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 73
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 24
+      },
+      {
+        "name": "EG Release Time",
+        "value": 41
+      },
+      {
+        "name": "Reverb Send",
+        "value": 50
+      },
+      {
+        "name": "Chorus Send",
+        "value": 7
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 41
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-16-parliament",
+    "name": "Parliament",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 16
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 80
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 63
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 22
+      },
+      {
+        "name": "EG Release Time",
+        "value": 32
+      },
+      {
+        "name": "Reverb Send",
+        "value": 50
+      },
+      {
+        "name": "Chorus Send",
+        "value": 16
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 31
+      },
+      {
+        "name": "Dry Level",
+        "value": 123
+      }
+    ]
+  },
+  {
+    "id": "normal-0-35-16-baroque",
+    "name": "Baroque",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 35,
+      "program": 16
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 77
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 76
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 13
+      },
+      {
+        "name": "EG Release Time",
+        "value": 45
+      },
+      {
+        "name": "Reverb Send",
+        "value": 65
+      },
+      {
+        "name": "Chorus Send",
+        "value": 13
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 53
+      },
+      {
+        "name": "Dry Level",
+        "value": 118
+      }
+    ]
+  },
+  {
+    "id": "normal-0-96-16-lever-pull",
+    "name": "Lever Pull",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 96,
+      "program": 16
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 73
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 17
+      },
+      {
+        "name": "EG Release Time",
+        "value": 48
+      },
+      {
+        "name": "Reverb Send",
+        "value": 47
+      },
+      {
+        "name": "Chorus Send",
+        "value": 18
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 35
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-97-16-arabasta",
+    "name": "Arabasta",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 97,
+      "program": 16
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 104
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 64
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 27
+      },
+      {
+        "name": "EG Release Time",
+        "value": 41
+      },
+      {
+        "name": "Reverb Send",
+        "value": 64
+      },
+      {
+        "name": "Chorus Send",
+        "value": 20
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 54
+      },
+      {
+        "name": "Dry Level",
+        "value": 118
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-17-ceremonial-cloister",
+    "name": "Ceremonial Cloister",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 77
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 65
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 15
+      },
+      {
+        "name": "EG Release Time",
+        "value": 52
+      },
+      {
+        "name": "Reverb Send",
+        "value": 44
+      },
+      {
+        "name": "Chorus Send",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 56
+      },
+      {
+        "name": "Dry Level",
+        "value": 109
+      }
+    ]
+  },
+  {
+    "id": "normal-0-33-17-wheel-in-the-sky",
+    "name": "Wheel In The Sky",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 33,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 56
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 19
+      },
+      {
+        "name": "EG Release Time",
+        "value": 49
+      },
+      {
+        "name": "Reverb Send",
+        "value": 49
+      },
+      {
+        "name": "Chorus Send",
+        "value": 66
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 77
+      },
+      {
+        "name": "Dry Level",
+        "value": 108
+      }
+    ]
+  },
+  {
+    "id": "normal-0-34-17-weezer",
+    "name": "Weezer",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 34,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 76
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 65
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 18
+      },
+      {
+        "name": "EG Release Time",
+        "value": 66
+      },
+      {
+        "name": "Reverb Send",
+        "value": 42
+      },
+      {
+        "name": "Chorus Send",
+        "value": 62
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 65
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 83
+      },
+      {
+        "name": "Dry Level",
+        "value": 126
+      }
+    ]
+  },
+  {
+    "id": "normal-0-37-17-intermission",
+    "name": "Intermission",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 37,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 92
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 73
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 27
+      },
+      {
+        "name": "EG Release Time",
+        "value": 50
+      },
+      {
+        "name": "Reverb Send",
+        "value": 33
+      },
+      {
+        "name": "Chorus Send",
+        "value": 64
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 70
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-38-17-odd-ball",
+    "name": "Odd Ball",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 38,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 88
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 67
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 28
+      },
+      {
+        "name": "EG Release Time",
+        "value": 50
+      },
+      {
+        "name": "Reverb Send",
+        "value": 30
+      },
+      {
+        "name": "Chorus Send",
+        "value": 44
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 57
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 68
+      },
+      {
+        "name": "Dry Level",
+        "value": 105
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-17-connection",
+    "name": "Connection",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 92
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 67
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 19
+      },
+      {
+        "name": "EG Release Time",
+        "value": 51
+      },
+      {
+        "name": "Reverb Send",
+        "value": 35
+      },
+      {
+        "name": "Chorus Send",
+        "value": 40
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 64
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 66
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-64-17-rotary-sermon",
+    "name": "Rotary Sermon",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 64,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 96
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 59
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 12
+      },
+      {
+        "name": "EG Release Time",
+        "value": 46
+      },
+      {
+        "name": "Reverb Send",
+        "value": 30
+      },
+      {
+        "name": "Chorus Send",
+        "value": 45
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 71
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 77
+      },
+      {
+        "name": "Dry Level",
+        "value": 112
+      }
+    ]
+  },
+  {
+    "id": "normal-0-65-17-sports-fan",
+    "name": "Sports Fan",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 65,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 76
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 61
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 29
+      },
+      {
+        "name": "EG Release Time",
+        "value": 68
+      },
+      {
+        "name": "Reverb Send",
+        "value": 45
+      },
+      {
+        "name": "Chorus Send",
+        "value": 57
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 61
+      },
+      {
+        "name": "Dry Level",
+        "value": 108
+      }
+    ]
+  },
+  {
+    "id": "normal-0-66-17-xtra-cheez",
+    "name": "Xtra Cheez",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 66,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 84
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 62
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 30
+      },
+      {
+        "name": "EG Release Time",
+        "value": 41
+      },
+      {
+        "name": "Reverb Send",
+        "value": 38
+      },
+      {
+        "name": "Chorus Send",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 73
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 62
+      },
+      {
+        "name": "Dry Level",
+        "value": 125
+      }
+    ]
+  },
+  {
+    "id": "normal-0-24-18-perky",
+    "name": "Perky",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 24,
+      "program": 18
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 79
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 56
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 11
+      },
+      {
+        "name": "EG Release Time",
+        "value": 41
+      },
+      {
+        "name": "Reverb Send",
+        "value": 48
+      },
+      {
+        "name": "Chorus Send",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 59
+      },
+      {
+        "name": "Dry Level",
+        "value": 119
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-18-gospel-truth",
+    "name": "Gospel Truth",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 18
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 81
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 55
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 11
+      },
+      {
+        "name": "EG Release Time",
+        "value": 64
+      },
+      {
+        "name": "Reverb Send",
+        "value": 59
+      },
+      {
+        "name": "Chorus Send",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 60
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 67
+      },
+      {
+        "name": "Dry Level",
+        "value": 116
+      }
+    ]
+  },
+  {
+    "id": "normal-0-33-18-full-body",
+    "name": "Full Body",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 33,
+      "program": 18
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 72
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 71
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 30
+      },
+      {
+        "name": "EG Release Time",
+        "value": 69
+      },
+      {
+        "name": "Reverb Send",
+        "value": 37
+      },
+      {
+        "name": "Chorus Send",
+        "value": 57
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 79
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 70
+      },
+      {
+        "name": "Dry Level",
+        "value": 104
+      }
+    ]
+  },
+  {
+    "id": "normal-0-37-18-bad-breath",
+    "name": "Bad Breath",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 37,
+      "program": 18
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 81
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 55
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 27
+      },
+      {
+        "name": "EG Release Time",
+        "value": 55
+      },
+      {
+        "name": "Reverb Send",
+        "value": 49
+      },
+      {
+        "name": "Chorus Send",
+        "value": 51
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 74
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 85
+      },
+      {
+        "name": "Dry Level",
+        "value": 121
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-19-less-talk-more-rock",
+    "name": "Less Talk More Rock",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 19
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 73
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 71
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 26
+      },
+      {
+        "name": "EG Release Time",
+        "value": 46
+      },
+      {
+        "name": "Reverb Send",
+        "value": 39
+      },
+      {
+        "name": "Chorus Send",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 66
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 64
+      },
+      {
+        "name": "Dry Level",
+        "value": 106
+      }
+    ]
+  },
+  {
+    "id": "normal-0-64-19-final-battle",
+    "name": "Final Battle",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 64,
+      "program": 19
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 79
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 72
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 12
+      },
+      {
+        "name": "EG Release Time",
+        "value": 51
+      },
+      {
+        "name": "Reverb Send",
+        "value": 38
+      },
+      {
+        "name": "Chorus Send",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 74
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 63
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-65-19-ufo",
+    "name": "UFO",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 65,
+      "program": 19
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 87
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 72
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 27
+      },
+      {
+        "name": "EG Release Time",
+        "value": 54
+      },
+      {
+        "name": "Reverb Send",
+        "value": 33
+      },
+      {
+        "name": "Chorus Send",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 85
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-20-devout",
+    "name": "Devout",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 20
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 90
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 71
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 27
+      },
+      {
+        "name": "EG Release Time",
+        "value": 52
+      },
+      {
+        "name": "Reverb Send",
+        "value": 53
+      },
+      {
+        "name": "Chorus Send",
+        "value": 49
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 66
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 62
+      },
+      {
+        "name": "Dry Level",
+        "value": 102
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-20-chapel",
+    "name": "Chapel",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 20
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 91
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 58
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 22
+      },
+      {
+        "name": "EG Release Time",
+        "value": 58
+      },
+      {
+        "name": "Reverb Send",
+        "value": 59
+      },
+      {
+        "name": "Chorus Send",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 66
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 60
+      },
+      {
+        "name": "Dry Level",
+        "value": 124
+      }
+    ]
+  },
+  {
+    "id": "normal-0-35-20-dark-harvest",
+    "name": "Dark Harvest",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 35,
+      "program": 20
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 88
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 67
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 19
+      },
+      {
+        "name": "EG Release Time",
+        "value": 60
+      },
+      {
+        "name": "Reverb Send",
+        "value": 49
+      },
+      {
+        "name": "Chorus Send",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 66
+      },
+      {
+        "name": "Dry Level",
+        "value": 109
+      }
+    ]
+  },
+  {
+    "id": "normal-0-65-20-inner-peace",
+    "name": "Inner Peace",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 65,
+      "program": 20
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 73
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 75
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 15
+      },
+      {
+        "name": "EG Release Time",
+        "value": 69
+      },
+      {
+        "name": "Reverb Send",
+        "value": 42
+      },
+      {
+        "name": "Chorus Send",
+        "value": 41
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 65
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 74
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-21-smoker",
+    "name": "Smoker",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 21
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 76
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 62
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 24
+      },
+      {
+        "name": "EG Release Time",
+        "value": 69
+      },
+      {
+        "name": "Reverb Send",
+        "value": 60
+      },
+      {
+        "name": "Chorus Send",
+        "value": 57
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 76
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 83
+      },
+      {
+        "name": "Dry Level",
+        "value": 112
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-22-love-boat",
+    "name": "Love Boat",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 22
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 71
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 57
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 20
+      },
+      {
+        "name": "EG Release Time",
+        "value": 62
+      },
+      {
+        "name": "Reverb Send",
+        "value": 39
+      },
+      {
+        "name": "Chorus Send",
+        "value": 43
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 76
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 57
+      },
+      {
+        "name": "Dry Level",
+        "value": 123
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-22-buzz-buzz",
+    "name": "Buzz Buzz",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 22
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 72
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 26
+      },
+      {
+        "name": "EG Release Time",
+        "value": 45
+      },
+      {
+        "name": "Reverb Send",
+        "value": 44
+      },
+      {
+        "name": "Chorus Send",
+        "value": 38
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 70
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 84
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-23-jolly-harmo",
+    "name": "Jolly Harmo",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 23
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 82
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 55
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 22
+      },
+      {
+        "name": "EG Release Time",
+        "value": 61
+      },
+      {
+        "name": "Reverb Send",
+        "value": 35
+      },
+      {
+        "name": "Chorus Send",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 61
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 80
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-23-crisp-harmo",
+    "name": "Crisp Harmo",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 23
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 84
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 55
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 26
+      },
+      {
+        "name": "EG Release Time",
+        "value": 40
+      },
+      {
+        "name": "Reverb Send",
+        "value": 35
+      },
+      {
+        "name": "Chorus Send",
+        "value": 47
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 77
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 73
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-24-cutlass",
+    "name": "Cutlass",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 24
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 91
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 13
+      },
+      {
+        "name": "EG Release Time",
+        "value": 55
+      },
+      {
+        "name": "Reverb Send",
+        "value": 60
+      },
+      {
+        "name": "Chorus Send",
+        "value": 70
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 67
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 63
+      },
+      {
+        "name": "Dry Level",
+        "value": 109
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-26-bard",
+    "name": "Bard",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 26
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 62
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 41
+      },
+      {
+        "name": "EG Release Time",
+        "value": 67
+      },
+      {
+        "name": "Reverb Send",
+        "value": 53
+      },
+      {
+        "name": "Chorus Send",
+        "value": 29
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 52
+      },
+      {
+        "name": "Dry Level",
+        "value": 116
+      }
+    ]
+  },
+  {
+    "id": "normal-0-35-26-roadside-twelve",
+    "name": "Roadside Twelve",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 35,
+      "program": 26
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 59
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 37
+      },
+      {
+        "name": "EG Release Time",
+        "value": 59
+      },
+      {
+        "name": "Reverb Send",
+        "value": 28
+      },
+      {
+        "name": "Chorus Send",
+        "value": 16
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 45
+      },
+      {
+        "name": "Dry Level",
+        "value": 119
+      }
+    ]
+  },
+  {
+    "id": "normal-0-96-26-live-wire",
+    "name": "Live Wire",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 96,
+      "program": 26
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 71
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 46
+      },
+      {
+        "name": "EG Release Time",
+        "value": 70
+      },
+      {
+        "name": "Reverb Send",
+        "value": 34
+      },
+      {
+        "name": "Chorus Send",
+        "value": 34
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 60
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 53
+      },
+      {
+        "name": "Dry Level",
+        "value": 107
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-27-popper",
+    "name": "Popper",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 27
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 74
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 56
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 26
+      },
+      {
+        "name": "EG Release Time",
+        "value": 51
+      },
+      {
+        "name": "Reverb Send",
+        "value": 29
+      },
+      {
+        "name": "Chorus Send",
+        "value": 23
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 48
+      },
+      {
+        "name": "Dry Level",
+        "value": 121
+      }
+    ]
+  },
+  {
+    "id": "normal-0-96-27-brightpdl",
+    "name": "BrightPdl",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 96,
+      "program": 27
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 66
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 60
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 35
+      },
+      {
+        "name": "EG Release Time",
+        "value": 68
+      },
+      {
+        "name": "Reverb Send",
+        "value": 52
+      },
+      {
+        "name": "Chorus Send",
+        "value": 27
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 64
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 59
+      },
+      {
+        "name": "Dry Level",
+        "value": 113
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-28-squeekycleangtr",
+    "name": "SqueekyCleanGtr",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 28
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 67
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 61
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 34
+      },
+      {
+        "name": "EG Release Time",
+        "value": 58
+      },
+      {
+        "name": "Reverb Send",
+        "value": 32
+      },
+      {
+        "name": "Chorus Send",
+        "value": 33
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 56
+      },
+      {
+        "name": "Dry Level",
+        "value": 124
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-28-warm-campfire",
+    "name": "Warm Campfire",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 28
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 67
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 70
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 26
+      },
+      {
+        "name": "EG Release Time",
+        "value": 53
+      },
+      {
+        "name": "Reverb Send",
+        "value": 50
+      },
+      {
+        "name": "Chorus Send",
+        "value": 21
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 51
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 49
+      },
+      {
+        "name": "Dry Level",
+        "value": 109
+      }
+    ]
+  },
+  {
+    "id": "normal-0-66-28-dusty-riff",
+    "name": "Dusty Riff",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 66,
+      "program": 28
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 64
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 63
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 26
+      },
+      {
+        "name": "EG Release Time",
+        "value": 49
+      },
+      {
+        "name": "Reverb Send",
+        "value": 49
+      },
+      {
+        "name": "Chorus Send",
+        "value": 13
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 54
+      },
+      {
+        "name": "Dry Level",
+        "value": 127
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-29-punchy-mute",
+    "name": "Punchy Mute",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 29
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 77
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 58
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 28
+      },
+      {
+        "name": "EG Release Time",
+        "value": 52
+      },
+      {
+        "name": "Reverb Send",
+        "value": 46
+      },
+      {
+        "name": "Chorus Send",
+        "value": 26
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 53
+      },
+      {
+        "name": "Dry Level",
+        "value": 112
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-29-wild-cherry",
+    "name": "Wild Cherry",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 29
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 77
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 57
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 42
+      },
+      {
+        "name": "EG Release Time",
+        "value": 49
+      },
+      {
+        "name": "Reverb Send",
+        "value": 47
+      },
+      {
+        "name": "Chorus Send",
+        "value": 32
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 64
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 45
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-43-29-streetlight",
+    "name": "Streetlight",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 43,
+      "program": 29
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 81
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 46
+      },
+      {
+        "name": "EG Release Time",
+        "value": 62
+      },
+      {
+        "name": "Reverb Send",
+        "value": 35
+      },
+      {
+        "name": "Chorus Send",
+        "value": 34
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 64
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 65
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-30-hyperdrive",
+    "name": "Hyperdrive",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 30
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 83
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 56
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 29
+      },
+      {
+        "name": "EG Release Time",
+        "value": 59
+      },
+      {
+        "name": "Reverb Send",
+        "value": 46
+      },
+      {
+        "name": "Chorus Send",
+        "value": 20
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 60
+      },
+      {
+        "name": "Dry Level",
+        "value": 116
+      }
+    ]
+  },
+  {
+    "id": "normal-0-43-30-finger-picking-good",
+    "name": "Finger Picking Good",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 43,
+      "program": 30
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 69
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 57
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 43
+      },
+      {
+        "name": "EG Release Time",
+        "value": 49
+      },
+      {
+        "name": "Reverb Send",
+        "value": 40
+      },
+      {
+        "name": "Chorus Send",
+        "value": 34
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 60
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-24-31-front-man",
+    "name": "Front Man",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 24,
+      "program": 31
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 62
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 32
+      },
+      {
+        "name": "EG Release Time",
+        "value": 65
+      },
+      {
+        "name": "Reverb Send",
+        "value": 40
+      },
+      {
+        "name": "Chorus Send",
+        "value": 31
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 46
+      },
+      {
+        "name": "Dry Level",
+        "value": 105
+      }
+    ]
+  },
+  {
+    "id": "normal-0-37-31-retro-power",
+    "name": "Retro Power",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 37,
+      "program": 31
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 61
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 60
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 48
+      },
+      {
+        "name": "EG Release Time",
+        "value": 49
+      },
+      {
+        "name": "Reverb Send",
+        "value": 50
+      },
+      {
+        "name": "Chorus Send",
+        "value": 30
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 41
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-31-thick-fb",
+    "name": "Thick FB",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 31
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 82
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 67
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 41
+      },
+      {
+        "name": "EG Release Time",
+        "value": 68
+      },
+      {
+        "name": "Reverb Send",
+        "value": 54
+      },
+      {
+        "name": "Chorus Send",
+        "value": 15
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 44
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-41-31-quick-lime",
+    "name": "Quick Lime",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 41,
+      "program": 31
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 76
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 61
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 33
+      },
+      {
+        "name": "EG Release Time",
+        "value": 68
+      },
+      {
+        "name": "Reverb Send",
+        "value": 28
+      },
+      {
+        "name": "Chorus Send",
+        "value": 19
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 61
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 51
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-32-shine",
+    "name": "Shine",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 32
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 82
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 55
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 28
+      },
+      {
+        "name": "EG Release Time",
+        "value": 70
+      },
+      {
+        "name": "Reverb Send",
+        "value": 33
+      },
+      {
+        "name": "Chorus Send",
+        "value": 13
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 55
+      },
+      {
+        "name": "Dry Level",
+        "value": 108
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-33-flat-acoustic",
+    "name": "Flat Acoustic",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 33
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 90
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 84
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 26
+      },
+      {
+        "name": "EG Release Time",
+        "value": 36
+      },
+      {
+        "name": "Reverb Send",
+        "value": 17
+      },
+      {
+        "name": "Chorus Send",
+        "value": 2
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 59
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-33-cutrthm",
+    "name": "CutRthm",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 33
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 60
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 87
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 24
+      },
+      {
+        "name": "EG Release Time",
+        "value": 37
+      },
+      {
+        "name": "Reverb Send",
+        "value": 23
+      },
+      {
+        "name": "Chorus Send",
+        "value": 15
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 52
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 42
+      },
+      {
+        "name": "Dry Level",
+        "value": 116
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-34-fat-finger",
+    "name": "Fat Finger",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 34
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 82
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 68
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 23
+      },
+      {
+        "name": "EG Release Time",
+        "value": 48
+      },
+      {
+        "name": "Reverb Send",
+        "value": 17
+      },
+      {
+        "name": "Chorus Send",
+        "value": 3
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 46
+      },
+      {
+        "name": "Dry Level",
+        "value": 125
+      }
+    ]
+  },
+  {
+    "id": "normal-0-18-34-iron-current",
+    "name": "Iron Current",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 18,
+      "program": 34
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 87
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 85
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 33
+      },
+      {
+        "name": "EG Release Time",
+        "value": 44
+      },
+      {
+        "name": "Reverb Send",
+        "value": 19
+      },
+      {
+        "name": "Chorus Send",
+        "value": 12
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 52
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 40
+      },
+      {
+        "name": "Dry Level",
+        "value": 125
+      }
+    ]
+  },
+  {
+    "id": "normal-0-27-34-bumble",
+    "name": "Bumble",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 27,
+      "program": 34
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 81
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 72
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 30
+      },
+      {
+        "name": "EG Release Time",
+        "value": 34
+      },
+      {
+        "name": "Reverb Send",
+        "value": 20
+      },
+      {
+        "name": "Chorus Send",
+        "value": 9
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 54
+      },
+      {
+        "name": "Dry Level",
+        "value": 118
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-34-tightdst",
+    "name": "TightDst",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 34
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 80
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 65
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 27
+      },
+      {
+        "name": "EG Release Time",
+        "value": 40
+      },
+      {
+        "name": "Reverb Send",
+        "value": 15
+      },
+      {
+        "name": "Chorus Send",
+        "value": 2
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 61
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 55
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "normal-0-45-34-blunt-engine",
+    "name": "Blunt Engine",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 45,
+      "program": 34
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 84
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 86
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 45
+      },
+      {
+        "name": "EG Release Time",
+        "value": 44
+      },
+      {
+        "name": "Reverb Send",
+        "value": 12
+      },
+      {
+        "name": "Chorus Send",
+        "value": 2
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 52
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 52
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "normal-0-28-35-chokepkba",
+    "name": "ChokePkBa",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 28,
+      "program": 35
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 79
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 79
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 45
+      },
+      {
+        "name": "EG Release Time",
+        "value": 43
+      },
+      {
+        "name": "Reverb Send",
+        "value": 17
+      },
+      {
+        "name": "Chorus Send",
+        "value": 1
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 49
+      },
+      {
+        "name": "Dry Level",
+        "value": 124
+      }
+    ]
+  },
+  {
+    "id": "normal-0-33-36-dumper",
+    "name": "Dumper",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 33,
+      "program": 36
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 67
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 69
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 36
+      },
+      {
+        "name": "EG Release Time",
+        "value": 37
+      },
+      {
+        "name": "Reverb Send",
+        "value": 13
+      },
+      {
+        "name": "Chorus Send",
+        "value": 13
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 53
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-97-36-round-rumble",
+    "name": "Round Rumble",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 97,
+      "program": 36
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 63
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 89
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 32
+      },
+      {
+        "name": "EG Release Time",
+        "value": 55
+      },
+      {
+        "name": "Reverb Send",
+        "value": 13
+      },
+      {
+        "name": "Chorus Send",
+        "value": 10
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 52
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 57
+      },
+      {
+        "name": "Dry Level",
+        "value": 126
+      }
+    ]
+  },
+  {
+    "id": "normal-0-27-37-slap-and-pickle",
+    "name": "Slap and Pickle",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 27,
+      "program": 37
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 86
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 79
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 29
+      },
+      {
+        "name": "EG Release Time",
+        "value": 46
+      },
+      {
+        "name": "Reverb Send",
+        "value": 14
+      },
+      {
+        "name": "Chorus Send",
+        "value": 5
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 46
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-32-37-punch-drunk",
+    "name": "Punch Drunk",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 32,
+      "program": 37
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 88
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 80
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 28
+      },
+      {
+        "name": "EG Release Time",
+        "value": 55
+      },
+      {
+        "name": "Reverb Send",
+        "value": 11
+      },
+      {
+        "name": "Chorus Send",
+        "value": 9
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 60
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 41
+      },
+      {
+        "name": "Dry Level",
+        "value": 121
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-39-chunk",
+    "name": "Chunk",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 74
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 89
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 38
+      },
+      {
+        "name": "EG Release Time",
+        "value": 40
+      },
+      {
+        "name": "Reverb Send",
+        "value": 13
+      },
+      {
+        "name": "Chorus Send",
+        "value": 6
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 50
+      },
+      {
+        "name": "Dry Level",
+        "value": 117
+      }
+    ]
+  },
+  {
+    "id": "normal-0-18-39-little-fatty",
+    "name": "Little Fatty",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 18,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 56
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 62
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 43
+      },
+      {
+        "name": "EG Release Time",
+        "value": 43
+      },
+      {
+        "name": "Reverb Send",
+        "value": 28
+      },
+      {
+        "name": "Chorus Send",
+        "value": 3
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 51
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 49
+      },
+      {
+        "name": "Dry Level",
+        "value": 124
+      }
+    ]
+  },
+  {
+    "id": "normal-0-20-39-juicy-wire",
+    "name": "Juicy Wire",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 20,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 89
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 77
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 35
+      },
+      {
+        "name": "EG Release Time",
+        "value": 52
+      },
+      {
+        "name": "Reverb Send",
+        "value": 16
+      },
+      {
+        "name": "Chorus Send",
+        "value": 2
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 49
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-24-39-ducky",
+    "name": "Ducky",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 24,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 83
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 77
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 40
+      },
+      {
+        "name": "EG Release Time",
+        "value": 30
+      },
+      {
+        "name": "Reverb Send",
+        "value": 24
+      },
+      {
+        "name": "Chorus Send",
+        "value": 11
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 54
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 43
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-35-39-fuzzyclvb",
+    "name": "FuzzyClvB",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 35,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 80
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 73
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 30
+      },
+      {
+        "name": "EG Release Time",
+        "value": 51
+      },
+      {
+        "name": "Reverb Send",
+        "value": 27
+      },
+      {
+        "name": "Chorus Send",
+        "value": 8
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 62
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 52
+      },
+      {
+        "name": "Dry Level",
+        "value": 123
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-39-techno-belt",
+    "name": "Techno Belt",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 90
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 36
+      },
+      {
+        "name": "EG Release Time",
+        "value": 48
+      },
+      {
+        "name": "Reverb Send",
+        "value": 12
+      },
+      {
+        "name": "Chorus Send",
+        "value": 8
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 61
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 51
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-65-39-prefectsqrb",
+    "name": "PrefectSqrB",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 65,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 84
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 25
+      },
+      {
+        "name": "EG Release Time",
+        "value": 51
+      },
+      {
+        "name": "Reverb Send",
+        "value": 16
+      },
+      {
+        "name": "Chorus Send",
+        "value": 11
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 60
+      },
+      {
+        "name": "Dry Level",
+        "value": 126
+      }
+    ]
+  },
+  {
+    "id": "normal-0-66-39-clnrubb",
+    "name": "ClnRubB",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 66,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 80
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 70
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 22
+      },
+      {
+        "name": "EG Release Time",
+        "value": 33
+      },
+      {
+        "name": "Reverb Send",
+        "value": 13
+      },
+      {
+        "name": "Chorus Send",
+        "value": 7
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 58
+      },
+      {
+        "name": "Dry Level",
+        "value": 127
+      }
+    ]
+  },
+  {
+    "id": "normal-0-96-39-ham-on",
+    "name": "Ham On",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 96,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 80
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 75
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 24
+      },
+      {
+        "name": "EG Release Time",
+        "value": 55
+      },
+      {
+        "name": "Reverb Send",
+        "value": 22
+      },
+      {
+        "name": "Chorus Send",
+        "value": 4
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 57
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 51
+      },
+      {
+        "name": "Dry Level",
+        "value": 124
+      }
+    ]
+  },
+  {
+    "id": "normal-0-6-40-arcadesba",
+    "name": "ArcadeSBa",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 6,
+      "program": 40
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 86
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 79
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 38
+      },
+      {
+        "name": "EG Release Time",
+        "value": 42
+      },
+      {
+        "name": "Reverb Send",
+        "value": 27
+      },
+      {
+        "name": "Chorus Send",
+        "value": 4
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 55
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "normal-0-19-40-bomberman",
+    "name": "Bomberman",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 19,
+      "program": 40
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 86
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 63
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 26
+      },
+      {
+        "name": "EG Release Time",
+        "value": 53
+      },
+      {
+        "name": "Reverb Send",
+        "value": 30
+      },
+      {
+        "name": "Chorus Send",
+        "value": 15
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 53
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-65-40-assault",
+    "name": "Assault",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 65,
+      "program": 40
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 83
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 75
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 32
+      },
+      {
+        "name": "EG Release Time",
+        "value": 52
+      },
+      {
+        "name": "Reverb Send",
+        "value": 17
+      },
+      {
+        "name": "Chorus Send",
+        "value": 8
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 64
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 40
+      },
+      {
+        "name": "Dry Level",
+        "value": 116
+      }
+    ]
+  },
+  {
+    "id": "normal-0-66-40-cs-buzz",
+    "name": "CS Buzz",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 66,
+      "program": 40
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 87
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 73
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 41
+      },
+      {
+        "name": "EG Release Time",
+        "value": 51
+      },
+      {
+        "name": "Reverb Send",
+        "value": 14
+      },
+      {
+        "name": "Chorus Send",
+        "value": 10
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 59
+      },
+      {
+        "name": "Dry Level",
+        "value": 119
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-41-velvet-rhapsody",
+    "name": "Velvet Rhapsody",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 41
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 57
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 68
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 91
+      },
+      {
+        "name": "EG Release Time",
+        "value": 93
+      },
+      {
+        "name": "Reverb Send",
+        "value": 74
+      },
+      {
+        "name": "Chorus Send",
+        "value": 40
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 46
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 57
+      },
+      {
+        "name": "Dry Level",
+        "value": 111
+      }
+    ]
+  },
+  {
+    "id": "normal-0-8-41-rise-again",
+    "name": "Rise Again",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 8,
+      "program": 41
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 48
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 59
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 88
+      },
+      {
+        "name": "EG Release Time",
+        "value": 94
+      },
+      {
+        "name": "Reverb Send",
+        "value": 83
+      },
+      {
+        "name": "Chorus Send",
+        "value": 40
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 60
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 64
+      },
+      {
+        "name": "Dry Level",
+        "value": 97
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-43-vello",
+    "name": "Vello",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 43
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 55
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 71
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 75
+      },
+      {
+        "name": "EG Release Time",
+        "value": 86
+      },
+      {
+        "name": "Reverb Send",
+        "value": 75
+      },
+      {
+        "name": "Chorus Send",
+        "value": 35
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 60
+      },
+      {
+        "name": "Dry Level",
+        "value": 97
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-44-bowed-contrabs",
+    "name": "Bowed Contrabs",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 44
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 65
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 55
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 93
+      },
+      {
+        "name": "EG Release Time",
+        "value": 105
+      },
+      {
+        "name": "Reverb Send",
+        "value": 90
+      },
+      {
+        "name": "Chorus Send",
+        "value": 26
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 49
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 63
+      },
+      {
+        "name": "Dry Level",
+        "value": 106
+      }
+    ]
+  },
+  {
+    "id": "normal-0-8-45-solar-swell",
+    "name": "Solar Swell",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 8,
+      "program": 45
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 69
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 57
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 60
+      },
+      {
+        "name": "EG Release Time",
+        "value": 87
+      },
+      {
+        "name": "Reverb Send",
+        "value": 76
+      },
+      {
+        "name": "Chorus Send",
+        "value": 25
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 70
+      },
+      {
+        "name": "Dry Level",
+        "value": 94
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-46-the-grand-pizz",
+    "name": "The Grand Pizz",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 46
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 51
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 59
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 61
+      },
+      {
+        "name": "EG Release Time",
+        "value": 101
+      },
+      {
+        "name": "Reverb Send",
+        "value": 98
+      },
+      {
+        "name": "Chorus Send",
+        "value": 28
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 65
+      },
+      {
+        "name": "Dry Level",
+        "value": 104
+      }
+    ]
+  },
+  {
+    "id": "normal-0-0-47-sirens-harp",
+    "name": "Siren's Harp",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 0,
+      "program": 47
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 52
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 59
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 60
+      },
+      {
+        "name": "EG Release Time",
+        "value": 80
+      },
+      {
+        "name": "Reverb Send",
+        "value": 87
+      },
+      {
+        "name": "Chorus Send",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 52
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 67
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "normal-0-40-47-squid",
+    "name": "Squid",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 40,
+      "program": 47
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 59
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 63
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 80
+      },
+      {
+        "name": "EG Release Time",
+        "value": 88
+      },
+      {
+        "name": "Reverb Send",
+        "value": 80
+      },
+      {
+        "name": "Chorus Send",
+        "value": 46
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 45
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 62
+      },
+      {
+        "name": "Dry Level",
+        "value": 95
+      }
+    ]
+  },
+  {
+    "id": "normal-0-8-49-graduation",
+    "name": "Graduation",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 8,
+      "program": 49
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 78
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 70
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 54
+      },
+      {
+        "name": "EG Release Time",
+        "value": 90
+      },
+      {
+        "name": "Reverb Send",
+        "value": 85
+      },
+      {
+        "name": "Chorus Send",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 57
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 61
+      },
+      {
+        "name": "Dry Level",
+        "value": 99
+      }
+    ]
+  },
+  {
+    "id": "normal-0-24-49-arco-assembly",
+    "name": "Arco Assembly",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 24,
+      "program": 49
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 76
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 59
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 58
+      },
+      {
+        "name": "EG Release Time",
+        "value": 76
+      },
+      {
+        "name": "Reverb Send",
+        "value": 69
+      },
+      {
+        "name": "Chorus Send",
+        "value": 45
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 61
+      },
+      {
+        "name": "Dry Level",
+        "value": 119
+      }
+    ]
+  },
+  {
+    "id": "normal-0-35-49-cinematicstr",
+    "name": "CinematicStr",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 35,
+      "program": 49
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 89
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 66
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 49
+      },
+      {
+        "name": "EG Release Time",
+        "value": 96
+      },
+      {
+        "name": "Reverb Send",
+        "value": 90
+      },
+      {
+        "name": "Chorus Send",
+        "value": 34
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 60
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 65
+      },
+      {
+        "name": "Dry Level",
+        "value": 93
+      }
+    ]
+  },
+  {
+    "id": "normal-0-41-49-woven-chorus",
+    "name": "Woven Chorus",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 41,
+      "program": 49
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 75
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 55
+      },
+      {
+        "name": "EG Release Time",
+        "value": 71
+      },
+      {
+        "name": "Reverb Send",
+        "value": 86
+      },
+      {
+        "name": "Chorus Send",
+        "value": 38
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 63
+      },
+      {
+        "name": "Dry Level",
+        "value": 93
+      }
+    ]
+  },
+  {
+    "id": "normal-0-45-49-rising-movement",
+    "name": "Rising Movement",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 45,
+      "program": 49
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 62
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 68
+      },
+      {
+        "name": "EG Release Time",
+        "value": 100
+      },
+      {
+        "name": "Reverb Send",
+        "value": 92
+      },
+      {
+        "name": "Chorus Send",
+        "value": 53
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 55
+      },
+      {
+        "name": "Dry Level",
+        "value": 91
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-1-distantcnz",
+    "name": "DistantCNz",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 1
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 42
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 83
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 15
+      },
+      {
+        "name": "EG Release Time",
+        "value": 74
+      },
+      {
+        "name": "Reverb Send",
+        "value": 57
+      },
+      {
+        "name": "Chorus Send",
+        "value": 10
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 49
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 56
+      },
+      {
+        "name": "Dry Level",
+        "value": 107
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-2-zip",
+    "name": "Zip",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 2
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 72
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 76
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 20
+      },
+      {
+        "name": "EG Release Time",
+        "value": 54
+      },
+      {
+        "name": "Reverb Send",
+        "value": 93
+      },
+      {
+        "name": "Chorus Send",
+        "value": 11
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 36
+      },
+      {
+        "name": "Dry Level",
+        "value": 92
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-3-muffled-tape",
+    "name": "Muffled Tape",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 3
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 40
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 80
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 47
+      },
+      {
+        "name": "EG Release Time",
+        "value": 56
+      },
+      {
+        "name": "Reverb Send",
+        "value": 48
+      },
+      {
+        "name": "Chorus Send",
+        "value": 26
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 79
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 60
+      },
+      {
+        "name": "Dry Level",
+        "value": 125
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-4-split-str-slap",
+    "name": "Split Str Slap",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 4
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 85
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 71
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 57
+      },
+      {
+        "name": "EG Release Time",
+        "value": 38
+      },
+      {
+        "name": "Reverb Send",
+        "value": 49
+      },
+      {
+        "name": "Chorus Send",
+        "value": 30
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 72
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 64
+      },
+      {
+        "name": "Dry Level",
+        "value": 103
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-5-deep-slide",
+    "name": "Deep Slide",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 5
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 89
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 70
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 55
+      },
+      {
+        "name": "EG Release Time",
+        "value": 41
+      },
+      {
+        "name": "Reverb Send",
+        "value": 71
+      },
+      {
+        "name": "Chorus Send",
+        "value": 11
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 49
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 75
+      },
+      {
+        "name": "Dry Level",
+        "value": 125
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-6-tearing-through",
+    "name": "Tearing Through",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 6
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 69
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 73
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 59
+      },
+      {
+        "name": "EG Release Time",
+        "value": 52
+      },
+      {
+        "name": "Reverb Send",
+        "value": 50
+      },
+      {
+        "name": "Chorus Send",
+        "value": 33
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 49
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 56
+      },
+      {
+        "name": "Dry Level",
+        "value": 122
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-17-foley-click",
+    "name": "Foley Click",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 17
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 45
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 85
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 43
+      },
+      {
+        "name": "EG Release Time",
+        "value": 45
+      },
+      {
+        "name": "Reverb Send",
+        "value": 77
+      },
+      {
+        "name": "Chorus Send",
+        "value": 39
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 69
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 52
+      },
+      {
+        "name": "Dry Level",
+        "value": 110
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-33-walking-through-bushes",
+    "name": "Walking Through Bushes",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 33
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 94
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 81
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 55
+      },
+      {
+        "name": "EG Release Time",
+        "value": 46
+      },
+      {
+        "name": "Reverb Send",
+        "value": 69
+      },
+      {
+        "name": "Chorus Send",
+        "value": 12
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 50
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 30
+      },
+      {
+        "name": "Dry Level",
+        "value": 124
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-35-tunnel-train",
+    "name": "Tunnel Train",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 35
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 70
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 69
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 21
+      },
+      {
+        "name": "EG Release Time",
+        "value": 43
+      },
+      {
+        "name": "Reverb Send",
+        "value": 83
+      },
+      {
+        "name": "Chorus Send",
+        "value": 35
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 73
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 46
+      },
+      {
+        "name": "Dry Level",
+        "value": 116
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-36-lifestream",
+    "name": "Lifestream",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 36
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 93
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 80
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 47
+      },
+      {
+        "name": "EG Release Time",
+        "value": 81
+      },
+      {
+        "name": "Reverb Send",
+        "value": 94
+      },
+      {
+        "name": "Chorus Send",
+        "value": 28
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 51
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 55
+      },
+      {
+        "name": "Dry Level",
+        "value": 92
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-37-bubble-room",
+    "name": "Bubble Room",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 37
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 100
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 58
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 27
+      },
+      {
+        "name": "EG Release Time",
+        "value": 50
+      },
+      {
+        "name": "Reverb Send",
+        "value": 65
+      },
+      {
+        "name": "Chorus Send",
+        "value": 20
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 43
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 34
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-38-percolate",
+    "name": "Percolate",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 38
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 44
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 74
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 53
+      },
+      {
+        "name": "EG Release Time",
+        "value": 78
+      },
+      {
+        "name": "Reverb Send",
+        "value": 56
+      },
+      {
+        "name": "Chorus Send",
+        "value": 35
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 49
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 50
+      },
+      {
+        "name": "Dry Level",
+        "value": 92
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-49-raw-dog",
+    "name": "Raw Dog",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 49
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 80
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 77
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 43
+      },
+      {
+        "name": "EG Release Time",
+        "value": 33
+      },
+      {
+        "name": "Reverb Send",
+        "value": 76
+      },
+      {
+        "name": "Chorus Send",
+        "value": 24
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 76
+      },
+      {
+        "name": "Dry Level",
+        "value": 109
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-50-tunnel-horse",
+    "name": "Tunnel Horse",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 50
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 100
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 65
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 25
+      },
+      {
+        "name": "EG Release Time",
+        "value": 66
+      },
+      {
+        "name": "Reverb Send",
+        "value": 73
+      },
+      {
+        "name": "Chorus Send",
+        "value": 34
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 72
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 31
+      },
+      {
+        "name": "Dry Level",
+        "value": 111
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-55-ghost-v2",
+    "name": "Ghost V2",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 55
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 81
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 83
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 53
+      },
+      {
+        "name": "EG Release Time",
+        "value": 47
+      },
+      {
+        "name": "Reverb Send",
+        "value": 72
+      },
+      {
+        "name": "Chorus Send",
+        "value": 25
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 70
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 69
+      },
+      {
+        "name": "Dry Level",
+        "value": 95
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-65-ghost-caller",
+    "name": "Ghost Caller",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 65
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 64
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 58
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 28
+      },
+      {
+        "name": "EG Release Time",
+        "value": 73
+      },
+      {
+        "name": "Reverb Send",
+        "value": 96
+      },
+      {
+        "name": "Chorus Send",
+        "value": 31
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 56
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 69
+      },
+      {
+        "name": "Dry Level",
+        "value": 108
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-67-heavyslam",
+    "name": "HeavySlam",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 67
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 90
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 76
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 19
+      },
+      {
+        "name": "EG Release Time",
+        "value": 65
+      },
+      {
+        "name": "Reverb Send",
+        "value": 98
+      },
+      {
+        "name": "Chorus Send",
+        "value": 10
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 76
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 71
+      },
+      {
+        "name": "Dry Level",
+        "value": 126
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-69-garage-scratch",
+    "name": "Garage Scratch",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 69
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 56
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 89
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 11
+      },
+      {
+        "name": "EG Release Time",
+        "value": 79
+      },
+      {
+        "name": "Reverb Send",
+        "value": 91
+      },
+      {
+        "name": "Chorus Send",
+        "value": 10
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 70
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 57
+      },
+      {
+        "name": "Dry Level",
+        "value": 98
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-70-force-field",
+    "name": "Force Field",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 70
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 92
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 52
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 54
+      },
+      {
+        "name": "EG Release Time",
+        "value": 51
+      },
+      {
+        "name": "Reverb Send",
+        "value": 85
+      },
+      {
+        "name": "Chorus Send",
+        "value": 38
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 60
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 54
+      },
+      {
+        "name": "Dry Level",
+        "value": 121
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-85-dream-siren",
+    "name": "Dream Siren",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 85
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 50
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 56
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 53
+      },
+      {
+        "name": "EG Release Time",
+        "value": 43
+      },
+      {
+        "name": "Reverb Send",
+        "value": 69
+      },
+      {
+        "name": "Chorus Send",
+        "value": 15
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 65
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 70
+      },
+      {
+        "name": "Dry Level",
+        "value": 102
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-86-inside-train-car",
+    "name": "Inside Train Car",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 86
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 40
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 56
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 28
+      },
+      {
+        "name": "EG Release Time",
+        "value": 37
+      },
+      {
+        "name": "Reverb Send",
+        "value": 74
+      },
+      {
+        "name": "Chorus Send",
+        "value": 37
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 73
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 50
+      },
+      {
+        "name": "Dry Level",
+        "value": 98
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-88-beam-me-up",
+    "name": "Beam Me Up",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 88
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 80
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 64
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 22
+      },
+      {
+        "name": "EG Release Time",
+        "value": 38
+      },
+      {
+        "name": "Reverb Send",
+        "value": 65
+      },
+      {
+        "name": "Chorus Send",
+        "value": 14
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 74
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 74
+      },
+      {
+        "name": "Dry Level",
+        "value": 107
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-91-10000-leagues",
+    "name": "10,000 Leagues",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 91
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 87
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 84
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 24
+      },
+      {
+        "name": "EG Release Time",
+        "value": 49
+      },
+      {
+        "name": "Reverb Send",
+        "value": 52
+      },
+      {
+        "name": "Chorus Send",
+        "value": 28
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 57
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 67
+      },
+      {
+        "name": "Dry Level",
+        "value": 97
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-98-hi-chirp",
+    "name": "Hi Chirp",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 98
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 99
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 90
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 50
+      },
+      {
+        "name": "EG Release Time",
+        "value": 32
+      },
+      {
+        "name": "Reverb Send",
+        "value": 69
+      },
+      {
+        "name": "Chorus Send",
+        "value": 30
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 80
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 59
+      },
+      {
+        "name": "Dry Level",
+        "value": 115
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-99-kung-fu-punch",
+    "name": "Kung Fu Punch",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 99
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 45
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 90
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 13
+      },
+      {
+        "name": "EG Release Time",
+        "value": 69
+      },
+      {
+        "name": "Reverb Send",
+        "value": 49
+      },
+      {
+        "name": "Chorus Send",
+        "value": 39
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 71
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 45
+      },
+      {
+        "name": "Dry Level",
+        "value": 118
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-114-katana-slice",
+    "name": "Katana Slice",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 114
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 82
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 58
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 47
+      },
+      {
+        "name": "EG Release Time",
+        "value": 59
+      },
+      {
+        "name": "Reverb Send",
+        "value": 54
+      },
+      {
+        "name": "Chorus Send",
+        "value": 18
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 55
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 48
+      },
+      {
+        "name": "Dry Level",
+        "value": 106
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-116-close-firework",
+    "name": "Close Firework",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 116
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 76
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 60
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 41
+      },
+      {
+        "name": "EG Release Time",
+        "value": 62
+      },
+      {
+        "name": "Reverb Send",
+        "value": 90
+      },
+      {
+        "name": "Chorus Send",
+        "value": 26
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 58
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 75
+      },
+      {
+        "name": "Dry Level",
+        "value": 104
+      }
+    ]
+  },
+  {
+    "id": "normal-0-112-39-anlgrubberb",
+    "name": "AnlgRubberB",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 112,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 64
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 73
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 27
+      },
+      {
+        "name": "EG Release Time",
+        "value": 44
+      },
+      {
+        "name": "Reverb Send",
+        "value": 17
+      },
+      {
+        "name": "Chorus Send",
+        "value": 1
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 63
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 58
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  },
+  {
+    "id": "normal-0-113-39-muterezob",
+    "name": "MuteRezoB",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 113,
+      "program": 39
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 56
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 63
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 35
+      },
+      {
+        "name": "EG Release Time",
+        "value": 31
+      },
+      {
+        "name": "Reverb Send",
+        "value": 11
+      },
+      {
+        "name": "Chorus Send",
+        "value": 15
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 54
+      },
+      {
+        "name": "Dry Level",
+        "value": 116
+      }
+    ]
+  },
+  {
+    "id": "normal-0-114-40-buzzbas",
+    "name": "BuzzBas",
+    "voice": {
+      "bank": "normal",
+      "bankMsb": 0,
+      "bankLsb": 114,
+      "program": 40
+    },
+    "params": [
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 79
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 66
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 24
+      },
+      {
+        "name": "EG Release Time",
+        "value": 36
+      },
+      {
+        "name": "Reverb Send",
+        "value": 13
+      },
+      {
+        "name": "Chorus Send",
+        "value": 3
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 59
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 46
+      },
+      {
+        "name": "Dry Level",
+        "value": 120
+      }
+    ]
+  }
+]

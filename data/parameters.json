@@ -1,179 +1,1210 @@
 {
   "system": {
     "label": "System",
-    "addressBase": [0, 0, 0],
+    "addressBase": [
+      0,
+      0,
+      0
+    ],
     "params": [
-      {"offset": 0, "size": 4, "name": "Master Tune", "encoding": "nibble", "dataMin": 0, "dataMax": 2047, "default": 1024, "description": "00..07FFH, -102.4..+102.3 cent, nibble-packed across 4 bytes"},
-      {"offset": 4, "size": 1, "name": "Master Volume", "dataMin": 0, "dataMax": 127, "default": 127, "description": "0..127"},
-      {"offset": 6, "size": 1, "name": "Transpose", "dataMin": 40, "dataMax": 88, "default": 64, "description": "28H-58H, -24..+24 semitones centered at 40H"}
+      {
+        "offset": 0,
+        "size": 4,
+        "name": "Master Tune",
+        "encoding": "nibble",
+        "dataMin": 0,
+        "dataMax": 2047,
+        "default": 1024,
+        "description": "00..07FFH, -102.4..+102.3 cent, nibble-packed across 4 bytes"
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "Master Volume",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127,
+        "description": "0..127"
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "Transpose",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 64,
+        "description": "28H-58H, -24..+24 semitones centered at 40H"
+      }
     ]
   },
   "reverb": {
     "label": "Reverb",
-    "addressBase": [2, 1, 0],
+    "addressBase": [
+      2,
+      1,
+      0
+    ],
     "params": [
-      {"offset": 0, "size": 2, "name": "Reverb Type", "dataMin": 0, "dataMax": 127, "default": 1, "description": "MSB,LSB - see Effect Type List"},
-      {"offset": 2, "size": 1, "name": "Reverb Parameter 1", "dataMin": 0, "dataMax": 127, "default": 0, "description": "meaning depends on Reverb type"},
-      {"offset": 3, "size": 1, "name": "Reverb Parameter 2", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 4, "size": 1, "name": "Reverb Parameter 3", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 5, "size": 1, "name": "Reverb Parameter 4", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 6, "size": 1, "name": "Reverb Parameter 5", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 7, "size": 1, "name": "Reverb Parameter 6", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 8, "size": 1, "name": "Reverb Parameter 7", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 9, "size": 1, "name": "Reverb Parameter 8", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 10, "size": 1, "name": "Reverb Parameter 9", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 11, "size": 1, "name": "Reverb Parameter 10", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 12, "size": 1, "name": "Reverb Return", "dataMin": 0, "dataMax": 127, "default": 96, "description": "-inf..0..+6dB (0..96..127)"},
-      {"offset": 13, "size": 1, "name": "Reverb Pan", "dataMin": 1, "dataMax": 127, "default": 64, "description": "L63..C..R63"},
-      {"offset": 16, "size": 1, "name": "Reverb Parameter 11", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 17, "size": 1, "name": "Reverb Parameter 12", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 18, "size": 1, "name": "Reverb Parameter 13", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 19, "size": 1, "name": "Reverb Parameter 14", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 20, "size": 1, "name": "Reverb Parameter 15", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 21, "size": 1, "name": "Reverb Parameter 16", "dataMin": 0, "dataMax": 127, "default": 0}
+      {
+        "offset": 0,
+        "size": 2,
+        "name": "Reverb Type",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 1,
+        "description": "MSB,LSB - see Effect Type List"
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "Reverb Return",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 96,
+        "description": "-inf..0..+6dB (0..96..127)"
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "Reverb Pan",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 64,
+        "description": "L63..C..R63"
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Reverb Parameter 1",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "meaning depends on Reverb type"
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Reverb Parameter 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "Reverb Parameter 3",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "Reverb Parameter 4",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "Reverb Parameter 5",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "Reverb Parameter 6",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "Reverb Parameter 7",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "Reverb Parameter 8",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "Reverb Parameter 9",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "Reverb Parameter 10",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 16,
+        "size": 1,
+        "name": "Reverb Parameter 11",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "Reverb Parameter 12",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 18,
+        "size": 1,
+        "name": "Reverb Parameter 13",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 19,
+        "size": 1,
+        "name": "Reverb Parameter 14",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 20,
+        "size": 1,
+        "name": "Reverb Parameter 15",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 21,
+        "size": 1,
+        "name": "Reverb Parameter 16",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      }
     ]
   },
   "chorus": {
     "label": "Chorus",
-    "addressBase": [2, 1, 0],
+    "addressBase": [
+      2,
+      1,
+      0
+    ],
     "params": [
-      {"offset": 32, "size": 2, "name": "Chorus Type", "dataMin": 0, "dataMax": 127, "default": 65, "description": "MSB,LSB - see Effect Type List"},
-      {"offset": 34, "size": 1, "name": "Chorus Parameter 1", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 35, "size": 1, "name": "Chorus Parameter 2", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 36, "size": 1, "name": "Chorus Parameter 3", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 37, "size": 1, "name": "Chorus Parameter 4", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 38, "size": 1, "name": "Chorus Parameter 5", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 39, "size": 1, "name": "Chorus Parameter 6", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 40, "size": 1, "name": "Chorus Parameter 7", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 41, "size": 1, "name": "Chorus Parameter 8", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 42, "size": 1, "name": "Chorus Parameter 9", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 43, "size": 1, "name": "Chorus Parameter 10", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 44, "size": 1, "name": "Chorus Return", "dataMin": 0, "dataMax": 127, "default": 96},
-      {"offset": 45, "size": 1, "name": "Chorus Pan", "dataMin": 1, "dataMax": 127, "default": 64},
-      {"offset": 46, "size": 1, "name": "Send Chorus To Reverb", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 48, "size": 1, "name": "Chorus Parameter 11", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 49, "size": 1, "name": "Chorus Parameter 12", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 50, "size": 1, "name": "Chorus Parameter 13", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 51, "size": 1, "name": "Chorus Parameter 14", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 52, "size": 1, "name": "Chorus Parameter 15", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 53, "size": 1, "name": "Chorus Parameter 16", "dataMin": 0, "dataMax": 127, "default": 0}
+      {
+        "offset": 32,
+        "size": 2,
+        "name": "Chorus Type",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 65,
+        "description": "MSB,LSB - see Effect Type List"
+      },
+      {
+        "offset": 44,
+        "size": 1,
+        "name": "Chorus Return",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 96
+      },
+      {
+        "offset": 45,
+        "size": 1,
+        "name": "Chorus Pan",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 46,
+        "size": 1,
+        "name": "Send Chorus To Reverb",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 34,
+        "size": 1,
+        "name": "Chorus Parameter 1",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 35,
+        "size": 1,
+        "name": "Chorus Parameter 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 36,
+        "size": 1,
+        "name": "Chorus Parameter 3",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 37,
+        "size": 1,
+        "name": "Chorus Parameter 4",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 38,
+        "size": 1,
+        "name": "Chorus Parameter 5",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 39,
+        "size": 1,
+        "name": "Chorus Parameter 6",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 40,
+        "size": 1,
+        "name": "Chorus Parameter 7",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 41,
+        "size": 1,
+        "name": "Chorus Parameter 8",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 42,
+        "size": 1,
+        "name": "Chorus Parameter 9",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 43,
+        "size": 1,
+        "name": "Chorus Parameter 10",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 48,
+        "size": 1,
+        "name": "Chorus Parameter 11",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 49,
+        "size": 1,
+        "name": "Chorus Parameter 12",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 50,
+        "size": 1,
+        "name": "Chorus Parameter 13",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 51,
+        "size": 1,
+        "name": "Chorus Parameter 14",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 52,
+        "size": 1,
+        "name": "Chorus Parameter 15",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 53,
+        "size": 1,
+        "name": "Chorus Parameter 16",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      }
     ]
   },
   "variation": {
     "label": "Variation",
-    "addressBase": [2, 1, 0],
+    "addressBase": [
+      2,
+      1,
+      0
+    ],
     "params": [
-      {"offset": 64, "size": 2, "name": "Variation Type", "dataMin": 0, "dataMax": 127, "default": 5, "description": "MSB,LSB - see Effect Type List"},
-      {"offset": 66, "size": 2, "name": "Variation Param 1", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 68, "size": 2, "name": "Variation Param 2", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 70, "size": 2, "name": "Variation Param 3", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 72, "size": 2, "name": "Variation Param 4", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 74, "size": 2, "name": "Variation Param 5", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 76, "size": 2, "name": "Variation Param 6", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 78, "size": 2, "name": "Variation Param 7", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 80, "size": 2, "name": "Variation Param 8", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 82, "size": 2, "name": "Variation Param 9", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 84, "size": 2, "name": "Variation Param 10", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 86, "size": 1, "name": "Variation Return", "dataMin": 0, "dataMax": 127, "default": 96},
-      {"offset": 87, "size": 1, "name": "Variation Pan", "dataMin": 1, "dataMax": 127, "default": 64},
-      {"offset": 88, "size": 1, "name": "Send Variation To Reverb", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 89, "size": 1, "name": "Send Variation To Chorus", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 90, "size": 1, "name": "Variation Connection", "dataMin": 0, "dataMax": 1, "default": 0, "description": "0:insertion, 1:system"},
-      {"offset": 91, "size": 1, "name": "Variation Part", "dataMin": 0, "dataMax": 127, "default": 127, "description": "part1..32 (0..31), off (127)"},
-      {"offset": 92, "size": 1, "name": "MW Variation Ctrl Depth", "dataMin": 1, "dataMax": 127, "default": 0},
-      {"offset": 93, "size": 1, "name": "PB Variation Ctrl Depth", "dataMin": 1, "dataMax": 127, "default": 0},
-      {"offset": 94, "size": 1, "name": "AT Variation Ctrl Depth", "dataMin": 1, "dataMax": 127, "default": 0},
-      {"offset": 95, "size": 1, "name": "AC1 Variation Ctrl Depth", "dataMin": 1, "dataMax": 127, "default": 0},
-      {"offset": 96, "size": 1, "name": "AC2 Variation Ctrl Depth", "dataMin": 1, "dataMax": 127, "default": 0},
-      {"offset": 112, "size": 1, "name": "Variation Parameter 11", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 113, "size": 1, "name": "Variation Parameter 12", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 114, "size": 1, "name": "Variation Parameter 13", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 115, "size": 1, "name": "Variation Parameter 14", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 116, "size": 1, "name": "Variation Parameter 15", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 117, "size": 1, "name": "Variation Parameter 16", "dataMin": 0, "dataMax": 127, "default": 0}
+      {
+        "offset": 64,
+        "size": 2,
+        "name": "Variation Type",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 5,
+        "description": "MSB,LSB - see Effect Type List"
+      },
+      {
+        "offset": 90,
+        "size": 1,
+        "name": "VariMode",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "description": "0:insertion, 1:system"
+      },
+      {
+        "offset": 91,
+        "size": 1,
+        "name": "Variation Part",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127,
+        "description": "part1..32 (0..31), off (127)"
+      },
+      {
+        "offset": 88,
+        "size": 1,
+        "name": "Send Variation To Reverb",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 89,
+        "size": 1,
+        "name": "Send Variation To Chorus",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 86,
+        "size": 1,
+        "name": "Variation Return",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 96
+      },
+      {
+        "offset": 87,
+        "size": 1,
+        "name": "Variation Pan",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 92,
+        "size": 1,
+        "name": "MW Variation Ctrl Depth",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 93,
+        "size": 1,
+        "name": "PB Variation Ctrl Depth",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 94,
+        "size": 1,
+        "name": "AT Variation Ctrl Depth",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 95,
+        "size": 1,
+        "name": "AC1 Variation Ctrl Depth",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 96,
+        "size": 1,
+        "name": "AC2 Variation Ctrl Depth",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 66,
+        "size": 2,
+        "name": "Variation Param 1",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 68,
+        "size": 2,
+        "name": "Variation Param 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 70,
+        "size": 2,
+        "name": "Variation Param 3",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 72,
+        "size": 2,
+        "name": "Variation Param 4",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 74,
+        "size": 2,
+        "name": "Variation Param 5",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 76,
+        "size": 2,
+        "name": "Variation Param 6",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 78,
+        "size": 2,
+        "name": "Variation Param 7",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 80,
+        "size": 2,
+        "name": "Variation Param 8",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 82,
+        "size": 2,
+        "name": "Variation Param 9",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 84,
+        "size": 2,
+        "name": "Variation Param 10",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 112,
+        "size": 1,
+        "name": "Variation Parameter 11",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 113,
+        "size": 1,
+        "name": "Variation Parameter 12",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 114,
+        "size": 1,
+        "name": "Variation Parameter 13",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 115,
+        "size": 1,
+        "name": "Variation Parameter 14",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 116,
+        "size": 1,
+        "name": "Variation Parameter 15",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 117,
+        "size": 1,
+        "name": "Variation Parameter 16",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      }
     ]
   },
   "multiPart": {
     "label": "Multi Part",
-    "addressBase": [8, "part", 0],
-    "partRange": [0, 31],
+    "addressBase": [
+      8,
+      "part",
+      0
+    ],
+    "partRange": [
+      0,
+      31
+    ],
     "params": [
-      {"offset": 0, "size": 1, "name": "Element Reserve", "dataMin": 0, "dataMax": 32, "default": 2},
-      {"offset": 1, "size": 1, "name": "Bank Select MSB", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 2, "size": 1, "name": "Bank Select LSB", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 3, "size": 1, "name": "Program Number", "dataMin": 0, "dataMax": 127, "default": 0, "description": "wire 0-127, displayed as 1-128"},
-      {"offset": 4, "size": 1, "name": "Rcv Channel", "dataMin": 0, "dataMax": 127, "default": "part", "description": "0-15 = ch 1-16, 127 = off; default matches this part's number"},
-      {"offset": 5, "size": 1, "name": "Mono/Poly Mode", "dataMin": 0, "dataMax": 1, "default": 1, "description": "0:mono, 1:poly"},
-      {"offset": 6, "size": 1, "name": "Same Note Number Key On Assign", "dataMin": 0, "dataMax": 2, "default": 1, "description": "0:single, 1:multi, 2:inst (drum)"},
-      {"offset": 7, "size": 1, "name": "Part Mode", "dataMin": 0, "dataMax": 2, "default": 0, "description": "0:normal, 1-3: drum thru/drum1/drum2"},
-      {"offset": 8, "size": 1, "name": "Note Shift", "dataMin": 40, "dataMax": 88, "default": 64, "description": "28H-58H, -24..+24 semitones"},
-      {"offset": 9, "size": 2, "name": "Detune", "encoding": "nibble", "dataMin": 0, "dataMax": 255, "default": 128, "description": "00..FFH, -12.8..+12.7 Hz, nibble-packed across 2 bytes"},
-      {"offset": 11, "size": 1, "name": "Volume", "dataMin": 0, "dataMax": 127, "default": 100},
-      {"offset": 12, "size": 1, "name": "Velocity Sense Depth", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 13, "size": 1, "name": "Velocity Sense Offset", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 14, "size": 1, "name": "Pan", "dataMin": 0, "dataMax": 127, "default": 64, "description": "0:random, L63..C..R63"},
-      {"offset": 15, "size": 1, "name": "Note Limit Low", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 16, "size": 1, "name": "Note Limit High", "dataMin": 0, "dataMax": 127, "default": 127},
-      {"offset": 17, "size": 1, "name": "Dry Level", "dataMin": 0, "dataMax": 127, "default": 127},
-      {"offset": 18, "size": 1, "name": "Chorus Send", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 19, "size": 1, "name": "Reverb Send", "dataMin": 0, "dataMax": 127, "default": 40},
-      {"offset": 20, "size": 1, "name": "Variation Send", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 21, "size": 1, "name": "Vibrato Rate", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 22, "size": 1, "name": "Vibrato Depth", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 23, "size": 1, "name": "Vibrato Delay", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 24, "size": 1, "name": "Filter Cutoff Frequency", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 25, "size": 1, "name": "Filter Resonance", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 26, "size": 1, "name": "EG Attack Time", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 27, "size": 1, "name": "EG Decay Time", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 28, "size": 1, "name": "EG Release Time", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 29, "size": 1, "name": "MW Pitch Control", "dataMin": 40, "dataMax": 88, "default": 64},
-      {"offset": 30, "size": 1, "name": "MW Filter Control", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 31, "size": 1, "name": "MW Amplitude Control", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 32, "size": 1, "name": "MW LFO PMod Depth", "dataMin": 0, "dataMax": 127, "default": 10},
-      {"offset": 33, "size": 1, "name": "MW LFO FMod Depth", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 34, "size": 1, "name": "MW LFO AMod Depth", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 35, "size": 1, "name": "Bend Pitch Control", "dataMin": 40, "dataMax": 88, "default": 66},
-      {"offset": 36, "size": 1, "name": "Bend Filter Control", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 37, "size": 1, "name": "Bend Amplitude Control", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 38, "size": 1, "name": "Bend LFO PMod Depth", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 39, "size": 1, "name": "Bend LFO FMod Depth", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 40, "size": 1, "name": "Bend LFO AMod Depth", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 77, "size": 1, "name": "Ch's AT Pitch Control", "dataMin": 40, "dataMax": 88, "default": 64},
-      {"offset": 78, "size": 1, "name": "Ch's AT Filter Control", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 79, "size": 1, "name": "Ch's AT Amp Control", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 80, "size": 1, "name": "Ch's AT LFO PMod Depth", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 81, "size": 1, "name": "Ch's AT LFO FMod Depth", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 82, "size": 1, "name": "Ch's AT LFO AMod Depth", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 103, "size": 1, "name": "Portamento Switch", "dataMin": 0, "dataMax": 1, "default": 0},
-      {"offset": 104, "size": 1, "name": "Portamento Time", "dataMin": 0, "dataMax": 127, "default": 0},
-      {"offset": 105, "size": 1, "name": "Pitch EG Initial Level", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 106, "size": 1, "name": "Pitch EG Attack Time", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 107, "size": 1, "name": "Pitch EG Release Level", "dataMin": 0, "dataMax": 127, "default": 64},
-      {"offset": 108, "size": 1, "name": "Pitch EG Release Time", "dataMin": 0, "dataMax": 127, "default": 64}
+      {
+        "offset": 0,
+        "size": 1,
+        "name": "Element Reserve",
+        "dataMin": 0,
+        "dataMax": 32,
+        "default": 2
+      },
+      {
+        "offset": 1,
+        "size": 1,
+        "name": "Bank Select MSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Bank Select LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Program Number",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "wire 0-127, displayed as 1-128"
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "Rcv Channel",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": "part",
+        "description": "0-15 = ch 1-16, 127 = off; default matches this part's number"
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "Mono/Poly Mode",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "description": "0:mono, 1:poly"
+      },
+      {
+        "offset": 103,
+        "size": 1,
+        "name": "Portamento Switch",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 0
+      },
+      {
+        "offset": 104,
+        "size": 1,
+        "name": "Portamento Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "Same Note Number Key On Assign",
+        "dataMin": 0,
+        "dataMax": 2,
+        "default": 1,
+        "description": "0:single, 1:multi, 2:inst (drum)"
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "Part Mode",
+        "dataMin": 0,
+        "dataMax": 2,
+        "default": 0,
+        "description": "0:normal, 1-3: drum thru/drum1/drum2"
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "Note Shift",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 64,
+        "description": "28H-58H, -24..+24 semitones"
+      },
+      {
+        "offset": 9,
+        "size": 2,
+        "name": "Detune",
+        "encoding": "nibble",
+        "dataMin": 0,
+        "dataMax": 255,
+        "default": 128,
+        "description": "00..FFH, -12.8..+12.7 Hz, nibble-packed across 2 bytes"
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "Volume",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 100
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "Velocity Sense Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "Velocity Sense Offset",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "Pan",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "description": "0:random, L63..C..R63"
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "Note Limit Low",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 16,
+        "size": 1,
+        "name": "Note Limit High",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "Dry Level",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127
+      },
+      {
+        "offset": 18,
+        "size": 1,
+        "name": "Chorus Send",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 19,
+        "size": 1,
+        "name": "Reverb Send",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 40
+      },
+      {
+        "offset": 20,
+        "size": 1,
+        "name": "Variation Send",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 21,
+        "size": 1,
+        "name": "Vibrato Rate",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 22,
+        "size": 1,
+        "name": "Vibrato Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 23,
+        "size": 1,
+        "name": "Vibrato Delay",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 24,
+        "size": 1,
+        "name": "Filter Cutoff Frequency",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 25,
+        "size": 1,
+        "name": "Filter Resonance",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 26,
+        "size": 1,
+        "name": "EG Attack Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 27,
+        "size": 1,
+        "name": "EG Decay Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 28,
+        "size": 1,
+        "name": "EG Release Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 29,
+        "size": 1,
+        "name": "MW Pitch Control",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 64
+      },
+      {
+        "offset": 30,
+        "size": 1,
+        "name": "MW Filter Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 31,
+        "size": 1,
+        "name": "MW Amplitude Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 32,
+        "size": 1,
+        "name": "MW LFO PMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 10
+      },
+      {
+        "offset": 33,
+        "size": 1,
+        "name": "MW LFO FMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 34,
+        "size": 1,
+        "name": "MW LFO AMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 35,
+        "size": 1,
+        "name": "Bend Pitch Control",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 66
+      },
+      {
+        "offset": 36,
+        "size": 1,
+        "name": "Bend Filter Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 37,
+        "size": 1,
+        "name": "Bend Amplitude Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 38,
+        "size": 1,
+        "name": "Bend LFO PMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 39,
+        "size": 1,
+        "name": "Bend LFO FMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 40,
+        "size": 1,
+        "name": "Bend LFO AMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 105,
+        "size": 1,
+        "name": "Pitch EG Initial Level",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 106,
+        "size": 1,
+        "name": "Pitch EG Attack Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 107,
+        "size": 1,
+        "name": "Pitch EG Release Level",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 108,
+        "size": 1,
+        "name": "Pitch EG Release Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 77,
+        "size": 1,
+        "name": "Ch's AT Pitch Control",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 64
+      },
+      {
+        "offset": 78,
+        "size": 1,
+        "name": "Ch's AT Filter Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 79,
+        "size": 1,
+        "name": "Ch's AT Amp Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64
+      },
+      {
+        "offset": 80,
+        "size": 1,
+        "name": "Ch's AT LFO PMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 81,
+        "size": 1,
+        "name": "Ch's AT LFO FMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      },
+      {
+        "offset": 82,
+        "size": 1,
+        "name": "Ch's AT LFO AMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0
+      }
     ]
   },
   "drumSetup": {
     "label": "Drum Setup",
-    "addressBase": ["drumHigh", "note", 0],
-    "setupRange": [0, 21],
-    "noteRange": [13, 91],
+    "addressBase": [
+      "drumHigh",
+      "note",
+      0
+    ],
+    "setupRange": [
+      0,
+      21
+    ],
+    "noteRange": [
+      13,
+      91
+    ],
     "params": [
-      {"offset": 0, "size": 1, "name": "Pitch Coarse", "dataMin": 0, "dataMax": 127, "default": 0, "description": "-64..+63 relative"},
-      {"offset": 1, "size": 1, "name": "Pitch Fine", "dataMin": 0, "dataMax": 127, "default": 0, "description": "-64..+63 cent relative"},
-      {"offset": 2, "size": 1, "name": "Level", "dataMin": 0, "dataMax": 127, "default": null, "description": "absolute effect, voice-dependent default"},
-      {"offset": 3, "size": 1, "name": "Alternate Group", "dataMin": 0, "dataMax": 127, "default": null, "description": "0:off, 1..127"},
-      {"offset": 4, "size": 1, "name": "Pan", "dataMin": 0, "dataMax": 127, "default": null, "description": "0:random, L63..C..R63"},
-      {"offset": 5, "size": 1, "name": "Reverb Send Level", "dataMin": 0, "dataMax": 127, "default": null},
-      {"offset": 6, "size": 1, "name": "Chorus Send Level", "dataMin": 0, "dataMax": 127, "default": null},
-      {"offset": 7, "size": 1, "name": "Variation Send Level", "dataMin": 0, "dataMax": 127, "default": null},
-      {"offset": 8, "size": 1, "name": "Key Assign", "dataMin": 0, "dataMax": 1, "default": null, "description": "0:single, 1:multi"},
-      {"offset": 9, "size": 1, "name": "Rcv Note Off", "dataMin": 0, "dataMax": 1, "default": null},
-      {"offset": 10, "size": 1, "name": "Rcv Note On", "dataMin": 0, "dataMax": 1, "default": null},
-      {"offset": 11, "size": 1, "name": "Filter Cutoff Frequency", "dataMin": 0, "dataMax": 127, "default": 0, "description": "-64..63 relative"},
-      {"offset": 12, "size": 1, "name": "Filter Resonance", "dataMin": 0, "dataMax": 127, "default": 0, "description": "-64..63 relative"},
-      {"offset": 13, "size": 1, "name": "EG Attack Rate", "dataMin": 0, "dataMax": 127, "default": 0, "description": "-64..63 relative"},
-      {"offset": 14, "size": 1, "name": "EG Decay1 Rate", "dataMin": 0, "dataMax": 127, "default": 0, "description": "-64..63 relative"},
-      {"offset": 15, "size": 1, "name": "EG Decay2 Rate", "dataMin": 0, "dataMax": 127, "default": 0, "description": "-64..63 relative"}
+      {
+        "offset": 0,
+        "size": 1,
+        "name": "Pitch Coarse",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "-64..+63 relative"
+      },
+      {
+        "offset": 1,
+        "size": 1,
+        "name": "Pitch Fine",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "-64..+63 cent relative"
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Level",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": null,
+        "description": "absolute effect, voice-dependent default"
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Alternate Group",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": null,
+        "description": "0:off, 1..127"
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "Pan",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": null,
+        "description": "0:random, L63..C..R63"
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "Reverb Send Level",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": null
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "Chorus Send Level",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": null
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "Variation Send Level",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": null
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "Key Assign",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": null,
+        "description": "0:single, 1:multi"
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "Rcv Note Off",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": null
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "Rcv Note On",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": null
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "Filter Cutoff Frequency",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "-64..63 relative"
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "Filter Resonance",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "-64..63 relative"
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "EG Attack Rate",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "-64..63 relative"
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "EG Decay1 Rate",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "-64..63 relative"
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "EG Decay2 Rate",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "description": "-64..63 relative"
+      }
     ]
   }
 }
