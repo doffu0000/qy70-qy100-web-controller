@@ -5,6 +5,10 @@
 const SWEEP_DEG = 270; // total rotation range, -135deg..+135deg
 const START_DEG = -135;
 const DRAG_PIXELS_FOR_FULL_RANGE = 160;
+// Cap on how often a continuousSend knob fires mid-drag - fast enough to
+// feel live for performance tweaking, slow enough not to flood the MIDI
+// link or the QY70/QY100's SysEx parser.
+const CONTINUOUS_SEND_MS = 60;
 
 function valueToAngle(value, min, max) {
   const frac = max === min ? 0 : (value - min) / (max - min);
@@ -15,7 +19,7 @@ function clamp(v, min, max) {
   return Math.min(max, Math.max(min, v));
 }
 
-export function createKnob({ min, max, value, step = 1, onChange, onInput, resetValue, caption }) {
+export function createKnob({ min, max, value, step = 1, onChange, onInput, resetValue, caption, continuousSend = false }) {
   let current = clamp(value, min, max);
 
   const wrap = document.createElement('div');
@@ -89,10 +93,14 @@ export function createKnob({ min, max, value, step = 1, onChange, onInput, reset
 
   let dragStartY = null;
   let dragStartValue = null;
+  let lastSentAt = 0;
+  let lastSentValue = null;
 
   svg.addEventListener('pointerdown', (e) => {
     dragStartY = e.clientY;
     dragStartValue = current;
+    lastSentAt = 0;
+    lastSentValue = null;
     svg.setPointerCapture(e.pointerId);
     wrap.classList.add('dragging');
   });
@@ -102,6 +110,18 @@ export function createKnob({ min, max, value, step = 1, onChange, onInput, reset
     const frac = dy / DRAG_PIXELS_FOR_FULL_RANGE;
     const v = dragStartValue + frac * (max - min);
     setValue(v, false);
+    // Live-transmit while dragging (throttled) for performance-style use -
+    // tweaking a sound while it plays on the QY70/QY100 - rather than only
+    // sending once on release. Only for knobs that opt in (continuousSend)
+    // and only when the rounded value actually changed.
+    if (continuousSend && onChange && Math.round(current) !== lastSentValue) {
+      const now = performance.now();
+      if (now - lastSentAt >= CONTINUOUS_SEND_MS) {
+        lastSentAt = now;
+        lastSentValue = Math.round(current);
+        onChange(current);
+      }
+    }
   });
   function endDrag() {
     if (dragStartY === null) return;

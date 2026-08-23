@@ -16,6 +16,7 @@ const outputSelect = el('output-select');
 const channelSelect = el('channel-select');
 const connectBtn = el('connect-btn');
 const statusEl = el('status');
+const resetSectionBtn = el('reset-section-btn');
 const bankSelect = el('bank-select');
 const categorySelect = el('category-select');
 const searchBox = el('search-box');
@@ -88,7 +89,7 @@ function refreshDeviceLists() {
   if (prevOutput && outputs.some((d) => d.id === prevOutput)) outputSelect.value = prevOutput;
 }
 
-connectBtn.addEventListener('click', async () => {
+async function findDevices() {
   try {
     await link.requestAccess();
     link.onDevicesChanged = refreshDeviceLists;
@@ -96,7 +97,10 @@ connectBtn.addEventListener('click', async () => {
   } catch (err) {
     statusEl.textContent = `Error: ${err.message}`;
   }
-});
+}
+
+connectBtn.addEventListener('click', findDevices);
+if (navigator.requestMIDIAccess) findDevices();
 
 inputSelect.addEventListener('change', () => {
   link.selectInput(inputSelect.value);
@@ -284,7 +288,7 @@ el('xg-on-btn').addEventListener('click', async () => {
     'Send XG System On?',
     "This can be done once at the start of a session (or after a power " +
     "cycle) if Parameter Change edits below aren't taking effect - the " +
-    "QY100 ignores them until it receives this. It's typically not needed.\n\n" +
+    "QY70/QY100 ignores them until it receives this. It's typically not needed.\n\n" +
     'It will reset every voice on every channel to its default.'
   );
   if (!confirmed) return;
@@ -293,6 +297,17 @@ el('xg-on-btn').addEventListener('click', async () => {
   } catch (err) {
     statusEl.textContent = `Error: ${err.message}`;
   }
+});
+
+resetSectionBtn.addEventListener('click', async () => {
+  const sectionLabel = parameters[sectionSelect.value]?.label || 'this section';
+  const confirmed = await showConfirm(
+    `Reset all ${sectionLabel} parameters?`,
+    `This sets every parameter in ${sectionLabel} back to its default value and sends the change now. ` +
+    'Any custom values you\'ve dialed in here will be lost.'
+  );
+  if (!confirmed) return;
+  for (const resetFn of currentSectionResetFns) resetFn();
 });
 
 el('clear-log-btn').addEventListener('click', () => {
@@ -305,12 +320,15 @@ el('clear-log-btn').addEventListener('click', () => {
 let parameters = {};
 let drumNotes = {};
 let effectTypes = {};
+let effectParams = { groups: {}, typeToGroup: {} };
+let effectValueTables = {};
 const sectionSelect = el('section-select');
 const partSelect = el('part-select');
 const drumkitSelect = el('drumkit-select');
 const noteSelect = el('note-select');
 const drumSetupHint = el('drum-setup-hint');
 const paramListEl = el('param-list');
+let currentSectionResetFns = [];
 
 async function loadDrumNotes() {
   const res = await fetch('./data/drum_notes.json', { cache: 'no-store' });
@@ -327,6 +345,18 @@ async function loadPresets() {
 async function loadEffectTypes() {
   const res = await fetch('./data/effect_types.json', { cache: 'no-store' });
   if (!res.ok) throw new Error(`Failed to load effect_types.json: ${res.status}`);
+  return res.json();
+}
+
+async function loadEffectParams() {
+  const res = await fetch('./data/effect_params.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load effect_params.json: ${res.status}`);
+  return res.json();
+}
+
+async function loadEffectValueTables() {
+  const res = await fetch('./data/effect_value_tables.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load effect_value_tables.json: ${res.status}`);
   return res.json();
 }
 
@@ -450,6 +480,12 @@ function resolveDefault(row, context) {
 // of a rotary knob (Reset stays the same for both).
 const TOGGLE_PARAMS = new Set(['VariMode', 'Mono/Poly Mode', 'Portamento Switch']);
 
+// These knobs pick an identity (which voice, which bank) rather than a
+// smooth quality - continuously transmitting while dragging through them
+// would just rapid-fire voice changes, not a useful live tweak. Effect Type
+// rows are excluded separately via isEffectTypeRow for the same reason.
+const NON_CONTINUOUS_PARAMS = new Set(['Bank Select', 'Program Number']);
+
 // Params that pick between named modes (3+ discrete states) get a
 // segmented switch instead of a rotary knob; the array index is the wire
 // value, so it also serves as the DYNAMIC_PARAM_DESC lookup below.
@@ -463,6 +499,11 @@ const MULTI_TOGGLE_PARAMS = {
 const semitoneDesc = (value) => {
   const semitones = Math.round(value) - 64;
   return `${semitones > 0 ? '+' : ''}${semitones} semitones`;
+};
+const panDesc = (value) => {
+  const v = Math.round(value);
+  if (v === 64) return 'C';
+  return v < 64 ? `L${64 - v}` : `R${v - 64}`;
 };
 const DYNAMIC_PARAM_DESC = {
   'Master Tune': (value) => {
@@ -491,6 +532,9 @@ const DYNAMIC_PARAM_DESC = {
     if (v === 64) return 'C';
     return v < 64 ? `L${64 - v}` : `R${v - 64}`;
   },
+  'Reverb Pan': panDesc,
+  'Chorus Pan': panDesc,
+  'Variation Pan': panDesc,
   'Note Limit Low': (value) => noteName(Math.round(value)),
   'Note Limit High': (value) => noteName(Math.round(value)),
   'Mono/Poly Mode': (value) => (Math.round(value) === 1 ? 'Poly' : 'Mono'),
@@ -504,12 +548,278 @@ const SUPPRESSED_PARAM_DESC = new Set([
   'Reverb Return', 'Reverb Pan', 'Program Number',
 ]);
 
+// Short explanations shown via the info icon next to each param name. Falls
+// back to the row's own `description` field from parameters.json when a
+// param isn't listed here, and the icon is simply omitted if neither exists.
+const PARAM_INFO = {
+  // System
+  'Master Tune': 'Fine-tunes the whole instrument\'s pitch up or down in cents (1/100 of a semitone) - for matching another instrument that\'s slightly off pitch.',
+  'Master Volume': 'Overall output volume for every part combined.',
+  Transpose: 'Shifts the pitch of everything played in whole semitones, without changing the tempo - handy for matching a singer\'s range.',
+
+  // Reverb / Chorus / Variation shared concepts
+  'Reverb Type': 'The reverb algorithm in use - which room/hall/plate simulation (or delay/gate effect on Variation) is applied, and what its numbered parameters below control.',
+  'Chorus Type': 'The chorus/flanger algorithm in use - and what its numbered parameters below control.',
+  'Variation Type': 'The variation effect algorithm in use (any Reverb or Chorus algorithm, plus delays, distortion, EQ, and more) - and what its numbered parameters below control.',
+  'Reverb Return': 'How much of the reverb\'s processed sound is mixed back into the output.',
+  'Chorus Return': 'How much of the chorus\'s processed sound is mixed back into the output.',
+  'Variation Return': 'How much of the variation effect\'s processed sound is mixed back into the output, when Variation is in System mode.',
+  'Reverb Pan': 'Stereo position of the reverb\'s return signal.',
+  'Chorus Pan': 'Stereo position of the chorus\'s return signal.',
+  'Variation Pan': 'Stereo position of the variation effect\'s return signal, when Variation is in System mode.',
+  'Send Chorus To Reverb': 'How much of the chorus\'s output is additionally fed into the reverb, for a chorus-then-reverb effect chain.',
+  'Send Variation To Reverb': 'How much of the variation effect\'s output is additionally fed into the reverb, when Variation is in System mode.',
+  'Send Variation To Chorus': 'How much of the variation effect\'s output is additionally fed into the chorus, when Variation is in System mode.',
+  VariMode: 'Whether Variation acts as a shared bus effect like Reverb/Chorus (System - any part can send into it) or is patched directly into one specific part\'s signal path (Insertion - see Variation Part below).',
+  'Variation Part': 'Which part receives the Variation effect directly in its signal chain, when VariMode is set to Insertion.',
+  'MW Variation Ctrl Depth': 'How much the Modulation Wheel affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
+  'PB Variation Ctrl Depth': 'How much the Pitch Bend Wheel affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
+  'AT Variation Ctrl Depth': 'How much Channel Aftertouch affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
+  'AC1 Variation Ctrl Depth': 'How much Assignable Controller 1 affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
+  'AC2 Variation Ctrl Depth': 'How much Assignable Controller 2 affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
+
+  // Multi Part
+  'Element Reserve': 'How many sound-generating voices are reserved for this part, guaranteeing it can still play even when the instrument is busy with other parts.',
+  'Bank Select': 'Selects the voice bank (MSB/LSB) this part plays from; combined with Program Number to pick the exact voice.',
+  'Program Number': 'Selects which voice within the current bank this part plays.',
+  'Rcv Channel': 'Which MIDI channel this part listens to; Off means it ignores incoming MIDI note data entirely.',
+  'Mono/Poly Mode': 'Whether this part can only play one note at a time (Mono, good for basses/leads) or many notes at once (Poly).',
+  'Portamento Switch': 'Turns on a smooth pitch glide between consecutive notes on this part.',
+  'Portamento Time': 'How long the pitch glide takes when Portamento is on - higher is a slower slide.',
+  'Same Note Number Key On Assign': 'How repeated notes of the same pitch are handled: replace the previous note (Single), layer on top of it (Multi), or use drum-style one-shot behavior (Inst).',
+  'Part Mode': 'Whether this part behaves as a normal melodic part or is routed through drum-kit note mapping.',
+  'Note Shift': 'Shifts this part\'s pitch in whole semitones, independent of the global Transpose.',
+  Detune: 'Fine pitch offset for this part in Hz, for subtle chorus-like detuning against other parts.',
+  Volume: 'This part\'s individual volume, relative to Master Volume.',
+  'Velocity Sense Depth': 'How strongly playing velocity (how hard a note is struck) affects this part\'s volume.',
+  'Velocity Sense Offset': 'Shifts the velocity-to-volume curve up or down, so even soft playing can reach full volume if raised.',
+  Pan: 'Stereo position of this part.',
+  'Note Limit Low': 'The lowest note this part will respond to - notes below it are ignored.',
+  'Note Limit High': 'The highest note this part will respond to - notes above it are ignored.',
+  'Dry Level': 'How much of this part\'s unprocessed (dry) signal is sent straight to the output, bypassing the effects sends below.',
+  'Chorus Send': 'How much of this part\'s signal is sent to the Chorus effect.',
+  'Reverb Send': 'How much of this part\'s signal is sent to the Reverb effect.',
+  'Variation Send': 'How much of this part\'s signal is sent to the Variation effect (only relevant when Variation is in System mode).',
+  'Vibrato Rate': 'Speed of this part\'s pitch vibrato.',
+  'Vibrato Depth': 'Intensity of this part\'s pitch vibrato.',
+  'Vibrato Delay': 'How long a note plays before vibrato fades in.',
+  'Filter Cutoff Frequency': 'Brightness of the sound - lower rolls off high frequencies for a darker/mellower tone.',
+  'Filter Resonance': 'Emphasizes frequencies right at the filter cutoff, adding a "peaky" or vocal-like edge to the tone.',
+  'EG Attack Time': 'How quickly a note reaches full volume after being played - higher is a slower fade-in.',
+  'EG Decay Time': 'How quickly a note settles from its initial peak down to its sustain level.',
+  'EG Release Time': 'How long a note continues to sound after the key is released.',
+  'Pitch EG Initial Level': 'The pitch offset a note starts at before the pitch envelope moves it, relative to its normal pitch.',
+  'Pitch EG Attack Time': 'How quickly the pitch envelope moves from its initial level toward the release level.',
+  'Pitch EG Release Level': 'The pitch offset a note settles toward as the pitch envelope finishes.',
+  'Pitch EG Release Time': 'How long the pitch envelope takes to fade out after a note is released.',
+
+  // Ch's AT / Multi Part sends
+  Liveness: 'How much of the room\'s natural reflections carry through - higher feels more open/live.',
+  Density: 'How densely packed the reverb\'s echoes are - higher sounds smoother and less like distinct repeats.',
+
+  // Drum Setup
+  'Pitch Coarse': 'Pitch of this drum sound in whole semitones.',
+  'Pitch Fine': 'Fine pitch tuning of this drum sound in cents.',
+  Level: 'Volume of this individual drum sound within the kit.',
+  'Alternate Group': 'Sounds sharing the same non-zero group cut each other off (e.g. open/closed hi-hat) - 0 means no grouping.',
+  'Reverb Send Level': 'How much of this drum sound is sent to the Reverb effect.',
+  'Chorus Send Level': 'How much of this drum sound is sent to the Chorus effect.',
+  'Variation Send Level': 'How much of this drum sound is sent to the Variation effect.',
+  'Key Assign': 'Whether repeated hits of this drum sound cut each other off (Single) or are allowed to overlap/layer (Multi).',
+  'Rcv Note Off': 'Whether this drum sound responds to Note Off messages (usually off, since most drum hits are one-shots).',
+  'Rcv Note On': 'Whether this drum sound responds to Note On messages - turning it off effectively mutes that drum.',
+  'EG Attack Rate': 'How quickly this drum sound reaches full volume after being struck - higher is faster.',
+  'EG Decay1 Rate': 'How quickly this drum sound moves from its initial attack into its main decay.',
+  'EG Decay2 Rate': 'How quickly this drum sound fades out after Decay 1 - effectively its overall length/tail.',
+};
+const AT_MOD_CONTROL_INFO = {
+  'Pitch Control': 'How far this controller bends pitch, in semitones.',
+  'Filter Control': 'How much this controller opens/closes the filter cutoff.',
+  'Amplitude Control': 'How much this controller changes volume.',
+  'Amp Control': 'How much this controller changes volume.',
+  'LFO PMod Depth': 'How much this controller adds to the vibrato (pitch modulation) depth.',
+  'LFO FMod Depth': 'How much this controller adds to filter (tone) modulation depth.',
+  'LFO AMod Depth': 'How much this controller adds to tremolo (volume modulation) depth.',
+};
+for (const [suffix, text] of Object.entries(AT_MOD_CONTROL_INFO)) {
+  PARAM_INFO[`MW ${suffix}`] = `Modulation Wheel: ${text[0].toLowerCase()}${text.slice(1)}`;
+  PARAM_INFO[`Bend ${suffix}`] = `Pitch Bend Wheel: ${text[0].toLowerCase()}${text.slice(1)}`;
+  PARAM_INFO[`Ch's AT ${suffix}`] = `Channel Aftertouch (pressing harder after a note is already held): ${text[0].toLowerCase()}${text.slice(1)}`;
+}
+
 // Sections with an effect-type picker: base param name -> key into effectTypes.json.
 const EFFECT_TYPE_PARAMS = {
   reverb: { paramName: 'Reverb Type', dataKey: 'reverb' },
   chorus: { paramName: 'Chorus Type', dataKey: 'chorus' },
   variation: { paramName: 'Variation Type', dataKey: 'variation' },
 };
+
+// Live "meaning" text for the generic Reverb/Chorus/Variation "Parameter N"
+// rows, sourced from the QY100 Data List's Effect Parameter List (page
+// 10-13) - keyed by the real parameter name (from effect_params.json) once
+// refreshEffectParamNames() has relabeled the row. 'static' just shows the
+// documented range (used where the manual's own Range column doesn't give a
+// clean linear formula, e.g. non-linear lookup-table params); 'linear' and
+// 'enum' compute a live readout from the row's current knob value. Params
+// with no documented unit (plain 0-127 depth/level dials) are intentionally
+// left out - the raw number already is the whole story.
+// Every 'linear' entry's formula is only documented over its own narrower
+// data sub-range (e.g. EQ Gain is only defined for data 52-76, not the full
+// 0-127 the app's shared generic-parameter-slot knob template allows) -
+// dataMin/dataMax here clamp the value before formatting so dragging past
+// the documented range doesn't print a nonsense reading.
+const dbDesc = (v) => `${v - 64 >= 0 ? '+' : ''}${v - 64} dB`;
+const balanceDesc = (aLabel, bLabel) => (v) => (v === 64 ? `${aLabel} = ${bLabel}` : v < 64 ? `${aLabel} +${64 - v}` : `${bLabel} +${v - 64}`);
+// These read the byte value through the manual's own non-linear Data/Value
+// Correspondence Tables (data/effect_value_tables.json, transcribed from
+// the QY100 Data List) rather than a formula - "THRU" entries name the
+// frequency where filtering stops applying, so the unit still belongs
+// inside the parens (e.g. "THRU(20Hz)").
+const tableDesc = (tableName, unit) => (v) => {
+  const raw = effectValueTables[tableName]?.[v];
+  if (raw === undefined || raw === null) return '';
+  return /^THRU\(/.test(raw) ? raw.replace(')', `${unit})`) : `${raw}${unit}`;
+};
+const EFFECT_PARAM_META = {
+  'Reverb Time': { kind: 'linear', dataMin: 0, dataMax: 69, format: tableDesc('table4_reverbTimeS', 's') },
+  'HPF Cutoff': { kind: 'linear', dataMin: 0, dataMax: 52, format: tableDesc('table3_eqFreqHz', 'Hz') },
+  'LPF Cutoff': { kind: 'linear', dataMin: 34, dataMax: 60, format: tableDesc('table3_eqFreqHz', 'Hz') },
+  Width: { kind: 'linear', dataMin: 0, dataMax: 37, format: tableDesc('table8_widthDepthHeightM', 'm') },
+  Height: { kind: 'linear', dataMin: 0, dataMax: 73, format: tableDesc('table8_widthDepthHeightM', 'm') },
+  Depth: { kind: 'linear', dataMin: 0, dataMax: 104, format: tableDesc('table8_widthDepthHeightM', 'm') },
+  'LFO Frequency': { kind: 'linear', dataMin: 0, dataMax: 127, format: tableDesc('table1_lfoFreqHz', 'Hz') },
+  'EQ Low Frequency': { kind: 'linear', dataMin: 8, dataMax: 40, format: tableDesc('table3_eqFreqHz', 'Hz') },
+  'EQ High Frequency': { kind: 'linear', dataMin: 28, dataMax: 58, format: tableDesc('table3_eqFreqHz', 'Hz') },
+  'EQ Mid Frequency': { kind: 'static', text: '500Hz – 10.0kHz' },
+  'Room Size': { kind: 'static', text: '0.1 – 7.0m' },
+  Stage: { kind: 'static', text: '6-10 (Phaser 1) / 3-5 (Phaser 2)' },
+  'Lch Delay': { kind: 'static', text: '0.1 – 715.0ms' },
+  'Rch Delay': { kind: 'static', text: '0.1 – 715.0ms' },
+  'Cch Delay': { kind: 'static', text: '0.1 – 715.0ms' },
+  'Feedback Delay': { kind: 'static', text: '0.1 – 715.0ms' },
+  'Feedback Delay 1': { kind: 'static', text: '0.1 – 715.0ms' },
+  'Feedback Delay 2': { kind: 'static', text: '0.1 – 715.0ms' },
+  'L->R Delay': { kind: 'static', text: '0.1 – 355.0ms' },
+  'R->L Delay': { kind: 'static', text: '0.1 – 355.0ms' },
+  'Lch Delay1': { kind: 'static', text: '0.1 – 355.0ms' },
+  'Rch Delay1': { kind: 'static', text: '0.1 – 355.0ms' },
+  'Lch Delay2': { kind: 'static', text: '0.1 – 355.0ms' },
+  'Rch Delay2': { kind: 'static', text: '0.1 – 355.0ms' },
+
+  'Dry/Wet': { kind: 'linear', dataMin: 1, dataMax: 127, format: balanceDesc('Dry', 'Wet') },
+  'Er/ Rev Balance': { kind: 'linear', dataMin: 1, dataMax: 127, format: balanceDesc('Early Ref.', 'Reverb') },
+  'Feedback Level': { kind: 'linear', dataMin: 1, dataMax: 127, format: (v) => `${v - 64 >= 0 ? '+' : ''}${v - 64}` },
+  'Lch Feedback Level': { kind: 'linear', dataMin: 1, dataMax: 127, format: (v) => `${v - 64 >= 0 ? '+' : ''}${v - 64}` },
+  'Rch Feedback Level': { kind: 'linear', dataMin: 1, dataMax: 127, format: (v) => `${v - 64 >= 0 ? '+' : ''}${v - 64}` },
+  'EQ Low Gain': { kind: 'linear', dataMin: 52, dataMax: 76, format: dbDesc },
+  'EQ High Gain': { kind: 'linear', dataMin: 52, dataMax: 76, format: dbDesc },
+  'EQ Mid Gain': { kind: 'linear', dataMin: 52, dataMax: 76, format: dbDesc },
+  'LFO Phase Difference': { kind: 'linear', dataMin: 4, dataMax: 124, format: (v) => `${(v - 64) * 3 >= 0 ? '+' : ''}${(v - 64) * 3}°` },
+  'High Damp': { kind: 'linear', dataMin: 1, dataMax: 10, format: (v) => (v / 10).toFixed(1) },
+  'EQ Mid Width': { kind: 'linear', dataMin: 10, dataMax: 120, format: (v) => (v / 10).toFixed(1) },
+  Resonance: { kind: 'linear', dataMin: 10, dataMax: 120, format: (v) => (v / 10).toFixed(1) },
+
+  'Input Mode': { kind: 'enum', labels: ['Mono', 'Stereo'] },
+  'Input Select': { kind: 'enum', labels: ['L', 'R', 'L&R'] },
+  'AMP Type': { kind: 'enum', labels: ['Off', 'Stack', 'Combo', 'Tube'] },
+  'PAN Direction': { kind: 'enum', labels: ['L<->R', 'L->R', 'L<-R', 'L turn', 'R turn', 'L/R'] },
+};
+// A few parameter names mean something different depending on the group
+// (e.g. "Type" is a reverb-shape enum for Early Ref but an A/B enum for
+// Gate Reverb) - checked before the shared table above.
+const EFFECT_PARAM_META_BY_GROUP = {
+  'EARLY REF1,2': { Type: { kind: 'enum', labels: ['S-H', 'L-H', 'Rdm', 'Rvs', 'Plt', 'Spr'] } },
+  'GATE REVERB, REVERSE GATE': { Type: { kind: 'enum', labels: ['Type A', 'Type B'] } },
+};
+function effectParamMeta(name, groupKey) {
+  return (groupKey && EFFECT_PARAM_META_BY_GROUP[groupKey]?.[name]) || EFFECT_PARAM_META[name];
+}
+function computeEffectParamDesc(name, groupKey, value) {
+  const meta = effectParamMeta(name, groupKey);
+  if (!meta) return '';
+  if (meta.kind === 'static') return meta.text;
+  if (meta.kind === 'linear') return meta.format(Math.min(meta.dataMax, Math.max(meta.dataMin, Math.round(value))));
+  if (meta.kind === 'enum') return meta.labels[Math.round(value)] ?? '';
+  return '';
+}
+
+// A couple of the generic slots have a hardware-meaningful resting value
+// that differs from the shared 0-127 template's default of 0 - e.g. -63dB
+// isn't "no feedback", 0dB (data 64) is.
+const EFFECT_PARAM_DEFAULT = {
+  'Feedback Level': 64,
+  'Lch Feedback Level': 64,
+  'Rch Feedback Level': 64,
+};
+
+// Info-icon tooltip text for the generic Reverb/Chorus/Variation "Parameter
+// N" slots, keyed by their real name once relabeled - shown once the
+// currently selected effect Type actually defines a name for the slot.
+const EFFECT_PARAM_INFO = {
+  'Reverb Time': 'How long the reverb tail takes to decay.',
+  Diffusion: 'How dense/smooth the reverb\'s reflections are - higher blurs individual echoes together.',
+  'Initial Delay': 'Time before the first reflection is heard, simulating the size of the space.',
+  'HPF Cutoff': 'Rolls off low frequencies below this point out of the effect signal.',
+  'LPF Cutoff': 'Rolls off high frequencies above this point out of the effect signal.',
+  Width: 'Simulated left-right width of the room.',
+  Height: 'Simulated ceiling height of the room.',
+  Depth: 'Simulated front-back depth of the room.',
+  'Wall Vary': 'Amount of randomization applied to the simulated wall reflections.',
+  'Dry/Wet': 'Balance between the unprocessed (dry) and effect-processed (wet) signal.',
+  'Rev Delay': 'Delay before the main reverb tail begins, after the initial reflections.',
+  Density: 'Density of the reverb\'s later reflections.',
+  'Er/ Rev Balance': 'Balance between the early reflections and the main reverb tail.',
+  'Feedback Level': 'How much of the delay/effect output is fed back into itself - higher repeats longer.',
+  'Lch Feedback Level': 'How much of the left channel delay is fed back into itself - higher repeats longer.',
+  'Rch Feedback Level': 'How much of the right channel delay is fed back into itself - higher repeats longer.',
+  'LFO Frequency': 'Speed of the modulation cycle.',
+  'LFO PM Depth': 'Depth of the pitch-modulation applied by the LFO.',
+  'LFO Depth': 'Depth of the modulation applied by the LFO.',
+  'AM Depth': 'Depth of the amplitude (volume) modulation.',
+  'PM Depth': 'Depth of the pitch modulation.',
+  'L/R Depth': 'Depth of the left-right panning motion.',
+  'F/R Depth': 'Depth of the front-back panning motion.',
+  'Delay Offset': 'Base delay time the LFO\'s modulation is centered around.',
+  'EQ Low Frequency': 'Corner frequency of the low-shelf EQ band.',
+  'EQ Low Gain': 'Boost or cut applied at and below the low-shelf frequency.',
+  'EQ Mid Frequency': 'Center frequency of the mid EQ band.',
+  'EQ Mid Gain': 'Boost or cut applied around the mid-band center frequency.',
+  'EQ Mid Width': 'How narrow or broad the mid EQ band is around its center frequency.',
+  'EQ High Frequency': 'Corner frequency of the high-shelf EQ band.',
+  'EQ High Gain': 'Boost or cut applied at and above the high-shelf frequency.',
+  'Input Mode': 'Whether the effect processes its input as mono or stereo.',
+  'Input Select': 'Which input channel(s) feed the effect.',
+  'LFO Phase Difference': 'Phase offset between the left and right LFO cycles, for a wider stereo effect.',
+  'Room Size': 'Simulated size of the room, affecting reflection timing.',
+  Liveness: 'How reflective the simulated room surfaces are.',
+  'High Damp': 'How much high frequencies decay faster than the rest of the signal as it repeats/reverberates.',
+  'Delay Time': 'Time between the input and the first repeat.',
+  Type: 'Which variation of this effect algorithm is used.',
+  'Lch Delay': 'Delay time on the left channel.',
+  'Rch Delay': 'Delay time on the right channel.',
+  'Cch Delay': 'Delay time on the center channel.',
+  'Cch Level': 'Output level of the center channel delay.',
+  'Feedback Delay': 'Delay time used for the feedback repeats.',
+  'Feedback Delay 1': 'Delay time used for the first feedback path.',
+  'Feedback Delay 2': 'Delay time used for the second feedback path.',
+  'L->R Delay': 'Delay time from the left channel feeding into the right.',
+  'R->L Delay': 'Delay time from the right channel feeding into the left.',
+  'Lch Delay1': 'First delay time on the left channel.',
+  'Rch Delay1': 'First delay time on the right channel.',
+  'Lch Delay2': 'Second delay time on the left channel.',
+  'Rch Delay2': 'Second delay time on the right channel.',
+  'Delay2 Level': 'Output level of the second delay tap.',
+  Drive: 'Amount of distortion/overdrive gain applied to the signal.',
+  'AMP Type': 'Which guitar amplifier/cabinet character is simulated.',
+  'Output Level': 'Overall output level of the effect.',
+  'Edge(Clip Curve)': 'Shape of the distortion clipping, from mild to sharp-edged.',
+  Resonance: 'Emphasis added right at the filter\'s cutoff frequency.',
+  'Cutoff Frequency Offset': 'How far the wah\'s filter sweep moves from its center frequency.',
+  'PAN Direction': 'Pattern the auto-pan effect moves the sound image in.',
+  Stage: 'Which stage/depth of the phasing effect is used.',
+  'Phase Shift Offset': 'Base amount of phase shift the LFO\'s sweep is centered around.',
+};
+const EFFECT_PARAM_UNUSED_INFO = 'Unused by the currently selected effect Type - the QY70/QY100 ignores this byte here, though it can still be sent and may do something on other/external XG gear.';
 
 // Builds an effect-type picker (Reverb/Chorus/Variation Type), wired to
 // drive (and follow) the MSB/LSB knob pair it sits next to.
@@ -598,6 +908,7 @@ function renderParamPanel() {
   const context = currentContext(sectionKey);
   const groups = mergeVisualPairs(groupRows(expandRows(section.params)));
   paramListEl.innerHTML = '';
+  currentSectionResetFns = [];
   // Variation Part only means anything in Insertion mode; the two Sends
   // only mean anything in System mode - grey out whichever doesn't apply
   // to the current VariMode.
@@ -611,6 +922,41 @@ function renderParamPanel() {
     if (sendToReverbRowEl) sendToReverbRowEl.classList.toggle('dimmed', !isSystem);
     if (sendToChorusRowEl) sendToChorusRowEl.classList.toggle('dimmed', !isSystem);
   }
+
+  // The generic "Reverb/Chorus/Variation Parameter N" rows mean something
+  // different depending on the selected effect Type (e.g. Param 1 is
+  // "Reverb Time" for Hall/Room/Stage/Plate but "Lch Delay" for Delay
+  // types) - relabel them live whenever the Type's MSB/LSB change, without
+  // rebuilding the DOM (that would drop mid-drag pointer capture).
+  const effectTypeParam = EFFECT_TYPE_PARAMS[sectionKey];
+  const paramNameEls = [];
+  let effectTypeKnobs = null;
+  let currentEffectGroupKey = null;
+  function currentEffectGroup() {
+    if (!effectTypeParam || !effectTypeKnobs) return { groupKey: null, group: null };
+    const [msbKnob, lsbKnob] = effectTypeKnobs;
+    const typeList = effectTypes[effectTypeParam.dataKey] || [];
+    const match = typeList.find((t) => t.msb === msbKnob.getValue() && t.lsb === lsbKnob.getValue());
+    const groupKey = (match && effectParams.typeToGroup[match.name]) || null;
+    return { groupKey, group: groupKey && effectParams.groups[groupKey] };
+  }
+  function refreshEffectParamNames() {
+    if (!effectTypeParam || !effectTypeKnobs) return;
+    const { groupKey, group } = currentEffectGroup();
+    currentEffectGroupKey = groupKey;
+    for (const { el, num, fallback, descEl, knob, row, infoIcon } of paramNameEls) {
+      const used = !!(group && group[num - 1]);
+      el.textContent = used ? group[num - 1] : fallback;
+      descEl.textContent = used ? computeEffectParamDesc(el.textContent, currentEffectGroupKey, knob.getValue()) : '';
+      row.classList.toggle('unused-param', !used);
+      if (infoIcon) {
+        infoIcon.dataset.tooltip = used
+          ? (EFFECT_PARAM_INFO[el.textContent] || 'Meaning defined by the currently selected effect Type.')
+          : EFFECT_PARAM_UNUSED_INFO;
+      }
+    }
+  }
+
   for (const { rows, combineSend } of groups) {
     const firstRow = rows[0];
     const grouped = rows.length > 1;
@@ -618,30 +964,63 @@ function renderParamPanel() {
       ? firstRow.name.replace(/ \([^)]*\)$/, '').replace(/ (MSB|LSB)$/, '')
       : firstRow.name;
 
+    const paramNumMatch = effectTypeParam && baseName.match(/ Param(?:eter)? (\d+)$/);
+
     const div = document.createElement('div');
     div.className = 'param-row';
     const dynamicDesc = DYNAMIC_PARAM_DESC[firstRow.name];
     const showStaticDesc = !dynamicDesc && !SUPPRESSED_PARAM_DESC.has(firstRow.name) && firstRow.description;
     const desc = showStaticDesc ? `<span class="param-desc">${firstRow.description}</span>` : '<span class="param-desc"></span>';
-    div.innerHTML = `<span class="param-name">${baseName}</span>${desc}`;
+    const infoText = PARAM_INFO[baseName] || (!showStaticDesc && firstRow.description) || '';
+    // paramNumMatch rows always get an icon even with no infoText yet - its
+    // tooltip is filled in live by refreshEffectParamNames() once the
+    // selected effect Type says whether the slot is used and what it means.
+    // Uses data-tooltip + CSS (see .info-icon rules) instead of the native
+    // title attribute, which has a slow, browser-controlled hover delay.
+    const infoIcon = (infoText || paramNumMatch)
+      ? `<button type="button" class="info-icon" data-tooltip="${infoText.replace(/"/g, '&quot;')}">i</button>` : '';
+    div.innerHTML = `${infoIcon}<span class="param-name">${baseName}</span>${desc}`;
     const descEl = div.querySelector('.param-desc');
+    const nameEl = div.querySelector('.param-name');
 
-    const effectTypeParam = EFFECT_TYPE_PARAMS[sectionKey];
     const isEffectTypeRow = effectTypeParam && baseName === effectTypeParam.paramName;
     let effectSelect;
     const knobGroup = document.createElement('div');
     knobGroup.className = 'knob-group';
     const knobs = [];
+    const defaults = [];
+
+    // The generic slots' JSON default (0) is only right for some meanings -
+    // e.g. a Feedback Level of 0dB (data 64), not -63dB, is the sane resting
+    // point - so override it once we know what this slot currently means.
+    let effectParamDefault;
+    if (paramNumMatch) {
+      const { group } = currentEffectGroup();
+      const label = (group && group[Number(paramNumMatch[1]) - 1]) || baseName;
+      effectParamDefault = EFFECT_PARAM_DEFAULT[label];
+    }
 
     for (const row of rows) {
       const caption = grouped ? (row.name.match(/\(([^)]*)\)$/)?.[1] ?? row.name.match(/ (MSB|LSB)$/)?.[1]) : undefined;
-      const defaultValue = resolveDefault(row, context);
+      const defaultValue = effectParamDefault ?? resolveDefault(row, context);
+      defaults.push(defaultValue);
       const widgetOptions = {
         value: defaultValue ?? row.dataMin,
         resetValue: defaultValue,
+        // Live-transmit while dragging, for performance-style tweaking of a
+        // sound while it's playing - except for knobs that pick an identity
+        // (which voice, which effect Type) rather than a smooth quality,
+        // where sweeping through every value in between is just noise.
+        continuousSend: !isEffectTypeRow && !NON_CONTINUOUS_PARAMS.has(baseName),
         onInput: (value) => {
           if (dynamicDesc) descEl.textContent = dynamicDesc(value);
-          if (isEffectTypeRow) effectSelect?.syncFromKnobs();
+          if (isEffectTypeRow) {
+            effectSelect?.syncFromKnobs();
+            refreshEffectParamNames();
+          }
+          if (paramNumMatch) {
+            descEl.textContent = computeEffectParamDesc(nameEl.textContent, currentEffectGroupKey, value);
+          }
           if (baseName === 'VariMode') updateVariModeDimming(value);
         },
         // combineSend rows (e.g. Reverb Type's MSB+LSB) are one addressable
@@ -686,9 +1065,32 @@ function renderParamPanel() {
       knobGroup.appendChild(knob.element);
     }
 
-    if (isEffectTypeRow && effectTypes[effectTypeParam.dataKey]) {
-      effectSelect = buildEffectTypeSelect(effectTypes[effectTypeParam.dataKey], knobs[0], knobs[1]);
-      descEl.appendChild(effectSelect.element);
+    if (isEffectTypeRow) {
+      effectTypeKnobs = knobs;
+      if (effectTypes[effectTypeParam.dataKey]) {
+        effectSelect = buildEffectTypeSelect(effectTypes[effectTypeParam.dataKey], knobs[0], knobs[1]);
+        descEl.appendChild(effectSelect.element);
+      }
+    }
+
+    if (paramNumMatch) {
+      paramNameEls.push({
+        el: nameEl, num: Number(paramNumMatch[1]), fallback: baseName, descEl, knob: knobs[0],
+        row: div, infoIcon: div.querySelector('.info-icon'),
+      });
+    }
+
+    // Reset All: set every knob in this row back to its own default, firing
+    // only the last one's onChange - combineSend rows read every knob's
+    // current value at send time, so the others just need to be in place
+    // first. Rows with no documented default (resetValue disabled on the
+    // per-row Reset button too) are left untouched.
+    const resettableIdx = defaults.reduce((acc, d, i) => (d !== undefined && d !== null ? [...acc, i] : acc), []);
+    if (resettableIdx.length) {
+      const lastIdx = resettableIdx[resettableIdx.length - 1];
+      currentSectionResetFns.push(() => {
+        for (const i of resettableIdx) knobs[i].setValue(defaults[i], i === lastIdx);
+      });
     }
 
     div.appendChild(knobGroup);
@@ -702,6 +1104,7 @@ function renderParamPanel() {
       updateVariModeDimming(variModeKnob.getValue());
     }
   }
+  refreshEffectParamNames();
 }
 
 sectionSelect.addEventListener('change', renderParamPanel);
@@ -716,8 +1119,8 @@ channelSelect.addEventListener('change', () => {
 // ---- Boot ----
 
 (async () => {
-  [voices, parameters, drumNotes, presets, effectTypes] = await Promise.all(
-    [loadVoices(), loadParameters(), loadDrumNotes(), loadPresets(), loadEffectTypes()]);
+  [voices, parameters, drumNotes, presets, effectTypes, effectParams, effectValueTables] = await Promise.all(
+    [loadVoices(), loadParameters(), loadDrumNotes(), loadPresets(), loadEffectTypes(), loadEffectParams(), loadEffectValueTables()]);
   refreshCategoryOptions();
   renderVoiceList();
   populatePartSelect();
