@@ -1072,7 +1072,7 @@
         "name": "Pitch Coarse",
         "dataMin": 0,
         "dataMax": 127,
-        "default": 0,
+        "default": 64,
         "description": "-64..+63 relative"
       },
       {
@@ -1081,7 +1081,7 @@
         "name": "Pitch Fine",
         "dataMin": 0,
         "dataMax": 127,
-        "default": 0,
+        "default": 64,
         "description": "-64..+63 cent relative"
       },
       {
@@ -1090,8 +1090,7 @@
         "name": "Level",
         "dataMin": 0,
         "dataMax": 127,
-        "default": null,
-        "description": "absolute effect, voice-dependent default"
+        "default": 100
       },
       {
         "offset": 3,
@@ -1099,7 +1098,7 @@
         "name": "Alternate Group",
         "dataMin": 0,
         "dataMax": 127,
-        "default": null,
+        "default": 0,
         "description": "0:off, 1..127"
       },
       {
@@ -1108,7 +1107,7 @@
         "name": "Pan",
         "dataMin": 0,
         "dataMax": 127,
-        "default": null,
+        "default": 64,
         "description": "0:random, L63..C..R63"
       },
       {
@@ -1117,7 +1116,7 @@
         "name": "Reverb Send Level",
         "dataMin": 0,
         "dataMax": 127,
-        "default": null
+        "default": 127
       },
       {
         "offset": 6,
@@ -1125,7 +1124,7 @@
         "name": "Chorus Send Level",
         "dataMin": 0,
         "dataMax": 127,
-        "default": null
+        "default": 127
       },
       {
         "offset": 7,
@@ -1133,7 +1132,7 @@
         "name": "Variation Send Level",
         "dataMin": 0,
         "dataMax": 127,
-        "default": null
+        "default": 127
       },
       {
         "offset": 8,
@@ -1141,7 +1140,7 @@
         "name": "Key Assign",
         "dataMin": 0,
         "dataMax": 1,
-        "default": null,
+        "default": 1,
         "description": "0:single, 1:multi"
       },
       {
@@ -1150,7 +1149,7 @@
         "name": "Rcv Note Off",
         "dataMin": 0,
         "dataMax": 1,
-        "default": null
+        "default": 1
       },
       {
         "offset": 10,
@@ -1158,7 +1157,7 @@
         "name": "Rcv Note On",
         "dataMin": 0,
         "dataMax": 1,
-        "default": null
+        "default": 1
       },
       {
         "offset": 11,
@@ -1166,7 +1165,7 @@
         "name": "Filter Cutoff Frequency",
         "dataMin": 0,
         "dataMax": 127,
-        "default": 0,
+        "default": 64,
         "description": "-64..63 relative"
       },
       {
@@ -1175,7 +1174,7 @@
         "name": "Filter Resonance",
         "dataMin": 0,
         "dataMax": 127,
-        "default": 0,
+        "default": 64,
         "description": "-64..63 relative"
       },
       {
@@ -1184,7 +1183,7 @@
         "name": "EG Attack Rate",
         "dataMin": 0,
         "dataMax": 127,
-        "default": 0,
+        "default": 64,
         "description": "-64..63 relative"
       },
       {
@@ -1193,7 +1192,7 @@
         "name": "EG Decay1 Rate",
         "dataMin": 0,
         "dataMax": 127,
-        "default": 0,
+        "default": 64,
         "description": "-64..63 relative"
       },
       {
@@ -1202,7 +1201,7 @@
         "name": "EG Decay2 Rate",
         "dataMin": 0,
         "dataMax": 127,
-        "default": 0,
+        "default": 64,
         "description": "-64..63 relative"
       }
     ]

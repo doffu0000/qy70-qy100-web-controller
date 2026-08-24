@@ -77,18 +77,3 @@ export function buildMidiMasterTuning(deviceNumber, mm, ll) {
   ]);
 }
 
-// Bank Select (MSB/LSB) + Program Change are ordinary channel messages, not
-// SysEx, but voice selection always sends them as a trio per the QY70 spec
-// (3-1-6 CONTROL CHANGE / 3-1-3 PROGRAM CHANGE).
-//
-// `program` here is the wire value (0-127). The Data List's voice tables
-// print 1-128, so callers must pass `program - 1` — voices.js does this
-// conversion in one place so it's never duplicated at call sites.
-export function buildVoiceSelect(channel, bankMsb, bankLsb, program) {
-  const status = 0xb0 | (channel & 0x0f);
-  return [
-    new Uint8Array([status, 0x00, bankMsb & 0x7f]),
-    new Uint8Array([status, 0x20, bankLsb & 0x7f]),
-    new Uint8Array([0xc0 | (channel & 0x0f), program & 0x7f]),
-  ];
-}

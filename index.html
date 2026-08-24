@@ -12,7 +12,14 @@
 <body>
 <div id="brand-bar"></div>
 <header>
-  <h1>QY70 / QY100 Web Console</h1>
+  <div id="header-top">
+    <h1>QY70 / QY100 Web Console</h1>
+    <div id="header-actions">
+      <input type="file" id="patch-file-input" accept=".qyparam" hidden>
+      <button id="load-patch-btn">Load .qyparam</button>
+      <button id="save-patch-btn">Save .qyparam</button>
+    </div>
+  </div>
   <p class="hint required" id="no-midi-banner" hidden>
     This browser doesn't support Web MIDI, so this app can't reach your
     device. Open this page in <strong>Chrome</strong> or <strong>Edge</strong>
@@ -65,14 +72,28 @@
       </p>
     </details>
     <div id="voice-controls">
+      <label>Apply to
+        <select id="voice-part-select"></select>
+      </label>
       <select id="bank-select">
         <option value="normal">Normal</option>
         <option value="sfx">SFX Voice</option>
         <option value="drum">Drum Kit</option>
         <option value="sfxkit">SFX Kit</option>
+        <option value="userVoice">User Voice</option>
+        <option value="userKit">User Kit</option>
       </select>
       <select id="category-select"><option value="">All categories</option></select>
       <input id="search-box" type="text" placeholder="Search voice name...">
+    </div>
+    <p class="hint">Selecting a voice or preset only changes the Part selected above.</p>
+    <div id="voice-file-controls">
+      <input type="file" id="voice-file-input" accept=".qyvoice" hidden>
+      <button id="save-voice-btn" disabled>Save Voice</button>
+      <button id="load-voice-btn">Load Voice</button>
+      <input type="file" id="kit-file-input" accept=".qykit" hidden>
+      <button id="save-kit-btn" disabled>Save Kit</button>
+      <button id="load-kit-btn">Load Kit</button>
     </div>
     <ul id="voice-list"></ul>
   </section>
@@ -94,6 +115,7 @@
       <select id="drumkit-select" class="context-select" hidden></select>
       <select id="note-select" class="context-select" hidden></select>
       <button id="reset-section-btn" class="btn-warning">Reset All to Default</button>
+      <button id="push-drum-params-btn" hidden>Push Parameters</button>
       <p class="hint" id="drum-setup-hint" hidden>
         Drum Setup edits whatever kit is currently playing on the
         <strong>Channel</strong> selected above, not the kit picker here -
@@ -115,13 +137,31 @@
   </section>
 </main>
 
-<dialog id="confirm-dialog">
-  <h3 id="confirm-dialog-title"></h3>
+<dialog id="confirm-dialog" class="app-dialog">
+  <h3 id="confirm-dialog-title" class="app-dialog-title"></h3>
   <p id="confirm-dialog-message"></p>
-  <div id="confirm-dialog-actions">
+  <div id="confirm-dialog-actions" class="app-dialog-actions">
     <button id="confirm-dialog-cancel">Cancel</button>
     <button id="confirm-dialog-ok" class="btn-warning">Send</button>
   </div>
+</dialog>
+
+<dialog id="save-as-dialog" class="app-dialog">
+  <h3 id="save-as-title" class="app-dialog-title"></h3>
+  <label><span id="save-as-target-label-text">Part</span>
+    <select id="save-as-target-select"></select>
+  </label>
+  <div class="app-dialog-actions">
+    <button id="save-as-cancel">Cancel</button>
+    <button id="save-as-ok" class="btn-warning">Continue</button>
+  </div>
+</dialog>
+
+<dialog id="progress-dialog" class="app-dialog">
+  <h3 id="progress-dialog-title" class="app-dialog-title"></h3>
+  <p id="progress-dialog-warning" class="hint required" hidden></p>
+  <progress id="progress-dialog-bar" max="100" value="0"></progress>
+  <p id="progress-dialog-status"></p>
 </dialog>
 
 <script type="module" src="./js/app.js"></script>

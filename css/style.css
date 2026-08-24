@@ -29,8 +29,22 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
-h1 { margin: 0 0 0.75rem; font-size: 1.3rem; font-weight: 600; color: var(--heading); }
+h1 { margin: 0; font-size: 1.3rem; font-weight: 600; color: var(--heading); }
 h2 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--heading); text-transform: uppercase; letter-spacing: 0.04em; }
+
+#header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+#header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
 
 #connect-bar {
   display: flex;
@@ -125,6 +139,27 @@ section {
   gap: 0.5rem;
   margin-bottom: 0.75rem;
   flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+#voice-controls label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: var(--muted);
+  gap: 0.25rem;
+}
+
+#voice-file-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+#voice-file-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 #search-box { flex: 1; min-width: 150px; }
@@ -153,6 +188,22 @@ section {
 #voice-list .voice-meta { color: var(--muted); font-size: 0.78rem; margin-left: auto; }
 
 #voice-list li.qy100-only { color: var(--qy100); }
+
+#voice-list li.voice-category-divider {
+  margin-top: 0.6rem;
+  padding: 0.4rem 0.1rem 0.15rem;
+  border-top: 2px solid var(--qy100);
+  border-radius: 0;
+  color: var(--qy100);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: default;
+}
+
+#voice-list li.voice-category-divider:first-child { margin-top: 0; }
+#voice-list li.voice-category-divider:hover { background: none; }
 
 .preset-toggle, .preset-toggle-spacer {
   flex-shrink: 0;
@@ -243,9 +294,11 @@ section {
   border-bottom: 1px solid var(--border);
 }
 
+/* Greyed out to show it's not currently applicable (e.g. Variation Part
+   while VariMode is System) - stays interactive since the value is still
+   real and may matter again once the relevant mode is switched back. */
 .param-row.dimmed {
   opacity: 0.4;
-  pointer-events: none;
 }
 
 /* Unused-by-the-current-effect-Type slots stay fully interactive (the byte
@@ -266,6 +319,29 @@ section {
   font-size: 0.72rem;
   color: var(--muted);
   text-align: left;
+}
+
+/* "Active"/"Ignored" mute switch, rightmost on every param row - text runs
+   vertically so it stays compact in a dense list of knobs. */
+.ignore-toggle {
+  flex: none;
+  align-self: stretch;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  padding: 0.3rem 0.15rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.ignore-toggle.ignored {
+  background: var(--qy100);
+  color: #ffffff;
+  border-color: var(--qy100);
 }
 
 .info-icon {
@@ -502,7 +578,7 @@ section {
   padding: 0.5rem;
 }
 
-#confirm-dialog {
+.app-dialog {
   max-width: 26rem;
   width: calc(100% - 2rem);
   border: 1px solid var(--border);
@@ -513,11 +589,11 @@ section {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
 }
 
-#confirm-dialog::backdrop {
+.app-dialog::backdrop {
   background: rgba(0, 0, 0, 0.5);
 }
 
-#confirm-dialog-title {
+.app-dialog-title {
   margin: 0 0 0.6rem;
   font-size: 1.05rem;
   color: var(--heading);
@@ -531,8 +607,35 @@ section {
   white-space: pre-line;
 }
 
-#confirm-dialog-actions {
+.app-dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+.app-dialog label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: var(--muted);
+  gap: 0.25rem;
+  margin: 0 0 0.9rem;
+}
+
+.app-dialog input[type="text"],
+.app-dialog select {
+  width: 100%;
+}
+
+#progress-dialog-bar {
+  width: 100%;
+  height: 0.6rem;
+  margin: 0 0 0.6rem;
+  accent-color: var(--accent);
+}
+
+#progress-dialog-status {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
 }
