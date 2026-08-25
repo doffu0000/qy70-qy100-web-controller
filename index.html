@@ -14,11 +14,6 @@
 <header>
   <div id="header-top">
     <h1>QY70 / QY100 Web Console</h1>
-    <div id="header-actions">
-      <input type="file" id="patch-file-input" accept=".qyparam" hidden>
-      <button id="load-patch-btn">Load .qyparam</button>
-      <button id="save-patch-btn">Save .qyparam</button>
-    </div>
   </div>
   <p class="hint required" id="no-midi-banner" hidden>
     This browser doesn't support Web MIDI, so this app can't reach your
@@ -27,7 +22,14 @@
   </p>
   <div id="connect-bar">
     <button id="connect-btn">Find Devices</button>
-    <label>MIDI In
+    <label>
+      <span class="label-row">MIDI In
+        <button type="button" class="attention-icon" data-tooltip="Recommended: leave this set to (none) for most tasks - incoming MIDI messages while this app is mid-action (Push Parameters, Load Voice/Kit/.qyparam, Reset, etc.) can trigger unexpected parameter changes on the device.
+
+Turn it on when editing Drum Setup: playing a note on the QY70/QY100 jumps the web console to that kit element for editing.
+
+It also lets the web console follow the device's own Drum Kit/SFX Kit voice changes on Ds1/Ds2 (Song mode), updating the kit picker here to match.">!</button>
+      </span>
       <select id="input-select"><option value="">(none)</option></select>
     </label>
     <label>MIDI Out
@@ -63,12 +65,21 @@
         screen before proceeding to edit parameters in the web console.
       </p>
       <p>
-        Note: Even elements that look locked on the device's own screen can
-        still be edited from the web console.
+        <strong>Note:</strong> picking a Drum Kit or SFX Kit voice in the
+        Voice Browser only updates the device while on Ds1/Ds2 - the
+        QY70/QY100 doesn't accept voice selection over MIDI while in Pattern
+        mode (Ds3), so you'll need to match the kit on the device by hand
+        there; the parameter knobs below will still edit correctly once
+        it's matched.
       </p>
       <p>
-        Tip: Playing a note on the device automatically will update the web
-        console to display that kit element's editable parameters.
+        <strong>Note:</strong> Even elements that look locked on the
+        device's own screen can still be edited from the web console.
+      </p>
+      <p>
+        <strong>Tip:</strong> Playing a note on the device automatically
+        will update the web console to display that kit element's editable
+        parameters.
       </p>
     </details>
     <div id="voice-controls">
@@ -86,12 +97,12 @@
       <select id="category-select"><option value="">All categories</option></select>
       <input id="search-box" type="text" placeholder="Search voice name...">
     </div>
-    <p class="hint">Selecting a voice or preset only changes the Part selected above.</p>
+    <p class="hint">Click a voice, preset, or kit to select it (for editing/saving) - use its Push button to actually apply it.</p>
     <div id="voice-file-controls">
-      <input type="file" id="voice-file-input" accept=".qyvoice" hidden>
+      <input type="file" id="voice-file-input" accept=".qyvoice" multiple hidden>
       <button id="save-voice-btn" disabled>Save Voice</button>
       <button id="load-voice-btn">Load Voice</button>
-      <input type="file" id="kit-file-input" accept=".qykit" hidden>
+      <input type="file" id="kit-file-input" accept=".qykit" multiple hidden>
       <button id="save-kit-btn" disabled>Save Kit</button>
       <button id="load-kit-btn">Load Kit</button>
     </div>
@@ -100,7 +111,13 @@
 
   <section id="parameters">
     <h2>Parameters</h2>
-    <p class="hint">Sent as XG Parameter Change SysEx (F0 43 1n 4C aa aa aa dd..dd F7).</p>
+    <div id="param-file-controls">
+      <input type="file" id="patch-file-input" accept=".qyparam" hidden>
+      <button type="button" class="info-icon header-info-icon" data-tooltip="Saves every value in the System, Reverb, Chorus, and Variation sections of the Parameters panel - including each row's Active/Ignored state. Doesn't include Multi Part, Drum Setup, or Voice Browser selections. Only one parameter set can be loaded at a time.">i</button>
+      <button id="load-patch-btn">Load Parameters</button>
+      <button id="save-patch-btn">Save Parameters</button>
+    </div>
+    <hr>
 
     <div id="param-controls">
       <select id="section-select">
@@ -115,6 +132,8 @@
       <select id="drumkit-select" class="context-select" hidden></select>
       <select id="note-select" class="context-select" hidden></select>
       <button id="reset-section-btn" class="btn-warning">Reset All to Default</button>
+      <button id="push-params-btn" hidden>Push Parameters</button>
+      <button id="push-all-parts-btn" hidden>Push All Parts</button>
       <button id="push-drum-params-btn" hidden>Push Parameters</button>
       <p class="hint" id="drum-setup-hint" hidden>
         Drum Setup edits whatever kit is currently playing on the
@@ -148,6 +167,7 @@
 
 <dialog id="save-as-dialog" class="app-dialog">
   <h3 id="save-as-title" class="app-dialog-title"></h3>
+  <p id="save-as-message" class="hint" hidden></p>
   <label><span id="save-as-target-label-text">Part</span>
     <select id="save-as-target-select"></select>
   </label>

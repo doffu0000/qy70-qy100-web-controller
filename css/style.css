@@ -42,6 +42,7 @@ h2 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--headin
 
 #header-actions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
 }
@@ -59,6 +60,12 @@ h2 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--headin
   font-size: 0.75rem;
   color: var(--muted);
   gap: 0.25rem;
+}
+
+#connect-bar .label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 #input-select, #output-select {
@@ -162,6 +169,20 @@ section {
   cursor: not-allowed;
 }
 
+#param-file-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+#parameters hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0 0 1rem;
+}
+
 #search-box { flex: 1; min-width: 150px; }
 
 #voice-list {
@@ -230,6 +251,24 @@ section {
 
 #voice-list li.preset-item:hover { color: var(--text); }
 #voice-list li.preset-item.selected { color: var(--text); }
+
+.push-voice-btn {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.push-voice-btn:hover {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
 
 .qy100-badge {
   display: inline-block;
@@ -321,6 +360,13 @@ section {
   text-align: left;
 }
 
+.voice-picker-select {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  padding: 0.2rem 0.4rem;
+}
+
 /* "Active"/"Ignored" mute switch, rightmost on every param row - text runs
    vertically so it stays compact in a dense list of knobs. */
 .ignore-toggle {
@@ -344,21 +390,24 @@ section {
   border-color: var(--qy100);
 }
 
-.info-icon {
+.info-icon, .attention-icon {
   position: relative;
   flex: none;
   width: 1.1rem;
   height: 1.1rem;
   padding: 0;
   border-radius: 50%;
+  font-family: Georgia, serif;
+  line-height: 1;
+  cursor: help;
+}
+
+.info-icon {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
   font-size: 0.65rem;
   font-style: italic;
-  font-family: Georgia, serif;
-  line-height: 1;
-  cursor: help;
 }
 
 .info-icon:hover {
@@ -368,9 +417,30 @@ section {
   opacity: 1;
 }
 
-/* Custom tooltip instead of the native title attribute, which most browsers
-   delay by ~1s before showing - this appears the instant you hover. */
-.info-icon::after {
+.attention-icon {
+  border: 1px solid var(--qy100);
+  background: var(--bg);
+  color: var(--qy100);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.attention-icon:hover {
+  color: #ffffff;
+  background: var(--qy100);
+  border-color: var(--qy100);
+  /* Overrides the global button:hover opacity: 0.88 below - without this,
+     hovering the icon (needed to trigger its tooltip) dims the icon and its
+     ::after tooltip box together, same as .info-icon:hover does. */
+  opacity: 1;
+}
+
+/* Shared tooltip-box styling for both icon types, kept as one rule so their
+   popups can't visually drift apart - custom tooltip instead of the native
+   title attribute, which most browsers delay by ~1s before showing. Solid
+   background (no alpha), regular weight, and the app's own font regardless
+   of which icon triggered it. */
+.info-icon::after, .attention-icon::after {
   content: attr(data-tooltip);
   position: absolute;
   z-index: 30;
@@ -383,11 +453,12 @@ section {
   background: var(--heading);
   color: #ffffff;
   font-style: normal;
+  font-weight: 400;
   font-family: "Sora", Helvetica, Arial, sans-serif;
   font-size: 0.72rem;
   line-height: 1.4;
   text-align: left;
-  white-space: normal;
+  white-space: pre-line;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   opacity: 0;
   visibility: hidden;
@@ -396,6 +467,25 @@ section {
 }
 
 .info-icon:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* This icon sits at the top-right of the page, right against the edge - the
+   default left:0 anchor made its tooltip extend rightward off the viewport,
+   where it ended up rendered underneath the page's own scrollbar instead of
+   above it. Anchoring from the right edge instead keeps it fully on-screen. */
+.header-info-icon::after {
+  left: auto;
+  right: 0;
+}
+
+/* attention-icon's tooltip visibility is driven by JS (mouseenter/mouseleave
+   bound directly to the button, see app.js) instead of bare :hover - it
+   sits right next to the MIDI In select inside the same <label>, and
+   relying on :hover made the tooltip pop open while hovering the select or
+   label text too. */
+.attention-icon.tooltip-open::after {
   opacity: 1;
   visibility: visible;
 }
@@ -604,6 +694,17 @@ section {
   font-size: 0.88rem;
   line-height: 1.5;
   color: var(--text);
+  white-space: pre-line;
+}
+
+.confirm-note {
+  color: var(--qy100);
+}
+
+#save-as-message {
+  margin: 0 0 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
   white-space: pre-line;
 }
 

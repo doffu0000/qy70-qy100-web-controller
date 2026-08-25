@@ -198,6 +198,14 @@ outputSelect.addEventListener('change', () => {
   statusEl.textContent = outputSelect.value ? '' : 'No MIDI output selected';
 });
 
+// Tooltip open state is tracked with a class toggled only by this exact
+// button's own mouseenter/mouseleave, rather than a bare CSS :hover on
+// .attention-icon - see the .tooltip-open rule in style.css for why.
+document.querySelectorAll('.attention-icon').forEach((btn) => {
+  btn.addEventListener('mouseenter', () => btn.classList.add('tooltip-open'));
+  btn.addEventListener('mouseleave', () => btn.classList.remove('tooltip-open'));
+});
+
 function currentChannel() {
   return channelSelect.value === 'all' ? 'all' : Number(channelSelect.value || 0);
 }
@@ -208,7 +216,7 @@ function refreshCategoryOptions() {
   categorySelect.innerHTML = '<option value="">All categories</option>' +
     cats.map((c) => `<option value="${c}">${c}</option>`).join('');
   categorySelect.value = '';
-  el('drum-kit-hint').hidden = bankSelect.value !== 'drum' && bankSelect.value !== 'sfxkit';
+  el('drum-kit-hint').hidden = bankSelect.value !== 'drum' && bankSelect.value !== 'sfxkit' && bankSelect.value !== 'userKit';
 }
 
 // User Voice/User Kit are loaded from .qyvoice/.qykit files rather than
@@ -272,6 +280,25 @@ function applyVoiceToPart(part, voice) {
     } catch (err) {
       statusEl.textContent = `Error: ${err.message}`;
     }
+  }
+}
+
+// Selecting a Drum Kit/SFX Kit voice for a Ds1/Ds2/Ds3 slot can't go through
+// applyVoiceToPart above - that's Part-addressed, and there's no reliable
+// way to know which Part (if any) has its Rcv Channel pointed at the Ds
+// slot's fixed Channel (Ds1->1, Ds2->2, Ds3->3 - see README.md). Sending
+// plain real-time MIDI Bank Select (CC0/CC32) + Program Change directly on
+// that Channel instead matches exactly what turning the datawheel on the
+// device's own front panel produces (see handleIncomingVoiceChange, which
+// listens for this same message shape), so it reaches whatever's actually
+// listening on that Channel without needing to guess a Part.
+function sendVoiceSelectToChannel(channel, voice) {
+  try {
+    link.send(new Uint8Array([0xb0 | channel, 0, voice.bankMsb]));
+    link.send(new Uint8Array([0xb0 | channel, 32, voice.bankLsb]));
+    link.send(new Uint8Array([0xc0 | channel, voice.program - 1]));
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
   }
 }
 
@@ -451,6 +478,22 @@ const KIT_PUSH_WARNING = "This briefly plays through every note in the kit to re
 // parameters go out.
 const NOTE_TRIGGER_MS = 30;
 
+// Loading a saved User Kit/kit preset only ever pushed its per-note Drum
+// Setup Parameter Change data, deliberately never a voice select - that
+// avoided an old bug where re-selecting a voice reset a channel's Drum
+// Setup memory and raced the freshly-pushed data (see git history). But
+// that meant loading only "worked" if the device already happened to be on
+// the right kit for that Ds slot already - unlike pushing the same kit as a
+// plain Voice Browser entry, which does select the voice and reportedly
+// works correctly. sendVoiceSelectToChannel (added later) sends real-time
+// MIDI directly on the exact numeric Channel rather than hoping a Part's
+// Rcv Channel lines up with it, which is what the old bug actually traced
+// back to - so selecting the voice first here, then waiting this long
+// before pushing notes (giving the device's own reset time to settle),
+// should get the same reliable behavior without the old race. Unverified
+// against real hardware - the exact settle time may need adjusting.
+const VOICE_SETTLE_MS = 80;
+
 // Pushes a saved User Kit snapshot's note parameters live to the device on
 // one channel - separate from loadKitParamsIntoStore (which just updates
 // the app's own state) so a caller with no live output selected still gets
@@ -509,9 +552,18 @@ function renderUserVoiceList() {
     const li = document.createElement('li');
     li.dataset.key = key;
     if (key === selectedVoiceKey) li.classList.add('selected');
-    li.innerHTML = `<span class="preset-toggle-spacer"></span><span>${escapeHtml(entry.name)}</span>`;
-    li.addEventListener('click', async () => {
+    li.innerHTML = `<span class="preset-toggle-spacer"></span><span>${escapeHtml(entry.name)}</span>` +
+      `<button type="button" class="push-voice-btn">Push</button>`;
+    li.addEventListener('click', () => {
+      selectedVoiceKey = key;
+      selectedVoiceLabel = entry.name;
+      renderVoiceList();
+    });
+    li.querySelector('.push-voice-btn').addEventListener('click', async (evt) => {
+      evt.stopPropagation();
       if (entry.parts) {
+        const ok = await showConfirm('Are you sure?', confirmApplyMessage(entry.name, 'all 32 Multi Part parts'), 'Apply', { html: true });
+        if (!ok) return;
         showProgress(`Loading ${entry.name}`, 'This applies all 32 Multi Part parts - avoid touching the QY70/QY100 until it finishes.');
         try {
           await applyUserVoiceAllParts(entry.parts, updateProgress);
@@ -529,6 +581,8 @@ function renderUserVoiceList() {
         // started capturing all 32 parts at once) still apply to whichever
         // Part is picked in "Apply to" above.
         const part = Number(voicePartSelect.value);
+        const ok = await showConfirm('Are you sure?', confirmApplyMessage(entry.name, partLabel(part)), 'Apply', { html: true });
+        if (!ok) return;
         try {
           applyUserVoiceParamsToPart(part, entry.params);
         } catch (err) {
@@ -552,28 +606,47 @@ function renderUserKitList() {
     const li = document.createElement('li');
     li.dataset.key = key;
     if (key === selectedVoiceKey) li.classList.add('selected');
-    li.innerHTML = `<span class="preset-toggle-spacer"></span><span>${escapeHtml(entry.name)}</span>`;
-    li.addEventListener('click', async () => {
+    li.innerHTML = `<span class="preset-toggle-spacer"></span><span>${escapeHtml(entry.name)}</span>` +
+      `<button type="button" class="push-voice-btn">Push</button>`;
+    li.addEventListener('click', () => {
+      selectedVoiceKey = key;
+      selectedVoiceLabel = entry.name;
+      const kitIndex = drumKits.findIndex((k) => k.bankMsb === entry.voice.bankMsb && k.program === entry.voice.program);
+      selectedVoiceObj = kitIndex === -1 ? null : drumKits[kitIndex];
+      renderVoiceList();
+      if (kitIndex !== -1) {
+        sectionSelect.value = 'drumSetup';
+        drumkitSelect.value = kitIndex;
+        populateNoteSelect();
+        renderParamPanel();
+      }
+    });
+    li.querySelector('.push-voice-btn').addEventListener('click', async (evt) => {
+      evt.stopPropagation();
       const kitIndex = drumKits.findIndex((k) => k.bankMsb === entry.voice.bankMsb && k.program === entry.voice.program);
       if (kitIndex === -1) {
         statusEl.textContent = 'Error: this kit voice isn\'t in the current voice list.';
         return;
       }
+      const ok = await showConfirm('Are you sure?', confirmApplyToHighlightedTrackMessage(entry.name), 'Apply', { html: true });
+      if (!ok) return;
       const kit = drumKits[kitIndex];
       loadKitParamsIntoStore(`${kit.bankMsb}:${kit.program}`, entry.notes);
-      // This does NOT select the kit voice onto any track - a Bank
-      // Select/Program Number sent to a channel would also reassign
-      // whichever Song track sits on that channel to this kit voice, which
-      // isn't wanted here (and would also reset that channel's Drum Setup
-      // memory to factory defaults, racing the very data being pushed
-      // right after). Ds1/Ds2/Ds3 are picked on the device itself, same as
-      // a manual knob edit - this only ever sends Parameter Change data,
-      // never a voice change, so it can't disturb whatever's actually
-      // playing on any track.
-      const ch = await promptDsSlotChannel('Which Drum Setup slot are you loading to?');
+      const ch = await promptDsSlotChannel('Which Drum Setup slot are you loading to?', {
+        kitTypeLabel: entry.voice.bank === 'sfxkit' ? 'SFX' : 'drum',
+      });
       if (ch === null) return;
       showProgress(`Loading ${entry.name}`, KIT_PUSH_WARNING);
       try {
+        // Select the kit's own voice on this Ds slot's Channel first (same
+        // real-time MIDI mechanism the plain Voice Browser entry uses, not
+        // Part-addressed XG SysEx - see VOICE_SETTLE_MS above for why this
+        // is safe here where it wasn't before), then wait for the device's
+        // own voice-change reset to settle before pushing the saved notes -
+        // otherwise this only actually "loads" the kit when the device
+        // already happens to be on it already.
+        sendVoiceSelectToChannel(ch, entry.voice);
+        await new Promise((resolve) => setTimeout(resolve, VOICE_SETTLE_MS));
         await sendKitNotesToChannel(0x30 + ch, entry.notes, updateProgress);
       } catch (err) {
         statusEl.textContent = `Error: ${err.message}`;
@@ -626,7 +699,8 @@ function renderVoiceList() {
       ? `<button type="button" class="preset-toggle" title="${voicePresets.length} preset${voicePresets.length > 1 ? 's' : ''}">${expanded ? '▾' : '▸'}</button>`
       : '<span class="preset-toggle-spacer"></span>';
     li.innerHTML = `${toggle}<span>${escapeHtml(voiceDisplayName(v))}${badge}</span>` +
-      `<span class="voice-meta">${escapeHtml(bankLabel(v.bank))} P${v.program} B${v.bankLsb}</span>`;
+      `<span class="voice-meta">${escapeHtml(bankLabel(v.bank))} P${v.program} B${v.bankLsb}</span>` +
+      `<button type="button" class="push-voice-btn">Push</button>`;
     if (voicePresets.length) {
       li.querySelector('.preset-toggle').addEventListener('click', (evt) => {
         evt.stopPropagation();
@@ -636,13 +710,6 @@ function renderVoiceList() {
       });
     }
     li.addEventListener('click', () => {
-      const part = Number(voicePartSelect.value);
-      try {
-        resetPartToDefaults(part);
-        applyVoiceToPart(part, v);
-      } catch (err) {
-        statusEl.textContent = `Error: ${err.message}`;
-      }
       selectedVoiceKey = key;
       selectedVoiceLabel = voiceDisplayName(v);
       selectedVoiceObj = v;
@@ -655,9 +722,57 @@ function renderVoiceList() {
           populateNoteSelect();
           renderParamPanel();
         }
-      } else {
-        refreshIfViewingPart(part);
       }
+    });
+    li.querySelector('.push-voice-btn').addEventListener('click', async (evt) => {
+      evt.stopPropagation();
+      const name = voiceDisplayName(v);
+      let part;
+      if (v.bank === 'drum' || v.bank === 'sfxkit') {
+        const ok = await showConfirm('Are you sure?', confirmApplyMessage(name, partLabel(Number(voicePartSelect.value))), 'Apply', { html: true });
+        if (!ok) return;
+        const ch = await promptDsSlotChannel('Which Drum Setup slot are you selecting this kit for?', {
+          allowOtherTrack: true,
+          otherTrackLabel: v.bank === 'sfxkit' ? 'Sfx' : 'Dr',
+          kitTypeLabel: v.bank === 'sfxkit' ? 'SFX' : 'drum',
+        });
+        if (ch === null) return;
+        if (ch === 'other') {
+          // Falls through to the regular Part-addressed apply below, same as
+          // any non-drum voice.
+          part = Number(voicePartSelect.value);
+        } else {
+          sendVoiceSelectToChannel(ch, v);
+          selectedVoiceKey = key;
+          selectedVoiceLabel = name;
+          selectedVoiceObj = v;
+          renderVoiceList();
+          const kitIndex = drumKits.findIndex((k) => k.bankMsb === v.bankMsb && k.program === v.program);
+          if (kitIndex !== -1) {
+            sectionSelect.value = 'drumSetup';
+            drumkitSelect.value = kitIndex;
+            populateNoteSelect();
+            renderParamPanel();
+          }
+          await showAlert('Kit selected', `${name} has been selected for Ds${ch + 1} (Channel ${ch + 1}). Navigate to Ds${ch + 1} on your device to hear it.`);
+          return;
+        }
+      } else {
+        part = Number(voicePartSelect.value);
+        const ok = await showConfirm('Are you sure?', confirmApplyMessage(name, partLabel(part)), 'Apply', { html: true });
+        if (!ok) return;
+      }
+      try {
+        resetPartToDefaults(part);
+        applyVoiceToPart(part, v);
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+      }
+      selectedVoiceKey = key;
+      selectedVoiceLabel = name;
+      selectedVoiceObj = v;
+      renderVoiceList();
+      refreshIfViewingPart(part);
     });
     voiceListEl.appendChild(li);
 
@@ -668,9 +783,60 @@ function renderVoiceList() {
         presetLi.className = 'preset-item';
         presetLi.dataset.key = presetKey;
         if (presetKey === selectedVoiceKey) presetLi.classList.add('selected');
-        presetLi.innerHTML = `<span>${escapeHtml(preset.name)}</span>`;
-        presetLi.addEventListener('click', async () => {
-          if (preset.parts) {
+        presetLi.innerHTML = `<span>${escapeHtml(preset.name)}</span><button type="button" class="push-voice-btn">Push</button>`;
+        presetLi.addEventListener('click', () => {
+          selectedVoiceKey = presetKey;
+          selectedVoiceLabel = preset.name;
+          if (preset.notes) selectedVoiceObj = v;
+          renderVoiceList();
+          if (preset.notes) {
+            const kitIndex = drumKits.findIndex((k) => k.bankMsb === v.bankMsb && k.program === v.program);
+            if (kitIndex !== -1) {
+              sectionSelect.value = 'drumSetup';
+              drumkitSelect.value = kitIndex;
+              populateNoteSelect();
+              renderParamPanel();
+            }
+          }
+        });
+        presetLi.querySelector('.push-voice-btn').addEventListener('click', async (evt) => {
+          evt.stopPropagation();
+          if (preset.notes) {
+            const kitIndex = drumKits.findIndex((k) => k.bankMsb === v.bankMsb && k.program === v.program);
+            if (kitIndex === -1) { statusEl.textContent = 'Error: this kit voice isn\'t in the current voice list.'; return; }
+            const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, partLabel(Number(voicePartSelect.value))), 'Apply', { html: true });
+            if (!ok) return;
+            const kitKey = `${v.bankMsb}:${v.program}`;
+            loadKitParamsIntoStore(kitKey, preset.notes);
+            const ch = await promptDsSlotChannel('Which Drum Setup slot are you loading to?', {
+              kitTypeLabel: v.bank === 'sfxkit' ? 'SFX' : 'drum',
+            });
+            if (ch === null) return;
+            showProgress(`Loading ${preset.name}`, KIT_PUSH_WARNING);
+            try {
+              // Select the preset's own kit voice first, then settle - see
+              // VOICE_SETTLE_MS above.
+              sendVoiceSelectToChannel(ch, v);
+              await new Promise((resolve) => setTimeout(resolve, VOICE_SETTLE_MS));
+              await sendKitNotesToChannel(0x30 + ch, preset.notes, updateProgress);
+            } catch (err) {
+              statusEl.textContent = `Error: ${err.message}`;
+            } finally {
+              hideProgress();
+            }
+            selectedVoiceKey = presetKey;
+            selectedVoiceLabel = preset.name;
+            selectedVoiceObj = v;
+            renderVoiceList();
+            sectionSelect.value = 'drumSetup';
+            drumkitSelect.value = kitIndex;
+            populateNoteSelect();
+            renderParamPanel();
+            await showAlert('Kit loaded', `Ds${ch + 1}'s parameters have been set to ${preset.name}. Navigate to Ds${ch + 1} on any track on your device to hear it.`);
+            return;
+          } else if (preset.parts) {
+            const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, 'all 32 Multi Part parts'), 'Apply', { html: true });
+            if (!ok) return;
             showProgress(`Applying ${preset.name}`, 'This applies all 32 Multi Part parts - avoid touching the QY70/QY100 until it finishes.');
             try {
               await applyPresetAllParts(preset, updateProgress);
@@ -681,8 +847,11 @@ function renderVoiceList() {
             }
             renderParamPanel();
           } else {
+            const part = Number(voicePartSelect.value);
+            const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, partLabel(part)), 'Apply', { html: true });
+            if (!ok) return;
             try {
-              applyPreset(preset, Number(voicePartSelect.value));
+              applyPreset(preset, part);
             } catch (err) {
               statusEl.textContent = `Error: ${err.message}`;
             }
@@ -697,6 +866,37 @@ function renderVoiceList() {
   }
   updateSaveButtonsState();
 }
+
+// Parts 25-32 (the "Hidden" group in populatePartSelect, 0-indexed 24-31)
+// have no real bearing on Drum Setup's Ds1/Ds2/Ds3 slots or any live channel
+// (see promptDsSlotChannel/README.md) - a Drum Kit/SFX Kit/User Kit picked
+// for one of them can't ever be selected for a Ds slot or a channel that
+// matters, so those banks are removed from the dropdown entirely there
+// rather than letting the click end up going nowhere useful. "User Voice"
+// is never removed, so it doubles as the stable insertion point these are
+// restored relative to.
+const KIT_ONLY_BANKS = ['drum', 'sfxkit', 'userKit'];
+const kitOnlyBankOptions = Object.fromEntries(
+  KIT_ONLY_BANKS.map((bank) => [bank, bankSelect.querySelector(`option[value="${bank}"]`)]));
+const userVoiceOption = bankSelect.querySelector('option[value="userVoice"]');
+function isHiddenPart(part) {
+  return part >= 24 && part <= 31;
+}
+function updateBankSelectAvailability() {
+  const hidden = isHiddenPart(Number(voicePartSelect.value));
+  if (hidden) {
+    if (KIT_ONLY_BANKS.includes(bankSelect.value)) {
+      bankSelect.value = 'normal';
+      bankSelect.dispatchEvent(new Event('change'));
+    }
+    for (const bank of KIT_ONLY_BANKS) kitOnlyBankOptions[bank].remove();
+  } else {
+    if (!kitOnlyBankOptions.drum.isConnected) bankSelect.insertBefore(kitOnlyBankOptions.drum, userVoiceOption);
+    if (!kitOnlyBankOptions.sfxkit.isConnected) bankSelect.insertBefore(kitOnlyBankOptions.sfxkit, userVoiceOption);
+    if (!kitOnlyBankOptions.userKit.isConnected) bankSelect.appendChild(kitOnlyBankOptions.userKit);
+  }
+}
+voicePartSelect.addEventListener('change', updateBankSelectAvailability);
 
 // Switching banks shows a whole different list, so whatever was selected
 // before almost never still applies (Save Voice/Kit would otherwise stay
@@ -718,34 +918,71 @@ searchBox.addEventListener('input', renderVoiceList);
 // No "which Part" prompt - captures every one of the 32 Multi Part parts in
 // one file, so this is a full Multi Part snapshot rather than a single
 // instrument sound.
+// Same Song Mode/Pattern Mode/Hidden groups as "Apply to" above, plus an
+// "All 32 Parts" choice up front - lets Save Voice capture either a single
+// edited Part (giving Load Voice/Push its own Part picker again, same as a
+// legacy single-part preset) or a full multitimbral snapshot.
+function populateSaveVoiceTargetSelect(selectEl) {
+  populatePartSelect(selectEl);
+  const allOption = document.createElement('option');
+  allOption.value = 'all';
+  allOption.textContent = 'All 32 Parts';
+  selectEl.insertBefore(allOption, selectEl.firstChild);
+}
+
 saveVoiceBtn.addEventListener('click', async () => {
   const name = selectedVoiceLabel;
-  const parts = {};
-  for (let part = 0; part < 32; part++) {
-    parts[part] = snapshotPartVoice(part);
+  const target = await showSaveAsDialog({
+    title: 'Select Part to Save',
+    targetLabelText: 'Part',
+    populateTarget: populateSaveVoiceTargetSelect,
+    defaultTarget: voicePartSelect.value,
+  });
+  if (target === null) return;
+  let voiceFile;
+  let savedDesc;
+  if (target === 'all') {
+    const parts = {};
+    for (let part = 0; part < 32; part++) {
+      parts[part] = snapshotPartVoice(part);
+    }
+    voiceFile = { format: 'qyvoice', version: 2, savedAt: new Date().toISOString(), name, parts };
+    savedDesc = 'all 32 Parts';
+  } else {
+    const part = Number(target);
+    voiceFile = { format: 'qyvoice', version: 1, savedAt: new Date().toISOString(), name, params: snapshotPartVoice(part) };
+    savedDesc = partLabel(part);
   }
-  const voiceFile = {
-    format: 'qyvoice', version: 2, savedAt: new Date().toISOString(), name, parts,
-  };
   try {
     const savedName = await writeFile(`${name}.qyvoice`, JSON.stringify(voiceFile, null, 1), 'QY70/QY100 Voice', '.qyvoice');
-    await showAlert('Voice saved', `Saved all 32 Parts as ${savedName}.`);
+    await showAlert('Voice saved', `Saved ${savedDesc} as ${savedName}.`);
   } catch (err) {
     if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
   }
 });
 
-async function loadVoiceFile(text, filename) {
+// A short random suffix keeps ids unique even when several files load in
+// the same millisecond (batch-loading multiple .qyvoice/.qykit files at
+// once - see loadVoiceFiles/loadKitFiles below - can easily hit that).
+function newLoadedFileId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// silent skips this file's own list refresh/alert - used by loadVoiceFiles
+// to load a batch and only refresh/report once, at the end. Returns
+// whether the voice was actually loaded (false on a parse error or a
+// cancelled overwrite).
+async function loadVoiceFile(text, filename, { silent = false } = {}) {
   let data;
   try {
     data = JSON.parse(text);
   } catch {
     statusEl.textContent = 'Error: not a valid .qyvoice file.';
-    return;
+    return false;
   }
   if (data?.format !== 'qyvoice' || (!data.parts && !data.params)) {
     statusEl.textContent = 'Error: not a valid .qyvoice file.';
-    return;
+    return false;
   }
   const name = filename?.replace(/\.qyvoice$/i, '') || data.name || 'User Voice';
   const existingIndex = userVoices.findIndex((v) => v.name === name);
@@ -755,29 +992,53 @@ async function loadVoiceFile(text, filename) {
       `A voice named "${name}" is already in User Voice. Overwrite it, or cancel to abort loading?`,
       'Overwrite'
     );
-    if (!overwrite) return;
+    if (!overwrite) return false;
     userVoices.splice(existingIndex, 1);
   }
   // data.parts is the current (all-32-parts) format; data.params is the
   // older single-part format, kept loadable for files saved before Save
   // Voice started capturing everything at once.
   userVoices.push(data.parts
-    ? { id: `${Date.now()}`, name, parts: data.parts }
-    : { id: `${Date.now()}`, name, params: data.params });
-  bankSelect.value = 'userVoice';
-  refreshCategoryOptions();
-  renderVoiceList();
-  await showAlert('Voice loaded', `Loaded ${filename || 'voice'} into User Voice.`);
+    ? { id: newLoadedFileId(), name, parts: data.parts }
+    : { id: newLoadedFileId(), name, params: data.params });
+  if (!silent) {
+    bankSelect.value = 'userVoice';
+    refreshCategoryOptions();
+    renderVoiceList();
+    await showAlert('Voice loaded', `Loaded ${filename || 'voice'} into User Voice.`);
+  }
+  return true;
+}
+
+// Loads one or more .qyvoice files (a multi-select file picker can hand
+// over several at once) - each file still gets its own overwrite-conflict
+// prompt if its name collides, but the voice list only re-renders and
+// reports a result once, at the end, instead of once per file.
+async function loadVoiceFiles(files) {
+  if (files.length === 1) {
+    await loadVoiceFile(await files[0].text(), files[0].name);
+    return;
+  }
+  let loaded = 0;
+  for (const file of files) {
+    if (await loadVoiceFile(await file.text(), file.name, { silent: true })) loaded++;
+  }
+  if (loaded > 0) {
+    bankSelect.value = 'userVoice';
+    refreshCategoryOptions();
+    renderVoiceList();
+  }
+  await showAlert('Voices loaded', `Loaded ${loaded} of ${files.length} voice${files.length === 1 ? '' : 's'} into User Voice.`);
 }
 
 loadVoiceBtn.addEventListener('click', async () => {
   try {
     if (window.showOpenFilePicker) {
-      const [handle] = await window.showOpenFilePicker({
+      const handles = await window.showOpenFilePicker({
+        multiple: true,
         types: [{ description: 'QY70/QY100 Voice', accept: { 'application/json': ['.qyvoice'] } }],
       });
-      const file = await handle.getFile();
-      await loadVoiceFile(await file.text(), handle.name);
+      await loadVoiceFiles(await Promise.all(handles.map((h) => h.getFile())));
     } else {
       voiceFileInput.click();
     }
@@ -787,9 +1048,9 @@ loadVoiceBtn.addEventListener('click', async () => {
 });
 
 voiceFileInput.addEventListener('change', async () => {
-  const file = voiceFileInput.files[0];
+  const files = [...voiceFileInput.files];
   voiceFileInput.value = '';
-  if (file) await loadVoiceFile(await file.text(), file.name);
+  if (files.length) await loadVoiceFiles(files);
 });
 
 // Lists the drum/SFX kit voices from the Parameters > Drum Setup kit picker
@@ -803,6 +1064,10 @@ function populateDrumKitVoiceSelect(selectEl, bank) {
 }
 
 saveKitBtn.addEventListener('click', async () => {
+  // Selecting (not pushing) a User Kit whose voice isn't in the current
+  // voice list (e.g. QY70-only view) leaves selectedVoiceObj unset even
+  // though the button's enabled by bank prefix alone - guard against that.
+  if (!selectedVoiceObj) { statusEl.textContent = 'Error: this kit voice isn\'t in the current voice list.'; return; }
   const kitBank = selectedVoiceObj.bank;
   const target = await showSaveAsDialog({
     title: 'Select Drum Kit to Save',
@@ -828,17 +1093,19 @@ saveKitBtn.addEventListener('click', async () => {
   }
 });
 
-async function loadKitFile(text, filename) {
+// silent skips this file's own list refresh/alert - see loadVoiceFile above
+// for why. Returns whether the kit was actually loaded.
+async function loadKitFile(text, filename, { silent = false } = {}) {
   let data;
   try {
     data = JSON.parse(text);
   } catch {
     statusEl.textContent = 'Error: not a valid .qykit file.';
-    return;
+    return false;
   }
   if (data?.format !== 'qykit' || !data.notes || !data.voice) {
     statusEl.textContent = 'Error: not a valid .qykit file.';
-    return;
+    return false;
   }
   const name = filename?.replace(/\.qykit$/i, '') || data.name || 'User Kit';
   const existingIndex = userKits.findIndex((k) => k.name === name);
@@ -848,24 +1115,45 @@ async function loadKitFile(text, filename) {
       `A kit named "${name}" is already in User Kit. Overwrite it, or cancel to abort loading?`,
       'Overwrite'
     );
-    if (!overwrite) return;
+    if (!overwrite) return false;
     userKits.splice(existingIndex, 1);
   }
-  userKits.push({ id: `${Date.now()}`, name, voice: data.voice, notes: data.notes });
-  bankSelect.value = 'userKit';
-  refreshCategoryOptions();
-  renderVoiceList();
-  await showAlert('Kit loaded', `Loaded ${filename || 'kit'} into User Kit.`);
+  userKits.push({ id: newLoadedFileId(), name, voice: data.voice, notes: data.notes });
+  if (!silent) {
+    bankSelect.value = 'userKit';
+    refreshCategoryOptions();
+    renderVoiceList();
+    await showAlert('Kit loaded', `Loaded ${filename || 'kit'} into User Kit.`);
+  }
+  return true;
+}
+
+// Loads one or more .qykit files at once - see loadVoiceFiles above.
+async function loadKitFiles(files) {
+  if (files.length === 1) {
+    await loadKitFile(await files[0].text(), files[0].name);
+    return;
+  }
+  let loaded = 0;
+  for (const file of files) {
+    if (await loadKitFile(await file.text(), file.name, { silent: true })) loaded++;
+  }
+  if (loaded > 0) {
+    bankSelect.value = 'userKit';
+    refreshCategoryOptions();
+    renderVoiceList();
+  }
+  await showAlert('Kits loaded', `Loaded ${loaded} of ${files.length} kit${files.length === 1 ? '' : 's'} into User Kit.`);
 }
 
 loadKitBtn.addEventListener('click', async () => {
   try {
     if (window.showOpenFilePicker) {
-      const [handle] = await window.showOpenFilePicker({
+      const handles = await window.showOpenFilePicker({
+        multiple: true,
         types: [{ description: 'QY70/QY100 Drum Kit', accept: { 'application/json': ['.qykit'] } }],
       });
-      const file = await handle.getFile();
-      await loadKitFile(await file.text(), handle.name);
+      await loadKitFiles(await Promise.all(handles.map((h) => h.getFile())));
     } else {
       kitFileInput.click();
     }
@@ -875,19 +1163,23 @@ loadKitBtn.addEventListener('click', async () => {
 });
 
 kitFileInput.addEventListener('change', async () => {
-  const file = kitFileInput.files[0];
+  const files = [...kitFileInput.files];
   kitFileInput.value = '';
-  if (file) await loadKitFile(await file.text(), file.name);
+  if (files.length) await loadKitFiles(files);
 });
 
 const confirmDialog = el('confirm-dialog');
 const confirmDialogOk = el('confirm-dialog-ok');
 const confirmDialogCancel = el('confirm-dialog-cancel');
 
-function showConfirm(title, message, okLabel = 'Send') {
+// message is plain text by default; pass html: true to instead set it via
+// innerHTML (e.g. for <strong> emphasis) - callers doing that must escape
+// any dynamic text themselves (see escapeHtml) since it's not double-escaped.
+function showConfirm(title, message, okLabel = 'Send', { html = false } = {}) {
   return new Promise((resolve) => {
     el('confirm-dialog-title').textContent = title;
-    el('confirm-dialog-message').textContent = message;
+    if (html) el('confirm-dialog-message').innerHTML = message;
+    else el('confirm-dialog-message').textContent = message;
     confirmDialogCancel.hidden = false;
     confirmDialogOk.textContent = okLabel;
     const onOk = () => settle(true);
@@ -907,6 +1199,27 @@ function showConfirm(title, message, okLabel = 'Send') {
     confirmDialog.addEventListener('click', onBackdropClick);
     confirmDialog.showModal();
   });
+}
+
+// Builds the "Apply <name> to <target>?" message showConfirm's callers use
+// before applying a voice/preset, with both the name and target bolded to
+// stand out - name is untrusted (can come from an uploaded file's name), so
+// it's escaped same as anywhere else it's shown as HTML. target is omitted
+// for the kit flows, where it isn't decided yet (Ds1/Ds2/Ds3/Dr/Sfx is asked
+// in a separate prompt right after this one).
+function confirmApplyMessage(name, target) {
+  const boldName = `<strong>${escapeHtml(name)}</strong>`;
+  return target ? `Apply ${boldName} to <strong>${escapeHtml(target)}</strong>?` : `Apply ${boldName}?`;
+}
+
+// User Kit pushes always land wherever the Ds slot resolves to on the
+// device itself (see promptDsSlotChannel) - unlike a plain voice, there's
+// no "Apply to" Part fallback, so the confirm wording says so directly
+// instead of naming a Part that was never actually the target.
+function confirmApplyToHighlightedTrackMessage(name) {
+  const boldName = `<strong>${escapeHtml(name)}</strong>`;
+  return `Apply ${boldName} to currently highlighted track on the QY70/QY100?\n\n` +
+    '<span class="confirm-note"><strong>Note:</strong> User Kits are applied to whichever track is currently highlighted on the device.</span>';
 }
 
 // A plain acknowledgement popup (OK only, no Cancel) - reuses the same
@@ -944,20 +1257,32 @@ const saveAsCancel = el('save-as-cancel');
 // A prompt with just a single dropdown (Part for Save Voice, Drum Kit for
 // Save Kit) - picks what gets captured before the browser's own native save
 // dialog (if available) opens to let the user name/place the file.
-function showSaveAsDialog({ title, targetLabelText, populateTarget, defaultTarget }) {
+function showSaveAsDialog({ title, targetLabelText, populateTarget, defaultTarget, message }) {
   return new Promise((resolve) => {
     saveAsTitle.textContent = title;
     saveAsTargetLabelText.textContent = targetLabelText;
     populateTarget(saveAsTargetSelect);
     saveAsTargetSelect.value = defaultTarget;
+    const messageEl = el('save-as-message');
+    // message may be a fixed string, or a function of the target select's
+    // current value - the latter lets the explanation change live as the
+    // user switches targets (see promptDsSlotChannel's Dr option).
+    function refreshMessage() {
+      const text = typeof message === 'function' ? message(saveAsTargetSelect.value) : message;
+      messageEl.textContent = text || '';
+      messageEl.hidden = !text;
+    }
+    refreshMessage();
     const onOk = () => settle(saveAsTargetSelect.value);
     const onCancel = () => settle(null);
     const onBackdropClick = (evt) => { if (evt.target === saveAsDialog) settle(null); };
+    const onTargetChange = () => refreshMessage();
     function settle(result) {
       saveAsOk.removeEventListener('click', onOk);
       saveAsCancel.removeEventListener('click', onCancel);
       saveAsDialog.removeEventListener('cancel', onCancel);
       saveAsDialog.removeEventListener('click', onBackdropClick);
+      saveAsTargetSelect.removeEventListener('change', onTargetChange);
       saveAsDialog.close();
       resolve(result);
     }
@@ -965,6 +1290,7 @@ function showSaveAsDialog({ title, targetLabelText, populateTarget, defaultTarge
     saveAsCancel.addEventListener('click', onCancel);
     saveAsDialog.addEventListener('cancel', onCancel);
     saveAsDialog.addEventListener('click', onBackdropClick);
+    saveAsTargetSelect.addEventListener('change', onTargetChange);
     saveAsDialog.showModal();
   });
 }
@@ -977,17 +1303,32 @@ function showSaveAsDialog({ title, targetLabelText, populateTarget, defaultTarge
 // itself), so this asks directly rather than guessing from the connect
 // bar's Channel selector. Returns the Channel (0-indexed) or null if
 // canceled.
-async function promptDsSlotChannel(title) {
+// allowOtherTrack adds a 4th "Dr" choice, only meaningful for a plain voice
+// select (there's no per-note data to push, so it's free to target any Part
+// instead of one of the 3 hardwired Ds channels) - Push Parameters/Load Kit
+// callers push real Drum Setup parameter data, which only a genuine Ds1/2/3
+// channel can receive, so they never pass this.
+async function promptDsSlotChannel(title, { allowOtherTrack = false, otherTrackLabel = 'Dr', kitTypeLabel = 'drum' } = {}) {
+  const EDITABLE_PARAGRAPH = `For editable ${kitTypeLabel} kits, navigate to Ds1 or Ds2 (in Song Mode), or Ds3 (in Pattern Mode) on the QY70/QY100's target track part.`;
+  const NON_EDITABLE_PARAGRAPH = `For non-editable ${kitTypeLabel} kits, navigate to ${otherTrackLabel} on the QY70/QY100's target track part.`;
+  const message = [
+    ...(allowOtherTrack ? [NON_EDITABLE_PARAGRAPH, EDITABLE_PARAGRAPH] : [EDITABLE_PARAGRAPH]),
+    'This must be done before proceeding.',
+  ].join('\n\n');
   const dsSlot = await showSaveAsDialog({
     title,
-    targetLabelText: 'Drum Setup slot',
+    targetLabelText: kitTypeLabel === 'SFX' ? 'Drum Setup/SFX slot' : 'Drum Setup slot',
     populateTarget: (selectEl) => {
-      selectEl.innerHTML = ['Ds1 (Song Mode) - Channel 1', 'Ds2 (Song Mode) - Channel 2', 'Ds3 (Pattern Mode) - Channel 3']
-        .map((label, i) => `<option value="${i}">${label}</option>`).join('');
+      const options = ['Ds1 (Song Mode) - Channel 1', 'Ds2 (Song Mode) - Channel 2', 'Ds3 (Pattern Mode) - Channel 3'];
+      if (allowOtherTrack) options.push(`${otherTrackLabel} - Other track (not live-editable)`);
+      selectEl.innerHTML = options.map((label, i) => `<option value="${i}">${label}</option>`).join('');
     },
     defaultTarget: '0',
+    message,
   });
-  return dsSlot === null ? null : Number(dsSlot);
+  if (dsSlot === null) return null;
+  const idx = Number(dsSlot);
+  return allowOtherTrack && idx === 3 ? 'other' : idx;
 }
 
 const progressDialog = el('progress-dialog');
@@ -1064,6 +1405,8 @@ const drumkitSelect = el('drumkit-select');
 const noteSelect = el('note-select');
 const drumSetupHint = el('drum-setup-hint');
 const pushDrumParamsBtn = el('push-drum-params-btn');
+const pushParamsBtn = el('push-params-btn');
+const pushAllPartsBtn = el('push-all-parts-btn');
 const paramListEl = el('param-list');
 let currentSectionResetFns = [];
 
@@ -1104,13 +1447,26 @@ function noteName(n) {
   return `${NOTE_NAMES[n % 12]}${octave}`;
 }
 
+// Pattern Mode's 8 parts (17-24) are the QY70/QY100's fixed Drum1/Drum2/
+// Phrase-Chord/Bass/Chord1-4 pattern tracks, in this order - unlike Song
+// Mode's 16 general-purpose parts, so labeling them helps identify which
+// pattern track "Apply to" is targeting.
+const PATTERN_MODE_PART_LABELS = ['D1', 'D2', 'PC', 'BA', 'C1', 'C2', 'C3', 'C4'];
+
+// Matches the "Part N - D1" style labeling populatePartSelect gives Pattern
+// Mode's options, for reuse in confirmation dialog wording.
+function partLabel(part) {
+  if (part >= 16 && part <= 23) return `Part ${part + 1} - ${PATTERN_MODE_PART_LABELS[part - 16]}`;
+  return `Part ${part + 1}`;
+}
+
 function populatePartSelect(selectEl) {
-  const group = (label, from, to) =>
+  const group = (label, from, to, labels) =>
     `<optgroup label="${label}">${Array.from({ length: to - from + 1 }, (_, i) =>
-      `<option value="${from + i}">Part ${from + i + 1}</option>`).join('')}</optgroup>`;
+      `<option value="${from + i}">Part ${from + i + 1}${labels ? ` - ${labels[i]}` : ''}</option>`).join('')}</optgroup>`;
   selectEl.innerHTML =
     group('Song Mode', 0, 15) +
-    group('Pattern Mode', 16, 23) +
+    group('Pattern Mode', 16, 23, PATTERN_MODE_PART_LABELS) +
     group('Hidden', 24, 31);
 }
 
@@ -1336,8 +1692,8 @@ const PARAM_INFO = {
   'Send Chorus To Reverb': 'How much of the chorus\'s output is additionally fed into the reverb, for a chorus-then-reverb effect chain.',
   'Send Variation To Reverb': 'How much of the variation effect\'s output is additionally fed into the reverb, when Variation is in System mode.',
   'Send Variation To Chorus': 'How much of the variation effect\'s output is additionally fed into the chorus, when Variation is in System mode.',
-  VariMode: 'Whether Variation acts as a shared bus effect like Reverb/Chorus (System - any part can send into it) or is patched directly into one specific part\'s signal path (Insertion - see Variation Part below).',
-  'Variation Part': 'Which part receives the Variation effect directly in its signal chain, when VariMode is set to Insertion.',
+  VariMode: 'Whether Variation acts as a shared bus effect like Reverb/Chorus (System - any part can send into it) or is patched directly into one specific part\'s signal path (Insertion - see Variation Part below). Only works in Song Mode.',
+  'Variation Part': 'Which part receives the Variation effect directly in its signal chain, when VariMode is set to Insertion. Only works in Song Mode.',
   'MW Variation Ctrl Depth': 'How much the Modulation Wheel affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
   'PB Variation Ctrl Depth': 'How much the Pitch Bend Wheel affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
   'AT Variation Ctrl Depth': 'How much Channel Aftertouch affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
@@ -1663,6 +2019,31 @@ function mergeVisualPairs(groups) {
   return merged;
 }
 
+// Every voice across every bank, grouped into <optgroup>s, for the Multi
+// Part voice picker below - built once and cached since `voices` never
+// changes after boot, unlike renderParamPanel which rebuilds its DOM on
+// every section/part switch.
+let voicePickerOptionsHtml = null;
+function voicePickerOptions() {
+  if (voicePickerOptionsHtml) return voicePickerOptionsHtml;
+  const byBank = new Map();
+  for (const v of voices) {
+    if (!byBank.has(v.bank)) byBank.set(v.bank, []);
+    byBank.get(v.bank).push(v);
+  }
+  let html = '<option value="">(no match)</option>';
+  for (const [bank, list] of byBank) {
+    html += `<optgroup label="${escapeHtml(bankLabel(bank))}">`;
+    for (const v of list) {
+      const label = escapeHtml(voiceDisplayName(v)) + (v.qy100Only ? ' [QY100]' : '');
+      html += `<option value="${v.bankMsb}:${v.bankLsb}:${v.program}">${label}</option>`;
+    }
+    html += '</optgroup>';
+  }
+  voicePickerOptionsHtml = html;
+  return html;
+}
+
 function renderParamPanel() {
   const sectionKey = sectionSelect.value;
   const section = parameters[sectionKey];
@@ -1671,6 +2052,8 @@ function renderParamPanel() {
   noteSelect.hidden = sectionKey !== 'drumSetup';
   drumSetupHint.hidden = sectionKey !== 'drumSetup';
   pushDrumParamsBtn.hidden = sectionKey !== 'drumSetup';
+  pushParamsBtn.hidden = sectionKey === 'drumSetup';
+  pushAllPartsBtn.hidden = sectionKey !== 'multiPart';
 
   const context = currentContext(sectionKey);
   const stores = paramStoresForContext(sectionKey, context);
@@ -1690,6 +2073,54 @@ function renderParamPanel() {
     if (variationPartRowEl) variationPartRowEl.classList.toggle('dimmed', isSystem);
     if (sendToReverbRowEl) sendToReverbRowEl.classList.toggle('dimmed', !isSystem);
     if (sendToChorusRowEl) sendToChorusRowEl.classList.toggle('dimmed', !isSystem);
+  }
+
+  // Multi Part's Bank Select (MSB+LSB) and Program Number are two separate
+  // rows, but together they identify one specific voice - shows that
+  // voice's name as each row's live description, refreshed from all three
+  // knobs' current values whenever any of them changes. A picker above both
+  // rows offers the same thing in reverse: pick a voice by name and have it
+  // drive the Bank Select/Program Number knobs (see below, after the groups
+  // loop builds the knobs it needs).
+  let bankSelectKnobs;
+  let bankSelectDescEl;
+  let programNumberKnob;
+  let programNumberDescEl;
+  let voicePickerSelect;
+  if (sectionKey === 'multiPart') {
+    const pickerRow = document.createElement('div');
+    pickerRow.className = 'param-row voice-picker-row';
+    // Reuses the Voice Browser's spacer class to roughly line up "Voice"
+    // under the info-icon column the rows below it have.
+    pickerRow.innerHTML = '<span class="preset-toggle-spacer"></span><span class="param-name">Voice</span>';
+    voicePickerSelect = document.createElement('select');
+    voicePickerSelect.className = 'voice-picker-select';
+    voicePickerSelect.innerHTML = voicePickerOptions();
+    voicePickerSelect.addEventListener('change', () => {
+      if (!voicePickerSelect.value || !bankSelectKnobs || !programNumberKnob) return;
+      const [bankMsb, bankLsb, program] = voicePickerSelect.value.split(':').map(Number);
+      const [msbKnob, lsbKnob] = bankSelectKnobs;
+      // Bank Select MSB/LSB don't combineSend (see the onChange comment
+      // below), so each knob has to fire its own send independently -
+      // firing only one would leave the device with a mismatched byte.
+      msbKnob.setValue(bankMsb, true);
+      lsbKnob.setValue(bankLsb, true);
+      programNumberKnob.setValue(program - 1, true);
+    });
+    pickerRow.appendChild(voicePickerSelect);
+    paramListEl.appendChild(pickerRow);
+  }
+  function refreshBankProgramVoiceName() {
+    if (!bankSelectKnobs || !programNumberKnob) return;
+    const [msbKnob, lsbKnob] = bankSelectKnobs;
+    const bankMsb = Math.round(msbKnob.getValue());
+    const bankLsb = Math.round(lsbKnob.getValue());
+    const program = Math.round(programNumberKnob.getValue()) + 1; // wire 0-127 -> voices.json 1-128
+    const match = voices.find((v) => v.bankMsb === bankMsb && v.bankLsb === bankLsb && v.program === program);
+    const text = match ? voiceDisplayName(match) : 'No matching voice';
+    if (bankSelectDescEl) bankSelectDescEl.textContent = text;
+    if (programNumberDescEl) programNumberDescEl.textContent = text;
+    if (voicePickerSelect) voicePickerSelect.value = match ? `${match.bankMsb}:${match.bankLsb}:${match.program}` : '';
   }
 
   // The generic "Reverb/Chorus/Variation Parameter N" rows mean something
@@ -1796,6 +2227,7 @@ function renderParamPanel() {
             descEl.textContent = computeEffectParamDesc(nameEl.textContent, currentEffectGroupKey, value);
           }
           if (baseName === 'VariMode') updateVariModeDimming(value);
+          if (baseName === 'Bank Select' || baseName === 'Program Number') refreshBankProgramVoiceName();
         },
         // combineSend rows (e.g. Reverb Type's MSB+LSB) are one addressable
         // unit on the wire - the device rejects a message addressed to a
@@ -1811,6 +2243,7 @@ function renderParamPanel() {
           // output selected, momentary disconnect, etc.), and Save should
           // reflect that rather than silently reverting to the old value.
           for (const s of stores) rows.forEach((r, i) => { s[r.name] = knobs[i].getValue(); });
+          if (baseName === 'Bank Select' || baseName === 'Program Number') refreshBankProgramVoiceName();
           // Ignored rows still update the store above (Save keeps whatever's
           // dialed in) but never transmit - covers a live drag/typed value
           // and Reset/Reset All alike, since both fire this same onChange.
@@ -1912,6 +2345,8 @@ function renderParamPanel() {
 
     paramListEl.appendChild(div);
 
+    if (baseName === 'Bank Select') { bankSelectKnobs = knobs; bankSelectDescEl = descEl; }
+    if (baseName === 'Program Number') { programNumberKnob = knobs[0]; programNumberDescEl = descEl; }
     if (baseName === 'VariMode') variModeKnob = knobs[0];
     if (baseName === 'Variation Part') variationPartRowEl = div;
     if (baseName === 'Send Variation To Reverb') sendToReverbRowEl = div;
@@ -1921,6 +2356,7 @@ function renderParamPanel() {
     }
   }
   refreshEffectParamNames();
+  refreshBankProgramVoiceName();
 }
 
 // ---- Save / Load (.qyparam) ----
@@ -1952,37 +2388,18 @@ function resendSectionContext(sectionKey, context, values) {
   }
 }
 
-// Resending a whole saved session can be a lot of messages (every touched
-// Multi Part part, every Drum Setup note for whatever kit's on screen), so
-// this collects each resend as a step first, then runs them one at a time,
-// yielding back to the event loop between steps (keeping the tab responsive
-// and letting a progress popup actually repaint) and reporting progress.
+// .qyparam only covers System/Reverb/Chorus/Variation - Multi Part and Drum
+// Setup are excluded (both Save/Load Parameters and the info-icon tooltip
+// next to those buttons agree on this same list).
+const QYPARAM_SECTIONS = ['system', 'reverb', 'chorus', 'variation'];
+
+// Resending a whole saved session is still several sections' worth of
+// messages, so this collects each resend as a step first, then runs them
+// one at a time, yielding back to the event loop between steps (keeping the
+// tab responsive and letting a progress popup actually repaint) and
+// reporting progress.
 async function resendAllFromState(onProgress) {
-  const steps = [];
-  for (const sectionKey of ['system', 'reverb', 'chorus', 'variation']) {
-    steps.push(() => resendSectionContext(sectionKey, {}, paramState[sectionKey]));
-  }
-  for (const partKey of Object.keys(paramState.multiPart)) {
-    steps.push(() => resendSectionContext('multiPart', { part: Number(partKey) }, paramState.multiPart[partKey]));
-  }
-  // Drum Setup values are stored per kit, not per Channel (see paramState),
-  // so there's no single Channel address to resend most of them to - a kit
-  // saved here might not currently be loaded on any Channel at all. Only the
-  // kit/Channel pairing currently on screen has a real address to resend to;
-  // the rest reappear live the next time the user views that kit on some
-  // Channel, same as any other freshly-picked context.
-  const ch = currentChannel();
-  if (ch !== 'all') {
-    const kit = drumKits[Number(drumkitSelect.value || 0)];
-    if (kit) {
-      const kitKey = `${kit.bankMsb}:${kit.program}`;
-      const [lo, hi] = parameters.drumSetup.noteRange;
-      for (let note = lo; note <= hi; note++) {
-        const values = paramState.drumSetup[`${kitKey}:${note}`];
-        if (values) steps.push(() => resendSectionContext('drumSetup', { drumHigh: 0x30 + ch, note, kitKey }, values));
-      }
-    }
-  }
+  const steps = QYPARAM_SECTIONS.map((sectionKey) => () => resendSectionContext(sectionKey, {}, paramState[sectionKey]));
   for (let i = 0; i < steps.length; i++) {
     steps[i]();
     onProgress?.(i + 1, steps.length);
@@ -1991,7 +2408,13 @@ async function resendAllFromState(onProgress) {
 }
 
 function buildPatch() {
-  return { format: 'qyparam', version: 2, savedAt: new Date().toISOString(), paramState, ignoredState };
+  const savedParamState = {};
+  const savedIgnoredState = {};
+  for (const sectionKey of QYPARAM_SECTIONS) {
+    savedParamState[sectionKey] = paramState[sectionKey];
+    savedIgnoredState[sectionKey] = ignoredState[sectionKey];
+  }
+  return { format: 'qyparam', version: 2, savedAt: new Date().toISOString(), paramState: savedParamState, ignoredState: savedIgnoredState };
 }
 
 // Returns the name actually saved under - the user can rename away from
@@ -2043,7 +2466,7 @@ async function loadPatchText(text, filename) {
   const savedAt = patch.savedAt ? new Date(patch.savedAt).toLocaleString() : 'an unknown time';
   const confirmed = await showConfirm(
     'Load parameters?',
-    `This replaces every parameter dialed in this session with the saved state (saved ${savedAt}) and sends the full state to the device now.`
+    `This replaces this session's System, Reverb, Chorus, and Variation parameters with the saved state (saved ${savedAt}) and sends it to the device now.`
   );
   if (!confirmed) return;
   Object.assign(paramState, patch.paramState || {});
@@ -2127,6 +2550,37 @@ pushDrumParamsBtn.addEventListener('click', async () => {
   await showAlert('Parameters pushed', `Pushed all of ${kitName}'s drum parameters to Ds${ch + 1} (Channel ${ch + 1}).`);
 });
 
+// System/Reverb/Chorus/Variation/Multi Part just resend whatever this app
+// currently has stored for the section/context on screen - unlike Drum
+// Setup, none of these need a note triggered first, so there's nothing more
+// to it than replaying the same sends a live knob edit would make.
+pushParamsBtn.addEventListener('click', () => {
+  const sectionKey = sectionSelect.value;
+  const context = currentContext(sectionKey);
+  const values = sectionKey === 'multiPart' ? paramState.multiPart[context.part] : paramState[sectionKey];
+  resendSectionContext(sectionKey, context, values);
+  statusEl.textContent = 'Parameters pushed.';
+});
+
+// Pushes every Multi Part part this app has any stored parameters for (same
+// "which parts have anything to push" rule resendAllFromState uses) rather
+// than just the part currently on screen.
+pushAllPartsBtn.addEventListener('click', async () => {
+  const partKeys = Object.keys(paramState.multiPart);
+  if (!partKeys.length) { statusEl.textContent = 'No Multi Part parameters to push yet.'; return; }
+  showProgress('Pushing all Multi Part parts', 'This resends every part\'s parameters - avoid touching the QY70/QY100 until it finishes.');
+  try {
+    for (let i = 0; i < partKeys.length; i++) {
+      resendSectionContext('multiPart', { part: Number(partKeys[i]) }, paramState.multiPart[partKeys[i]]);
+      updateProgress(i + 1, partKeys.length);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  } finally {
+    hideProgress();
+  }
+  statusEl.textContent = 'All parts pushed.';
+});
+
 // ---- Boot ----
 
 (async () => {
@@ -2136,6 +2590,7 @@ pushDrumParamsBtn.addEventListener('click', async () => {
   renderVoiceList();
   populatePartSelect(partSelect);
   populatePartSelect(voicePartSelect);
+  updateBankSelectAvailability();
   populateDrumkitSelect();
   populateNoteSelect();
   renderParamPanel();
