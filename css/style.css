@@ -740,3 +740,172 @@ section {
   font-size: 0.82rem;
   color: var(--muted);
 }
+
+/* ---- Responsive ----
+   The three-panel grid and the fixed-width param rows assume real
+   horizontal room. Below tablet width the grid drops to a single column
+   (Voice Browser, then Parameters, then MIDI Log); below phone width the
+   header/toolbar rows and each param row also switch from a single wide
+   line to a stacked layout so nothing gets clipped or forces horizontal
+   scrolling. */
+
+@media (max-width: 900px) {
+  main {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  /* height, not max-height: these are flex columns whose voice-list/
+     log-output child uses flex:1 + overflow-y:auto to fill the rest and
+     scroll internally. On desktop that child gets a definite height to
+     grow into because the grid stretches this section across two rows;
+     single-column mobile removes that stretch, so without an explicit
+     height here the section just shrink-wraps to its non-list content and
+     the flex:1 child collapses to 0 instead of filling/scrolling. */
+  #voice-browser {
+    grid-row: auto;
+    height: 65vh;
+  }
+
+  #log {
+    grid-column: auto;
+    height: 30vh;
+  }
+}
+
+@media (max-width: 600px) {
+  /* A tooltip popup (::after on .info-icon/.attention-icon) is anchored to
+     its icon's own position and can extend past the right edge on a narrow
+     screen - its box still counts toward the page's scrollable area even
+     while hidden (opacity/visibility, not display:none), which forced a
+     phantom horizontal scrollbar with nothing visibly overflowing. Safe to
+     clip here since every real, visible element already fits at this width. */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  header {
+    padding: 0.75rem 1rem;
+  }
+
+  main {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+  }
+
+  section {
+    padding: 0.75rem;
+  }
+
+  #connect-bar,
+  #param-file-controls,
+  #param-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #connect-bar label {
+    width: 100%;
+  }
+
+  #input-select, #output-select, #channel-select,
+  #param-controls select {
+    width: 100%;
+  }
+
+  /* Stacking these one-per-row (like the rest of the toolbar rows above)
+     ate most of Voice Browser's height budget on its own, leaving the
+     actual voice list with no room to show anything - see the comment on
+     #voice-browser below. A 2-up grid keeps every control full-height and
+     touch-sized while using about half the vertical space. */
+  #voice-controls,
+  #voice-file-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  #voice-controls label {
+    width: 100%;
+  }
+
+  #voice-controls select, #voice-controls input {
+    width: 100%;
+  }
+
+  /* height, not max-height - see the matching comment in the 900px query
+     above for why. Voice Browser gets the biggest share on phone because
+     it's the primary panel and its list needs real room to be usable;
+     Parameters and MIDI Log are reached by scrolling the page further. */
+  #voice-browser {
+    height: 68vh;
+  }
+
+  #log {
+    height: 25vh;
+  }
+
+  /* A voice-list row's fixed pieces (toggle spacer, meta, Push button) no
+     longer fit beside a full-width name on a phone-width line, so the row
+     wraps - the meta text moves under the name (indented to align with it)
+     and the Push button moves to its own line, flush right. */
+  #voice-list li {
+    flex-wrap: wrap;
+  }
+
+  #voice-list .voice-meta {
+    margin-left: 1.6rem;
+    flex-basis: 100%;
+  }
+
+  .push-voice-btn {
+    margin-left: auto;
+  }
+
+  /* A param row's fixed-width name column plus its description and knob
+     group can't share one line below tablet width - each piece drops to
+     its own full-width line instead: name (with its info icon and the
+     Active/Ignored toggle, both small enough to stay inline with it),
+     then description, then the knob(s). */
+  .param-row {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+
+  .param-row .param-name {
+    width: auto;
+    flex: 1 1 auto;
+    order: 1;
+  }
+
+  .param-row .param-desc {
+    flex-basis: 100%;
+    order: 3;
+  }
+
+  .knob-group {
+    flex-basis: 100%;
+    margin-left: 0;
+    order: 4;
+  }
+
+  .ignore-toggle {
+    order: 2;
+    align-self: auto;
+    writing-mode: horizontal-tb;
+    transform: none;
+    width: auto;
+    padding: 0.2rem 0.5rem;
+  }
+
+  /* The tooltip popup's own box (22rem max-width) still counts toward the
+     page's scrollable area on a narrow viewport even while hidden - cap it
+     to the viewport so it can't force a horizontal scrollbar. */
+  .info-icon::after, .attention-icon::after {
+    max-width: calc(100vw - 3rem);
+  }
+}
