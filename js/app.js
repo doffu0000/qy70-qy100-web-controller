@@ -1,3 +1,8 @@
+// QY70/QY100 Web Console
+// Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+// Licensed under the GNU General Public License v3.0 or later. See LICENSE.
+// Support future development: <https://www.patreon.com/doffu>
+
 import { MidiLink } from './midi.js';
 import { buildXgSystemOn } from './sysex.js';
 import { loadVoices, filterVoices, categoriesFor, bankLabel, voiceDisplayName } from './voices.js';
@@ -109,9 +114,27 @@ const kitFileInput = el('kit-file-input');
 const voiceListEl = el('voice-list');
 const logOutput = el('log-output');
 
+// iPadOS 13+ reports navigator.platform as 'MacIntel', same as a real Mac -
+// maxTouchPoints is what actually distinguishes the two.
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 // Web MIDI is Chromium-only (no Safari, historically no Firefox) - flag it
 // up front instead of only surfacing an error once someone clicks Connect.
+// iOS gets its own message: every iOS browser (Safari, Chrome, Firefox) is
+// required by Apple to use WebKit, which has never implemented Web MIDI, so
+// "open this in Chrome" - correct advice on desktop or Android - is actively
+// wrong there.
 if (!navigator.requestMIDIAccess) {
+  if (isIOS()) {
+    el('no-midi-banner').innerHTML =
+      "iOS doesn't support Web MIDI in any browser - Safari, Chrome, and " +
+      "Firefox for iOS all use Apple's WebKit engine under the hood, which " +
+      "hasn't implemented it. Open this page on a desktop browser, or on " +
+      '<strong>Chrome</strong>/<strong>Edge</strong> on Android, instead.';
+  }
   el('no-midi-banner').hidden = false;
   connectBtn.disabled = true;
 }
@@ -1375,6 +1398,18 @@ el('xg-on-btn').addEventListener('click', async () => {
     statusEl.textContent = `Error: ${err.message}`;
   }
 });
+
+// Its own dialog rather than showConfirm/showAlert - the pitch has headings,
+// a bulleted list, and an image, well past what that dialog's single <p>
+// message is meant to hold.
+const supportDialog = el('support-dialog');
+el('join-btn').addEventListener('click', () => supportDialog.showModal());
+el('support-dialog-cancel').addEventListener('click', () => supportDialog.close());
+el('support-dialog-join').addEventListener('click', () => {
+  window.open('https://www.patreon.com/doffu', '_blank', 'noopener');
+  supportDialog.close();
+});
+supportDialog.addEventListener('click', (evt) => { if (evt.target === supportDialog) supportDialog.close(); });
 
 resetSectionBtn.addEventListener('click', async () => {
   const sectionLabel = parameters[sectionSelect.value]?.label || 'this section';

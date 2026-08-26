@@ -19,3 +19,23 @@ A browser-based Web MIDI app for controlling Yamaha QY70/QY100 hardware synthesi
   itself (open its Drum Edit screen) before any live Drum Setup edits from the web
   console will land anywhere. This is why "Push Parameters" asks which of Ds1/Ds2/Ds3 is
   currently open on the device rather than using the connect bar's Channel selector.
+
+## License
+
+Copyright (C) 2026 Doffu (<https://qy100.doffu.net/>)
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+If this project has been useful to you, consider supporting future work
+on Patreon: <https://www.patreon.com/doffu>.

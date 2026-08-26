@@ -1,3 +1,8 @@
+// QY70/QY100 Web Console
+// Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+// Licensed under the GNU General Public License v3.0 or later. See LICENSE.
+// Support future development: <https://www.patreon.com/doffu>
+
 // Thin wrapper around the Web MIDI API: device discovery, connect/select,
 // and a single send/receive path everything else in the app builds on.
 

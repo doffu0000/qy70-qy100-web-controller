@@ -1,3 +1,10 @@
+/*
+ * QY70/QY100 Web Console
+ * Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+ * Licensed under the GNU General Public License v3.0 or later. See LICENSE.
+ * Support future development: <https://www.patreon.com/doffu>
+ */
+
 :root {
   color-scheme: light;
   --bg: #ffffff;
@@ -34,10 +41,46 @@ h2 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--headin
 
 #header-top {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
   gap: 1rem;
+}
+
+#header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#site-logo {
+  display: block;
+  height: 3.125rem;
+  width: auto;
+}
+
+/* Matches qy100.doffu.net's own "Join the exploration" button (same accent
+   color, font, and radius the rest of this app already uses, plus its
+   site's soft white glow) so the header reads as one piece with the site
+   it's embedded in rather than a foreign widget. */
+#join-btn {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background: var(--accent);
+  color: #ffffff;
+  font-family: "Sora", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-decoration: none;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.5);
+}
+
+#join-btn:hover {
+  opacity: 0.88;
 }
 
 #header-actions {
@@ -708,6 +751,58 @@ section {
   white-space: pre-line;
 }
 
+/* Wider than the base .app-dialog (26rem) - this one carries headings, a
+   list, and an image rather than a single short message, and needs the
+   room. Its own scrollable body keeps the title/actions always visible
+   even when the pitch text alone is taller than the viewport. */
+.support-dialog {
+  max-width: 34rem;
+}
+
+#support-dialog-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin: 0 0 1rem;
+  padding-right: 0.25rem;
+}
+
+#support-dialog-body p {
+  margin: 0 0 0.85rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+#support-dialog-body h4 {
+  margin: 1.1rem 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--heading);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+#support-dialog-body ul {
+  margin: 0 0 0.85rem;
+  padding-left: 1.1rem;
+}
+
+#support-dialog-body li {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+#support-dialog-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0.25rem 0 1rem;
+}
+
 .app-dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -795,6 +890,15 @@ section {
 
   h1 {
     font-size: 1.1rem;
+  }
+
+  #site-logo {
+    height: 2.5rem;
+  }
+
+  #join-btn {
+    padding: 0.45rem 0.8rem;
+    font-size: 0.8rem;
   }
 
   section {

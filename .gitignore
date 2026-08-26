@@ -1,0 +1,3 @@
+# Deployment packaging artifacts (zipped/extracted for uploading to hosting) - not source
+*.zip
+/qy70-qy100-web-console/

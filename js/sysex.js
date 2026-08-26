@@ -1,3 +1,8 @@
+// QY70/QY100 Web Console
+// Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+// Licensed under the GNU General Public License v3.0 or later. See LICENSE.
+// Support future development: <https://www.patreon.com/doffu>
+
 // QY70 / XG SysEx message builders, matching the QY70 Data List's "MIDI
 // Data Format" section:
 //

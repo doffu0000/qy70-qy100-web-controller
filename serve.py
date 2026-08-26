@@ -1,3 +1,8 @@
+# QY70/QY100 Web Console
+# Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+# Licensed under the GNU General Public License v3.0 or later. See LICENSE.
+# Support future development: <https://www.patreon.com/doffu>
+
 """Local dev server that disables caching entirely, so edits always show up
 on a normal reload instead of getting stuck behind the browser's HTTP cache."""
 import http.server

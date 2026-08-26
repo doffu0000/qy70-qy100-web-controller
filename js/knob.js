@@ -1,3 +1,8 @@
+// QY70/QY100 Web Console
+// Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+// Licensed under the GNU General Public License v3.0 or later. See LICENSE.
+// Support future development: <https://www.patreon.com/doffu>
+
 // A minimal rotary knob control: drag vertically to change the value,
 // or type directly into the field below it. No external dependencies -
 // plain SVG + pointer events.

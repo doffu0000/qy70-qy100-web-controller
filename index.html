@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  QY70/QY100 Web Console
+  Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+  Licensed under the GNU General Public License v3.0 or later. See LICENSE.
+  Support future development: <https://www.patreon.com/doffu>
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -13,7 +19,13 @@
 <div id="brand-bar"></div>
 <header>
   <div id="header-top">
-    <h1>QY70 / QY100 Web Console</h1>
+    <div id="header-brand">
+      <a href="https://qy100.doffu.net/" target="_blank" rel="noopener" id="site-logo-link">
+        <img src="https://qy100.doffu.net/wp-content/uploads/2024/09/QY-Mounting-Banner.png" alt="QY100 Explorer" id="site-logo">
+      </a>
+      <h1>QY70 / QY100 Web Console</h1>
+    </div>
+    <button type="button" id="join-btn">Support Future Projects</button>
   </div>
   <p class="hint required" id="no-midi-banner" hidden>
     This browser doesn't support Web MIDI, so this app can't reach your
@@ -162,6 +174,31 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
   <div id="confirm-dialog-actions" class="app-dialog-actions">
     <button id="confirm-dialog-cancel">Cancel</button>
     <button id="confirm-dialog-ok" class="btn-warning">Send</button>
+  </div>
+</dialog>
+
+<dialog id="support-dialog" class="app-dialog support-dialog">
+  <h3 class="app-dialog-title">Support Future Projects</h3>
+  <div id="support-dialog-body">
+    <p>The QY100 Explorer web console, the QY70 and QY100 protocol reverse-engineering behind it, and the custom style files available on this site are all projects I develop and maintain on my own time.</p>
+    <p>If you&rsquo;ve found these resources useful, becoming a Patreon supporter directly helps fund the hours that go into reverse-engineering more of the QY70 and QY100&rsquo;s hidden capabilities, creating new files and resources, and developing tools like this web console.</p>
+    <img src="https://qy100.doffu.net/wp-content/uploads/2024/09/SM-Card-30.jpg" alt="A QY70/QY100 SmartMedia card loaded with custom style files" id="support-dialog-image">
+    <h4>What&rsquo;s already available</h4>
+    <p>As a QY100 Explorer supporter, you&rsquo;ll gain access to specialized files and starter material designed to expand what you can do with the Yamaha QY70 and QY100.</p>
+    <p>There&rsquo;s already a growing collection of resources available, including:</p>
+    <ul>
+      <li>70+ starter templates for the Yamaha QY100, plus 40+ for the QY70, designed to provide useful starting points and inspiration.</li>
+      <li>Unlocked feature files for the QY70 and QY100 that enable things such as increased Pattern Mode measure limits, out-of-range BPMs, additional time signature options, access to hidden QY100 drum tables, and more as new discoveries are made.</li>
+      <li>Tips, tricks, guides, and tutorials covering everything from working with QY70 and QY100 files to getting more out of the hardware itself.</li>
+      <li>The QY70 / QY100 Web Console, built from the ongoing reverse-engineering work, providing new ways to interact with and explore the QY70 and QY100.</li>
+    </ul>
+    <h4>Help shape what comes next</h4>
+    <p>Your support helps keep the website running, funds the time required for technical investigation and reverse-engineering, and makes it possible to continue developing new tools and resources for the QY community.</p>
+    <p>If any of my content has been useful to you, please consider becoming a Patreon supporter. It directly supports the continued development of these resources and helps uncover more of the QY70 and QY100&rsquo;s hidden possibilities.</p>
+  </div>
+  <div class="app-dialog-actions">
+    <button id="support-dialog-cancel">Cancel</button>
+    <button id="support-dialog-join" class="btn-warning">Join the exploration</button>
   </div>
 </dialog>
 
