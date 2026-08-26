@@ -751,29 +751,42 @@ section {
   white-space: pre-line;
 }
 
-/* Wider than the base .app-dialog (26rem) - this one carries headings, a
-   list, and an image rather than a single short message, and needs the
-   room. Its own scrollable body keeps the title/actions always visible
-   even when the pitch text alone is taller than the viewport. */
-.support-dialog {
+/* Wider than the base .app-dialog (26rem) - shared by dialogs that carry
+   headings/lists/images rather than a single short message, and need the
+   room. Each one's .dialog-body is independently scrollable so the title
+   and actions stay visible even when the content alone is taller than
+   the viewport. */
+.wide-dialog {
   max-width: 34rem;
 }
 
-#support-dialog-body {
+.dialog-body {
   max-height: 60vh;
   overflow-y: auto;
   margin: 0 0 1rem;
   padding-right: 0.25rem;
 }
 
-#support-dialog-body p {
+/* Fixed (not max-) height, unlike the general .dialog-body above - this one
+   switches between tab panels of very different lengths (Connect vs. MIDI
+   Log), and letting the dialog box itself resize on every tab click made
+   it visibly jump around. Holding it at the longest panel's height keeps
+   the dialog steady; a shorter panel just leaves blank space below, and a
+   panel that somehow exceeds it scrolls within this box instead of
+   growing it. */
+#help-dialog .dialog-body {
+  height: 22.5rem;
+  max-height: 60vh;
+}
+
+.dialog-body p {
   margin: 0 0 0.85rem;
   font-size: 0.86rem;
   line-height: 1.5;
   color: var(--text);
 }
 
-#support-dialog-body h4 {
+.dialog-body h4 {
   margin: 1.1rem 0 0.5rem;
   font-size: 0.8rem;
   font-weight: 600;
@@ -782,16 +795,81 @@ section {
   letter-spacing: 0.03em;
 }
 
-#support-dialog-body ul {
+.dialog-body ul {
   margin: 0 0 0.85rem;
   padding-left: 1.1rem;
 }
 
-#support-dialog-body li {
+.dialog-body li {
   margin-bottom: 0.5rem;
   font-size: 0.85rem;
   line-height: 1.45;
   color: var(--text);
+}
+
+.dialog-body strong {
+  color: var(--heading);
+}
+
+.dialog-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+}
+
+.dialog-tab {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.dialog-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.dialog-tab-panel p:last-child {
+  margin-bottom: 0;
+}
+
+.dialog-body code {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.82em;
+}
+
+#site-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+#contact-btn {
+  display: inline-block;
+  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  background: var(--accent);
+  color: #ffffff;
+  font-family: "Sora", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+#contact-btn:hover {
+  opacity: 0.88;
 }
 
 #support-dialog-image {
@@ -1011,5 +1089,15 @@ section {
      to the viewport so it can't force a horizontal scrollbar. */
   .info-icon::after, .attention-icon::after {
     max-width: calc(100vw - 3rem);
+  }
+
+  #site-footer {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  #help-btn, #contact-btn {
+    width: 100%;
+    text-align: center;
   }
 }

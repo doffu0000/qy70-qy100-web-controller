@@ -1411,6 +1411,23 @@ el('support-dialog-join').addEventListener('click', () => {
 });
 supportDialog.addEventListener('click', (evt) => { if (evt.target === supportDialog) supportDialog.close(); });
 
+const helpDialog = el('help-dialog');
+const helpTabs = [...helpDialog.querySelectorAll('.dialog-tab')];
+const helpPanels = [...helpDialog.querySelectorAll('.dialog-tab-panel')];
+helpTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    helpTabs.forEach((t) => t.classList.toggle('active', t === tab));
+    helpPanels.forEach((p) => { p.hidden = p.dataset.panel !== tab.dataset.tab; });
+    helpDialog.querySelector('.dialog-body').scrollTop = 0;
+  });
+});
+el('help-btn').addEventListener('click', () => {
+  helpTabs[0]?.click();
+  helpDialog.showModal();
+});
+el('help-dialog-close').addEventListener('click', () => helpDialog.close());
+helpDialog.addEventListener('click', (evt) => { if (evt.target === helpDialog) helpDialog.close(); });
+
 resetSectionBtn.addEventListener('click', async () => {
   const sectionLabel = parameters[sectionSelect.value]?.label || 'this section';
   const confirmed = await showConfirm(

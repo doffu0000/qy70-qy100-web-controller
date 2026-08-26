@@ -168,6 +168,42 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
   </section>
 </main>
 
+<footer id="site-footer">
+  <button type="button" id="help-btn">Instructions</button>
+  <a href="https://qy100.doffu.net/contact/" target="_blank" rel="noopener" id="contact-btn">Report a Bug / Suggest Something</a>
+</footer>
+
+<dialog id="help-dialog" class="app-dialog wide-dialog">
+  <h3 class="app-dialog-title">Instructions</h3>
+  <div class="dialog-tabs" role="tablist">
+    <button type="button" class="dialog-tab active" data-tab="connect">Connect</button>
+    <button type="button" class="dialog-tab" data-tab="voices">Voice Browser</button>
+    <button type="button" class="dialog-tab" data-tab="params">Parameters</button>
+    <button type="button" class="dialog-tab" data-tab="log">MIDI Log</button>
+  </div>
+  <div class="dialog-body">
+    <div class="dialog-tab-panel" data-panel="connect">
+      <p>Your browser will prompt for <strong>MIDI device access</strong> the first time you connect - this page needs that permission allowed, or it can&rsquo;t see any MIDI interface at all. If you accidentally blocked it, allow MIDI access again from your browser&rsquo;s site settings (usually the padlock/info icon next to the address bar) and reload the page.</p>
+      <p>Click <strong>Find Devices</strong> to grant this page MIDI access, then pick your interface from <strong>MIDI In</strong> and <strong>MIDI Out</strong>. Leave MIDI In set to <strong>(none)</strong> for most tasks - incoming messages while an action is in progress can trigger unexpected changes on the device. Turn it on only when editing Drum Setup, where it lets the console follow what you play or select on the device itself.</p>
+      <p>If parameter edits don&rsquo;t seem to be taking effect, click <strong>Send XG System On</strong> once - the QY70/QY100 may ignore Parameter Change messages until it receives this. This can also be used to reset all voices to default. Be careful to save your work on the device often to avoid accidental data loss.</p>
+    </div>
+    <div class="dialog-tab-panel" data-panel="voices" hidden>
+      <p>Browse or search every Normal/SFX voice, Drum Kit, and SFX Kit, plus your own saved User Voice/User Kit entries. <strong>Clicking</strong> a voice, preset, or kit only <em>selects</em> it, for editing or saving - it doesn&rsquo;t touch the device. Use its <strong>Push</strong> button to actually send it to the <strong>Apply to</strong> Part shown above the list.</p>
+      <p>Entries with a <span class="qy100-badge">QY100</span> badge aren&rsquo;t available on the QY70. Voices with a ▸ toggle have saved presets underneath them - full parameter setups you can push the same way. <strong>Save/Load Voice</strong> and <strong>Save/Load Kit</strong> write and read your own <code>.qyvoice</code>/<code>.qykit</code> files for reuse later or sharing.</p>
+    </div>
+    <div class="dialog-tab-panel" data-panel="params" hidden>
+      <p>Pick a section - System, Reverb, Chorus, Variation, Multi Part, or Drum Setup - from the dropdown. Drag a knob or type directly into its value field to edit; <strong>Push Parameters</strong> sends the section to the device. Each row has an <strong>Active/Ignored</strong> toggle on the right - Ignored keeps the value tracked and saved, it just stops sending it. <strong>Save/Load Parameters</strong> captures System, Reverb, Chorus, and Variation together as one <code>.qyparam</code> file.</p>
+      <p><strong>Drum Setup</strong> always edits whatever kit is currently playing on the Channel selected at the top, not the kit picker in that section - that dropdown only chooses which note names to display. Ds1/Ds2/Ds3 slots can only be selected on the device itself, never over MIDI - select one there and open its Drum Edit screen before editing it here.</p>
+    </div>
+    <div class="dialog-tab-panel" data-panel="log" hidden>
+      <p>Shows the last 30 messages sent and received, useful for confirming something actually went out. Toggle it off or clear it from the MIDI Log panel at any time.</p>
+    </div>
+  </div>
+  <div class="app-dialog-actions">
+    <button id="help-dialog-close" class="btn-warning">Close</button>
+  </div>
+</dialog>
+
 <dialog id="confirm-dialog" class="app-dialog">
   <h3 id="confirm-dialog-title" class="app-dialog-title"></h3>
   <p id="confirm-dialog-message"></p>
@@ -177,9 +213,9 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
   </div>
 </dialog>
 
-<dialog id="support-dialog" class="app-dialog support-dialog">
+<dialog id="support-dialog" class="app-dialog wide-dialog">
   <h3 class="app-dialog-title">Support Future Projects</h3>
-  <div id="support-dialog-body">
+  <div class="dialog-body">
     <p>The QY100 Explorer web console, the QY70 and QY100 protocol reverse-engineering behind it, and the custom style files available on this site are all projects I develop and maintain on my own time.</p>
     <p>If you&rsquo;ve found these resources useful, becoming a Patreon supporter directly helps fund the hours that go into reverse-engineering more of the QY70 and QY100&rsquo;s hidden capabilities, creating new files and resources, and developing tools like this web console.</p>
     <img src="https://qy100.doffu.net/wp-content/uploads/2024/09/SM-Card-30.jpg" alt="A QY70/QY100 SmartMedia card loaded with custom style files" id="support-dialog-image">
