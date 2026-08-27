@@ -109,6 +109,7 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
       <select id="category-select"><option value="">All categories</option></select>
       <input id="search-box" type="text" placeholder="Search voice name...">
     </div>
+    <p id="voice-filter-active" hidden>Results are filtered - clear the search or set category to "All categories" to see everything.</p>
     <p class="hint">Click a voice, preset, or kit to select it (for editing/saving) - use its Push button to actually apply it.</p>
     <div id="voice-file-controls">
       <input type="file" id="voice-file-input" accept=".qyvoice" multiple hidden>
@@ -154,6 +155,21 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
       </p>
     </div>
 
+    <div id="fx-file-controls" hidden>
+      <input type="file" id="fx-file-input" hidden>
+      <button id="save-fx-btn">Save</button>
+      <button id="load-fx-btn">Load</button>
+    </div>
+
+    <div id="fx-preset-browser" hidden>
+      <p class="hint">Click a preset to select it - use its Push button to actually apply it.</p>
+      <div class="segmented-control" id="fx-preset-source-toggle">
+        <button type="button" class="segment-btn active" data-source="builtin">Presets</button>
+        <button type="button" class="segment-btn" data-source="user">User</button>
+      </div>
+      <ul id="fx-preset-list"></ul>
+    </div>
+
     <div id="param-list"></div>
   </section>
 
@@ -194,6 +210,7 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
     <div class="dialog-tab-panel" data-panel="params" hidden>
       <p>Pick a section - System, Reverb, Chorus, Variation, Multi Part, or Drum Setup - from the dropdown. Drag a knob or type directly into its value field to edit; <strong>Push Parameters</strong> sends the section to the device. Each row has an <strong>Active/Ignored</strong> toggle on the right - Ignored keeps the value tracked and saved, it just stops sending it. <strong>Save/Load Parameters</strong> captures System, Reverb, Chorus, and Variation together as one <code>.qyparam</code> file.</p>
       <p><strong>Drum Setup</strong> always edits whatever kit is currently playing on the Channel selected at the top, not the kit picker in that section - that dropdown only chooses which note names to display. Ds1/Ds2/Ds3 slots can only be selected on the device itself, never over MIDI - select one there and open its Drum Edit screen before editing it here.</p>
+      <p><strong>Reverb, Chorus, and Variation</strong> each have their own preset browser and <code>.qyrev</code>/<code>.qycho</code>/<code>.qyvar</code> save/load, working the same way as the Voice Browser - click a preset to select it, use its <strong>Push</strong> button to apply it, and <strong>Save</strong>/<strong>Load</strong> to keep your own setups as files.</p>
     </div>
     <div class="dialog-tab-panel" data-panel="log" hidden>
       <p>Shows the last 30 messages sent and received, useful for confirming something actually went out. Toggle it off or clear it from the MIDI Log panel at any time.</p>

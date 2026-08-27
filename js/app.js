@@ -12,6 +12,12 @@ import { createKnob, createToggle, createMultiToggle } from './knob.js';
 const link = new MidiLink();
 let voices = [];
 let presets = [];
+// Built-in Reverb/Chorus/Variation presets (data/fx_presets.json), keyed by
+// section - session-loaded ones (via Load) live alongside them in a
+// separate per-section array so a page reload drops back to just the
+// built-ins, same as User Voice/User Kit.
+let fxPresets = { reverb: [], chorus: [], variation: [] };
+const userFxPresets = { reverb: [], chorus: [], variation: [] };
 let selectedVoiceKey = null;
 // Display name of whatever selectedVoiceKey currently points at - kept
 // alongside it (rather than re-derived from the DOM) so Save Voice/Save Kit
@@ -105,6 +111,18 @@ const voicePartSelect = el('voice-part-select');
 const bankSelect = el('bank-select');
 const categorySelect = el('category-select');
 const searchBox = el('search-box');
+const voiceFilterActive = el('voice-filter-active');
+
+// User Voice/User Kit ignore the search box and category filter entirely
+// (see renderUserVoiceList/renderUserKitList) - showing "results are
+// filtered" there would be misleading since nothing's actually being
+// filtered out.
+function updateVoiceFilterIndicator() {
+  const isUserBank = bankSelect.value === 'userVoice' || bankSelect.value === 'userKit';
+  const hasSearch = searchBox.value.trim().length > 0;
+  const hasCategory = !isUserBank && categorySelect.value !== '';
+  voiceFilterActive.hidden = isUserBank || (!hasSearch && !hasCategory);
+}
 const saveVoiceBtn = el('save-voice-btn');
 const loadVoiceBtn = el('load-voice-btn');
 const voiceFileInput = el('voice-file-input');
@@ -606,10 +624,16 @@ function renderUserVoiceList() {
         const part = Number(voicePartSelect.value);
         const ok = await showConfirm('Are you sure?', confirmApplyMessage(entry.name, partLabel(part)), 'Apply', { html: true });
         if (!ok) return;
+        showProgress(`Applying ${entry.name}`, 'Sends every Multi Part parameter for this voice to the device - avoid touching the QY70/QY100 until it finishes.');
         try {
+          await new Promise((resolve) => setTimeout(resolve, 0));
           applyUserVoiceParamsToPart(part, entry.params);
+          updateProgress(1, 1);
+          await new Promise((resolve) => setTimeout(resolve, 0));
         } catch (err) {
           statusEl.textContent = `Error: ${err.message}`;
+        } finally {
+          hideProgress();
         }
         selectedVoiceKey = key;
         selectedVoiceLabel = entry.name;
@@ -695,6 +719,7 @@ function renderUserKitList() {
 }
 
 function renderVoiceList() {
+  updateVoiceFilterIndicator();
   if (bankSelect.value === 'userVoice') { renderUserVoiceList(); return; }
   if (bankSelect.value === 'userKit') { renderUserKitList(); return; }
   const filtered = currentFilteredVoices();
@@ -785,11 +810,17 @@ function renderVoiceList() {
         const ok = await showConfirm('Are you sure?', confirmApplyMessage(name, partLabel(part)), 'Apply', { html: true });
         if (!ok) return;
       }
+      showProgress(`Applying ${name}`, 'Sends every Multi Part parameter for this voice to the device - avoid touching the QY70/QY100 until it finishes.');
       try {
+        await new Promise((resolve) => setTimeout(resolve, 0));
         resetPartToDefaults(part);
         applyVoiceToPart(part, v);
+        updateProgress(1, 1);
+        await new Promise((resolve) => setTimeout(resolve, 0));
       } catch (err) {
         statusEl.textContent = `Error: ${err.message}`;
+      } finally {
+        hideProgress();
       }
       selectedVoiceKey = key;
       selectedVoiceLabel = name;
@@ -873,10 +904,16 @@ function renderVoiceList() {
             const part = Number(voicePartSelect.value);
             const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, partLabel(part)), 'Apply', { html: true });
             if (!ok) return;
+            showProgress(`Applying ${preset.name}`, 'Sends every Multi Part parameter for this preset to the device - avoid touching the QY70/QY100 until it finishes.');
             try {
+              await new Promise((resolve) => setTimeout(resolve, 0));
               applyPreset(preset, part);
+              updateProgress(1, 1);
+              await new Promise((resolve) => setTimeout(resolve, 0));
             } catch (err) {
               statusEl.textContent = `Error: ${err.message}`;
+            } finally {
+              hideProgress();
             }
           }
           selectedVoiceKey = presetKey;
@@ -1462,6 +1499,35 @@ const pushAllPartsBtn = el('push-all-parts-btn');
 const paramListEl = el('param-list');
 let currentSectionResetFns = [];
 
+const fxFileControls = el('fx-file-controls');
+const fxFileInput = el('fx-file-input');
+const saveFxBtn = el('save-fx-btn');
+const loadFxBtn = el('load-fx-btn');
+const fxPresetBrowser = el('fx-preset-browser');
+const fxPresetListEl = el('fx-preset-list');
+const fxPresetSourceToggle = el('fx-preset-source-toggle');
+const fxPresetSourceBtns = [...fxPresetSourceToggle.querySelectorAll('.segment-btn')];
+// Shared across Reverb/Chorus/Variation (not reset per section) - picking
+// "User" once and then switching sections keeps showing your own presets
+// rather than snapping back to Built-in every time.
+let fxPresetSource = 'builtin';
+fxPresetSourceBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    fxPresetSource = btn.dataset.source;
+    fxPresetSourceBtns.forEach((b) => b.classList.toggle('active', b === btn));
+    renderFxPresetList(sectionSelect.value);
+  });
+});
+
+// Reverb/Chorus/Variation each get their own save/load file type and
+// built-in-plus-loaded preset browser, mirroring the Voice Browser but
+// scoped to one section's worth of parameters instead of a whole Part.
+const FX_SECTIONS = {
+  reverb: { label: 'Reverb', ext: '.qyrev', format: 'qyrev', description: 'QY70/QY100 Reverb' },
+  chorus: { label: 'Chorus', ext: '.qycho', format: 'qycho', description: 'QY70/QY100 Chorus' },
+  variation: { label: 'Variation', ext: '.qyvar', format: 'qyvar', description: 'QY70/QY100 Variation' },
+};
+
 async function loadDrumNotes() {
   const res = await fetch('./data/drum_notes.json', { cache: 'no-store' });
   if (!res.ok) throw new Error(`Failed to load drum_notes.json: ${res.status}`);
@@ -1471,6 +1537,12 @@ async function loadDrumNotes() {
 async function loadPresets() {
   const res = await fetch('./data/presets.json', { cache: 'no-store' });
   if (!res.ok) throw new Error(`Failed to load presets.json: ${res.status}`);
+  return res.json();
+}
+
+async function loadFxPresets() {
+  const res = await fetch('./data/fx_presets.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load fx_presets.json: ${res.status}`);
   return res.json();
 }
 
@@ -1668,6 +1740,9 @@ const DYNAMIC_PARAM_DESC = {
   Transpose: semitoneDesc,
   'Note Shift': semitoneDesc,
   'Bend Pitch Control': semitoneDesc,
+  'MW Pitch Control': semitoneDesc,
+  "Ch's AT Pitch Control": semitoneDesc,
+  'Pitch EG Initial Level': semitoneDesc,
   VariMode: (value) => (Math.round(value) === 1 ? 'System' : 'Insertion'),
   'Variation Part': (value) => {
     const v = Math.round(value);
@@ -2106,6 +2181,7 @@ function renderParamPanel() {
   pushDrumParamsBtn.hidden = sectionKey !== 'drumSetup';
   pushParamsBtn.hidden = sectionKey === 'drumSetup';
   pushAllPartsBtn.hidden = sectionKey !== 'multiPart';
+  renderFxPresetList(sectionKey);
 
   const context = currentContext(sectionKey);
   const stores = paramStoresForContext(sectionKey, context);
@@ -2236,6 +2312,10 @@ function renderParamPanel() {
     const nameEl = div.querySelector('.param-name');
 
     const isEffectTypeRow = effectTypeParam && baseName === effectTypeParam.paramName;
+    // Its select is a full effect-name picker rather than a short readout,
+    // so it gets its own full-width line above the MSB/LSB knobs instead of
+    // squeezing into the narrow .param-desc column every other row uses.
+    if (isEffectTypeRow) div.classList.add('effect-type-row');
     let effectSelect;
     const knobGroup = document.createElement('div');
     knobGroup.className = 'knob-group';
@@ -2410,6 +2490,149 @@ function renderParamPanel() {
   refreshEffectParamNames();
   refreshBankProgramVoiceName();
 }
+
+// ---- Reverb/Chorus/Variation preset browser (.qyrev/.qycho/.qyvar) ----
+// Same built-in-plus-loaded-list shape as the Voice Browser, but scoped to
+// one FX section's own parameters rather than a whole Part - clicking an
+// item only highlights it, its own Push button is what actually applies
+// and sends the preset (same "select vs. apply" split as voices/kits).
+function renderFxPresetList(sectionKey) {
+  const cfg = FX_SECTIONS[sectionKey];
+  fxFileControls.hidden = !cfg;
+  fxPresetBrowser.hidden = !cfg;
+  if (!cfg) return;
+  saveFxBtn.textContent = `Save ${cfg.label}`;
+  loadFxBtn.textContent = `Load ${cfg.label}`;
+  fxFileInput.accept = cfg.ext;
+  fxPresetSourceBtns.forEach((b) => b.classList.toggle('active', b.dataset.source === fxPresetSource));
+
+  const list = fxPresetSource === 'user' ? userFxPresets[sectionKey] : (fxPresets[sectionKey] || []);
+  fxPresetListEl.innerHTML = '';
+  if (!list.length) {
+    const li = document.createElement('li');
+    li.className = 'fx-preset-empty';
+    li.textContent = fxPresetSource === 'user'
+      ? `No ${cfg.label} presets loaded yet - use Load above.`
+      : `No ${cfg.label} presets.`;
+    fxPresetListEl.appendChild(li);
+    return;
+  }
+  for (const preset of list) {
+    const li = document.createElement('li');
+    li.dataset.key = preset.id;
+    li.innerHTML = `<span class="fx-preset-name">${escapeHtml(preset.name)}</span><button type="button" class="push-voice-btn">Push</button>`;
+    li.addEventListener('click', () => {
+      fxPresetListEl.querySelectorAll('li.selected').forEach((x) => x.classList.remove('selected'));
+      li.classList.add('selected');
+    });
+    li.querySelector('.push-voice-btn').addEventListener('click', async (evt) => {
+      evt.stopPropagation();
+      const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, cfg.label), 'Apply', { html: true });
+      if (!ok) return;
+      Object.assign(paramState[sectionKey], preset.params);
+      showProgress(`Applying ${preset.name}`, `Sends every ${cfg.label} parameter to the device - avoid touching the QY70/QY100 until it finishes.`);
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        resendSectionContext(sectionKey, {}, preset.params);
+        updateProgress(1, 1);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+      } finally {
+        hideProgress();
+      }
+      renderParamPanel();
+    });
+    fxPresetListEl.appendChild(li);
+  }
+}
+
+// Full current-value snapshot of every row in a section - same idea as
+// snapshotPartVoice, but for a global (non-Part) section, so there's no
+// context to resolve beyond the section itself.
+function snapshotSection(sectionKey) {
+  const section = parameters[sectionKey];
+  const store = paramState[sectionKey];
+  const params = {};
+  for (const row of expandRows(section.params)) {
+    params[row.name] = store[row.name] ?? resolveDefault(row, {}) ?? row.dataMin;
+  }
+  return params;
+}
+
+saveFxBtn.addEventListener('click', async () => {
+  const sectionKey = sectionSelect.value;
+  const cfg = FX_SECTIONS[sectionKey];
+  if (!cfg) return;
+  const name = `${cfg.label} ${new Date().toISOString().slice(0, 10)}`;
+  const file = { format: cfg.format, version: 1, savedAt: new Date().toISOString(), name, params: snapshotSection(sectionKey) };
+  try {
+    const savedName = await writeFile(`${name}${cfg.ext}`, JSON.stringify(file, null, 1), cfg.description, cfg.ext);
+    await showAlert(`${cfg.label} saved`, `Saved the current ${cfg.label} settings as ${savedName}.`);
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+async function loadFxFileText(sectionKey, text, filename) {
+  const cfg = FX_SECTIONS[sectionKey];
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    statusEl.textContent = `Error: not a valid ${cfg.ext} file.`;
+    return;
+  }
+  if (data?.format !== cfg.format || !data.params) {
+    statusEl.textContent = `Error: not a valid ${cfg.ext} file.`;
+    return;
+  }
+  const extRe = new RegExp(`\\${cfg.ext}$`, 'i');
+  const name = filename?.replace(extRe, '') || data.name || cfg.label;
+  const list = userFxPresets[sectionKey];
+  const existingIndex = list.findIndex((p) => p.name === name);
+  if (existingIndex !== -1) {
+    const overwrite = await showConfirm(
+      `${cfg.label} preset already loaded`,
+      `A ${cfg.label} preset named "${name}" is already in the User list. Overwrite it, or cancel to abort loading?`,
+      'Overwrite'
+    );
+    if (!overwrite) return;
+    list.splice(existingIndex, 1);
+  }
+  list.push({ id: `${Date.now()}`, name, params: data.params });
+  // Switch to the User tab so the newly-loaded preset is actually visible,
+  // rather than silently landing behind Built-in if that's what's showing.
+  fxPresetSource = 'user';
+  renderFxPresetList(sectionKey);
+  await showAlert(`${cfg.label} loaded`, `Loaded ${filename || 'file'} into the ${cfg.label} preset list below.`);
+}
+
+loadFxBtn.addEventListener('click', async () => {
+  const sectionKey = sectionSelect.value;
+  const cfg = FX_SECTIONS[sectionKey];
+  if (!cfg) return;
+  try {
+    if (window.showOpenFilePicker) {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: cfg.description, accept: { 'application/json': [cfg.ext] } }],
+      });
+      const file = await handle.getFile();
+      await loadFxFileText(sectionKey, await file.text(), handle.name);
+    } else {
+      fxFileInput.click();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+fxFileInput.addEventListener('change', async () => {
+  const sectionKey = sectionSelect.value;
+  const file = fxFileInput.files[0];
+  fxFileInput.value = '';
+  if (file) await loadFxFileText(sectionKey, await file.text(), file.name);
+});
 
 // ---- Save / Load (.qyparam) ----
 // Resends a captured section+context's worth of stored values, reusing the
@@ -2636,8 +2859,8 @@ pushAllPartsBtn.addEventListener('click', async () => {
 // ---- Boot ----
 
 (async () => {
-  [voices, parameters, drumNotes, presets, effectTypes, effectParams, effectValueTables] = await Promise.all(
-    [loadVoices(), loadParameters(), loadDrumNotes(), loadPresets(), loadEffectTypes(), loadEffectParams(), loadEffectValueTables()]);
+  [voices, parameters, drumNotes, presets, effectTypes, effectParams, effectValueTables, fxPresets] = await Promise.all(
+    [loadVoices(), loadParameters(), loadDrumNotes(), loadPresets(), loadEffectTypes(), loadEffectParams(), loadEffectValueTables(), loadFxPresets()]);
   refreshCategoryOptions();
   renderVoiceList();
   populatePartSelect(partSelect);
