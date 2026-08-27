@@ -98,6 +98,21 @@ function escapeHtml(str) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[ch]));
 }
+
+// Object.assign(target, jsonParsedFile) is a real prototype-pollution
+// vector: a loaded .qyparam/.qyvoice/.qykit/.qyrev/.qycho/.qyvar with an
+// own "__proto__" key (JSON.parse happily creates one, no exploit needed
+// to get it there) makes the assignment step - not the parse - reach
+// through the accessor and swap target's own prototype out from under it.
+// Used everywhere a loaded file's object gets merged into live app state,
+// in place of a bare Object.assign.
+function safeAssign(target, source) {
+  for (const key of Object.keys(source || {})) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    target[key] = source[key];
+  }
+  return target;
+}
 const inputSelect = el('input-select');
 const outputSelect = el('output-select');
 const channelSelect = el('channel-select');
@@ -2529,7 +2544,7 @@ function renderFxPresetList(sectionKey) {
       evt.stopPropagation();
       const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, cfg.label), 'Apply', { html: true });
       if (!ok) return;
-      Object.assign(paramState[sectionKey], preset.params);
+      safeAssign(paramState[sectionKey], preset.params);
       showProgress(`Applying ${preset.name}`, `Sends every ${cfg.label} parameter to the device - avoid touching the QY70/QY100 until it finishes.`);
       try {
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -2744,8 +2759,8 @@ async function loadPatchText(text, filename) {
     `This replaces this session's System, Reverb, Chorus, and Variation parameters with the saved state (saved ${savedAt}) and sends it to the device now.`
   );
   if (!confirmed) return;
-  Object.assign(paramState, patch.paramState || {});
-  Object.assign(ignoredState, patch.ignoredState || {});
+  safeAssign(paramState, patch.paramState || {});
+  safeAssign(ignoredState, patch.ignoredState || {});
   showProgress('Loading parameters', 'This sends the full saved state to the device - avoid touching the QY70/QY100 until it finishes.');
   try {
     await resendAllFromState(updateProgress);
