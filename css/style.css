@@ -425,6 +425,12 @@ section {
 #param-list {
   max-height: 55vh;
   overflow-y: auto;
+  /* Without this, overflow-x computes to auto too (leaving only overflow-y
+     set makes both axes auto per spec) - a hidden info-icon tooltip's
+     ::after box (22rem wide) then counts toward this container's own
+     scrollable area even at opacity:0, producing a phantom horizontal
+     scrollbar. Vertical-only scrolling is the only thing this list needs. */
+  overflow-x: hidden;
 }
 
 .param-row {
@@ -505,7 +511,47 @@ section {
   border-color: var(--qy100);
 }
 
-.info-icon, .attention-icon {
+/* "Punch Insert"/"Rec-Arm Insert" - each gets its own narrow column (icon
+   stacked above its button) matching the Active/Ignored toggle's footprint,
+   sized down (see .insert-btn below) since a full-size button here would
+   push these already-tight rows into horizontal scroll. */
+.insert-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: stretch;
+  flex: none;
+  gap: 0.2rem;
+}
+
+.insert-wrap .info-icon {
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  font-size: 0.55rem;
+}
+
+.insert-btn {
+  flex: 1;
+  min-height: 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  padding: 0.2rem 0.1rem;
+  font-size: 0.48rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.insert-btn.sent {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.info-icon, .attention-icon, .label-info-icon {
   position: relative;
   flex: none;
   width: 1.1rem;
@@ -517,7 +563,7 @@ section {
   cursor: help;
 }
 
-.info-icon {
+.info-icon, .label-info-icon {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
@@ -525,10 +571,14 @@ section {
   font-style: italic;
 }
 
-.info-icon:hover {
+.info-icon:hover, .label-info-icon:hover {
   color: #ffffff;
   background: var(--accent);
   border-color: var(--accent);
+  /* Overrides the global button:hover opacity: 0.88 below - without this,
+     hovering the icon (needed to trigger its tooltip) dims the icon and its
+     ::after tooltip box together, making the tooltip look translucent
+     instead of the same solid background every other tooltip uses. */
   opacity: 1;
 }
 
@@ -555,7 +605,7 @@ section {
    title attribute, which most browsers delay by ~1s before showing. Solid
    background (no alpha), regular weight, and the app's own font regardless
    of which icon triggered it. */
-.info-icon::after, .attention-icon::after {
+.info-icon::after, .attention-icon::after, .label-info-icon::after {
   content: attr(data-tooltip);
   position: absolute;
   z-index: 30;
@@ -595,12 +645,29 @@ section {
   right: 0;
 }
 
-/* attention-icon's tooltip visibility is driven by JS (mouseenter/mouseleave
-   bound directly to the button, see app.js) instead of bare :hover - it
-   sits right next to the MIDI In select inside the same <label>, and
-   relying on :hover made the tooltip pop open while hovering the select or
-   label text too. */
-.attention-icon.tooltip-open::after {
+/* Same edge problem as the header icon above, just on the opposite side -
+   this icon sits at the right edge of the Parameters panel, right against
+   its vertical scrollbar, so the default left:0 anchor pushed the tooltip
+   under/behind the scrollbar instead of showing it in full. */
+.insert-info-icon::after {
+  left: auto;
+  right: 0;
+}
+
+/* Same edge problem again - this icon sits toward the right end of the
+   connect bar, so the default left:0 anchor could push its tooltip past
+   the right edge of narrower browser windows. */
+.label-info-icon::after {
+  left: auto;
+  right: 0;
+}
+
+/* attention-icon's (and label-info-icon's) tooltip visibility is driven by
+   JS (mouseenter/mouseleave bound directly to the button, see app.js)
+   instead of bare :hover - both sit right next to a select/input inside the
+   same <label>, and relying on :hover made the tooltip pop open while
+   hovering that sibling control or the label text too. */
+.attention-icon.tooltip-open::after, .label-info-icon.tooltip-open::after {
   opacity: 1;
   visibility: visible;
 }
@@ -1148,9 +1215,19 @@ section {
     order: 4;
   }
 
+  .insert-wrap,
   .ignore-toggle {
     order: 2;
     align-self: auto;
+  }
+
+  .insert-wrap {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .insert-btn,
+  .ignore-toggle {
     writing-mode: horizontal-tb;
     transform: none;
     width: auto;
@@ -1160,7 +1237,7 @@ section {
   /* The tooltip popup's own box (22rem max-width) still counts toward the
      page's scrollable area on a narrow viewport even while hidden - cap it
      to the viewport so it can't force a horizontal scrollbar. */
-  .info-icon::after, .attention-icon::after {
+  .info-icon::after, .attention-icon::after, .label-info-icon::after {
     max-width: calc(100vw - 3rem);
   }
 

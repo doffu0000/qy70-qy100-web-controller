@@ -10,6 +10,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QY70 / QY100 Web Console</title>
+<meta property="og:title" content="QY70 / QY100 Web Console">
+<meta property="og:description" content="Control your Yamaha QY70/QY100 live from your browser - customize voices and drum kits, edit every parameter, and save/load your own presets.">
+<meta property="og:image" content="https://qy100.doffu.net/wp-content/uploads/2026/08/qy100-console-og-image.png">
+<meta property="og:url" content="https://qy100.doffu.net/wp-content/uploads/qy70-qy100-web-console/index.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -51,6 +57,12 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
       <select id="channel-select"></select>
     </label>
     <button id="xg-on-btn" class="btn-warning">Send XG System On</button>
+    <label>
+      <span class="label-row">Tempo
+        <button type="button" class="label-info-icon" data-tooltip="The tempo to use if the QY70/QY100's MIDI SYNC setting is set to EXTERNAL">i</button>
+      </span>
+      <input type="number" id="tempo-input" min="20" max="300" step="1" value="120">
+    </label>
     <span id="status"></span>
   </div>
 </header>
@@ -202,6 +214,9 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
       <p>Your browser will prompt for <strong>MIDI device access</strong> the first time you connect - this page needs that permission allowed, or it can&rsquo;t see any MIDI interface at all. If you accidentally blocked it, allow MIDI access again from your browser&rsquo;s site settings (usually the padlock/info icon next to the address bar) and reload the page.</p>
       <p>Click <strong>Find Devices</strong> to grant this page MIDI access, then pick your interface from <strong>MIDI In</strong> and <strong>MIDI Out</strong>. Leave MIDI In set to <strong>(none)</strong> for most tasks - incoming messages while an action is in progress can trigger unexpected changes on the device. Turn it on only when editing Drum Setup, where it lets the console follow what you play or select on the device itself.</p>
       <p>If parameter edits don&rsquo;t seem to be taking effect, click <strong>Send XG System On</strong> once - the QY70/QY100 may ignore Parameter Change messages until it receives this. This can also be used to reset all voices to default. Be careful to save your work on the device often to avoid accidental data loss.</p>
+      <hr>
+      <h4>QY70/QY100 Device Setup</h4>
+      <p>On the QY70/QY100 itself, go to <strong>Menu &gt; Utility &gt; MIDI</strong> and set <strong>MIDI Control</strong> to <strong>In/Out</strong>, <strong>Patt Out</strong> to <strong>1~8</strong> or <strong>9~16</strong>, and <strong>XG Parm Out</strong> to <strong>On</strong> - these need to be set correctly for the device to properly send and receive MIDI with this console.</p>
     </div>
     <div class="dialog-tab-panel" data-panel="voices" hidden>
       <p>Browse or search every Normal/SFX voice, Drum Kit, and SFX Kit, plus your own saved User Voice/User Kit entries. <strong>Clicking</strong> a voice, preset, or kit only <em>selects</em> it, for editing or saving - it doesn&rsquo;t touch the device. Use its <strong>Push</strong> button to actually send it to the <strong>Apply to</strong> Part shown above the list.</p>

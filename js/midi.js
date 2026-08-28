@@ -50,8 +50,12 @@ export class MidiLink {
     this.output = this.access.outputs.get(id) || null;
   }
 
-  send(bytes) {
+  // timestamp (a performance.now()-domain DOMHighResTimeStamp) lets a
+  // caller schedule a send ahead of time instead of firing immediately -
+  // used for MIDI Clock generation, where JS timer jitter would otherwise
+  // make the pulse spacing audibly uneven.
+  send(bytes, timestamp) {
     if (!this.output) throw new Error('No MIDI output selected.');
-    this.output.send(bytes);
+    this.output.send(bytes, timestamp);
   }
 }

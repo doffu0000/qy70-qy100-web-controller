@@ -203,15 +203,84 @@ function log(direction, bytes) {
 }
 
 const originalSend = link.send.bind(link);
-link.send = (bytes) => {
+link.send = (bytes, timestamp) => {
   log('OUT', bytes);
-  originalSend(bytes);
+  originalSend(bytes, timestamp);
 };
 link.onMessage = (bytes) => {
   log('IN ', bytes);
   handleIncomingVoiceChange(bytes);
   handleIncomingNoteOn(bytes);
 };
+
+// MIDI Clock generator for "Rec-Arm Insert" - a bare Start byte isn't
+// enough to make the QY70/QY100 (or most MIDI-synced hardware) actually
+// run; it needs a continuous stream of Timing Clock pulses (24 per quarter
+// note) behind it to sync playback to, the same way a DAW does when it
+// starts external gear. setInterval alone drifts too much for this, so a
+// look-ahead scheduler runs every 25ms and hands each pulse a precise send
+// timestamp (performance.now()-domain) instead of relying on the
+// interval's own firing time. There's no Stop control here by design - the
+// user stops playback/recording on the device itself, and this stream just
+// keeps running harmlessly in the background until then (or the output
+// disconnects, which does stop it - see the catch in scheduleClockPulses).
+const PPQN = 24;
+const CLOCK_LOOKAHEAD_MS = 100;
+const CLOCK_SCHEDULER_INTERVAL_MS = 25;
+const tempoInput = el('tempo-input');
+let clockRunning = false;
+let clockTimerId = null;
+let nextPulseTime = 0;
+
+function msPerClockPulse() {
+  const bpm = Math.max(1, Number(tempoInput.value) || 120);
+  return 60000 / bpm / PPQN;
+}
+
+function scheduleClockPulses() {
+  const horizon = performance.now() + CLOCK_LOOKAHEAD_MS;
+  while (nextPulseTime < horizon) {
+    try {
+      link.send(new Uint8Array([0xf8]), nextPulseTime);
+    } catch (err) {
+      stopClock();
+      statusEl.textContent = `Error: ${err.message}`;
+      return;
+    }
+    nextPulseTime += msPerClockPulse();
+  }
+}
+
+// Starts the pulse-scheduling interval if it isn't already running - shared
+// by both Start (fresh song) and Continue (resume from a located position),
+// since once going the pulse stream itself doesn't care which one kicked it
+// off. Never sends anything on its own.
+function ensureClockRunning() {
+  if (clockRunning) return;
+  clockRunning = true;
+  nextPulseTime = performance.now();
+  scheduleClockPulses();
+  clockTimerId = setInterval(scheduleClockPulses, CLOCK_SCHEDULER_INTERVAL_MS);
+}
+
+function startClock() {
+  link.send(new Uint8Array([0xfa])); // Start - throws here if no output selected, before touching any running state
+  ensureClockRunning();
+}
+
+// Only called internally (see the catch in scheduleClockPulses) when the
+// output disconnects mid-stream - there's no user-facing Stop control.
+function stopClock() {
+  if (!clockRunning) return;
+  clearInterval(clockTimerId);
+  clockTimerId = null;
+  clockRunning = false;
+  try {
+    link.send(new Uint8Array([0xfc])); // Stop
+  } catch {
+    // Losing the output mid-stream already surfaced its own error above.
+  }
+}
 
 // MIDIAccess fires onstatechange for reasons unrelated to the user (e.g. a
 // port re-announcing itself), so preserve the selected device across a
@@ -256,8 +325,9 @@ outputSelect.addEventListener('change', () => {
 
 // Tooltip open state is tracked with a class toggled only by this exact
 // button's own mouseenter/mouseleave, rather than a bare CSS :hover on
-// .attention-icon - see the .tooltip-open rule in style.css for why.
-document.querySelectorAll('.attention-icon').forEach((btn) => {
+// .attention-icon/.label-info-icon - see the .tooltip-open rule in
+// style.css for why.
+document.querySelectorAll('.attention-icon, .label-info-icon').forEach((btn) => {
   btn.addEventListener('mouseenter', () => btn.classList.add('tooltip-open'));
   btn.addEventListener('mouseleave', () => btn.classList.remove('tooltip-open'));
 });
@@ -2464,6 +2534,90 @@ function renderParamPanel() {
     }
 
     div.appendChild(knobGroup);
+
+    // Shared by the Insert button below - sends every knob in this row's
+    // current value right now, same wire logic as a live onChange send.
+    function sendRowNow() {
+      try {
+        const doSend = (ctx) => {
+          if (combineSend && grouped) {
+            sendParamGroup(link, 0, section, ctx, rows, knobs.map((k) => k.getValue()));
+          } else {
+            rows.forEach((r, i) => sendParam(link, 0, section, ctx, r, knobs[i].getValue()));
+          }
+        };
+        if (context.allChannels) {
+          for (let ch = 0; ch < 16; ch++) doSend({ ...context, drumHigh: 0x30 + ch });
+        } else {
+          doSend(context);
+        }
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+      }
+    }
+
+    // Explicitly (re-)transmits this row's current value right now,
+    // regardless of Active/Ignored (which only governs live drag/typed
+    // sends and .qyparam loads) - meant for punching a specific parameter
+    // into a QY70/QY100 song while it's actively recording (Replace,
+    // Overdub, or Multi), without needing to nudge the knob to trigger a
+    // change.
+    const insertWrap = document.createElement('div');
+    insertWrap.className = 'insert-wrap';
+
+    const insertInfoIcon = document.createElement('button');
+    insertInfoIcon.type = 'button';
+    insertInfoIcon.className = 'info-icon insert-info-icon';
+    insertInfoIcon.textContent = 'i';
+    insertInfoIcon.dataset.tooltip = "Sends this parameter's current value to the device while a song/pattern is actively recording in REPL, OVER, or MULTI mode - lets you punch-in the parameter's setting at the moments you desire.";
+
+    const insertBtn = document.createElement('button');
+    insertBtn.type = 'button';
+    insertBtn.className = 'insert-btn';
+    insertBtn.textContent = 'Punch Insert';
+    insertBtn.addEventListener('click', () => {
+      sendRowNow();
+      insertBtn.classList.add('sent');
+      setTimeout(() => insertBtn.classList.remove('sent'), 250);
+    });
+
+    insertWrap.appendChild(insertInfoIcon);
+    insertWrap.appendChild(insertBtn);
+    div.appendChild(insertWrap);
+
+    // "Rec-Arm Insert" - sends a MIDI Play (Start) message plus a Clock
+    // stream to start the QY70/QY100 playing, immediately followed by this
+    // row's current value - starts playback and punches this parameter in
+    // right at the top, in a single click, rather than needing Play pressed
+    // on the device and this parameter sent separately by hand.
+    const playInsertWrap = document.createElement('div');
+    playInsertWrap.className = 'insert-wrap';
+
+    const playInsertInfoIcon = document.createElement('button');
+    playInsertInfoIcon.type = 'button';
+    playInsertInfoIcon.className = 'info-icon insert-info-icon';
+    playInsertInfoIcon.textContent = 'i';
+    playInsertInfoIcon.dataset.tooltip = "Arm your QY70/QY100 to record in REPL, OVER, or MULTI mode (but don't begin the recording on the device). Click the REC-ARM INSERT button to trigger recording to initiate, and insert the corresponding parameter value. Useful for inserting parameter changes at the beginning of a song/pattern.";
+
+    const playInsertBtn = document.createElement('button');
+    playInsertBtn.type = 'button';
+    playInsertBtn.className = 'insert-btn play-insert-btn';
+    playInsertBtn.textContent = 'Rec-Arm Insert';
+    playInsertBtn.addEventListener('click', () => {
+      try {
+        startClock();
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+        return;
+      }
+      sendRowNow();
+      playInsertBtn.classList.add('sent');
+      setTimeout(() => playInsertBtn.classList.remove('sent'), 250);
+    });
+
+    playInsertWrap.appendChild(playInsertInfoIcon);
+    playInsertWrap.appendChild(playInsertBtn);
+    div.appendChild(playInsertWrap);
 
     // "Active"/"Ignored" mute switch for this row - Ignored still lets the
     // knob/toggle/reset update its value (and Save still captures it), it
