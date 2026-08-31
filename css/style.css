@@ -39,13 +39,28 @@ header {
 h1 { margin: 0; font-size: 1.3rem; font-weight: 600; color: var(--heading); }
 h2 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--heading); text-transform: uppercase; letter-spacing: 0.04em; }
 
+/* Plain h3s (subsection headings like "Animated Message"/"Graphics
+   Library") had no rule of their own, so they fell back to the browser
+   default - bold (700) and larger than body text - reading noticeably
+   heavier than the h2 section title above them despite being one level
+   down. :not(.app-dialog-title) excludes dialog titles, which already
+   have their own sizing (see .app-dialog-title) and weren't part of
+   this complaint. */
+h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight: 600; color: var(--heading); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Negative left/right margin cancels header's own 1.5rem side padding so
+   this border-bottom reaches the viewport edges (full screen width)
+   instead of stopping at header's padded content width; the matching
+   padding restores the original inset for header-top's own content. */
 #header-top {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
   gap: 1rem;
+  margin: 0 -1.5rem 0.75rem;
+  padding: 0 1.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
 }
 
 #header-brand {
@@ -90,14 +105,54 @@ h2 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--headin
   flex-shrink: 0;
 }
 
+/* A 2-column flex layout (not a shared-row grid): the left row (Find
+   Devices..Channel) is one line, the right side is two stacked rows
+   (Tempo..Sections, then the Send XG/Messaging box). A grid with shared
+   row tracks forced row 1's height to match the TALLER of the two columns
+   (Tempo's knob), stretching the short left row's row down to match it
+   and leaving a dead gap underneath - flex lets each column size to its
+   own content instead, with nowrap keeping the two columns side by side
+   (each still wraps its own fields internally via .connect-row) down to
+   the 600px breakpoint below, which switches to a full column stack. */
 #connect-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.connect-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.connect-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.connect-row-1-right,
+.connect-row-2-right {
+  justify-content: flex-end;
+}
+
+/* Each row above is itself a flex row of fields, wrapping within its own
+   width only (never the width of a sibling row). */
+.connect-row {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   align-items: flex-end;
 }
 
-#connect-bar label {
+/* .connect-field is the same shape as a plain <label> here, used instead
+   of one where the field itself is already a <label> (the toggle switch
+   below) - nesting a <label> inside a <label> is invalid HTML and can
+   double-fire click-to-toggle behavior. */
+#connect-bar label, #connect-bar .connect-field {
   display: flex;
   flex-direction: column;
   font-size: 0.75rem;
@@ -105,10 +160,117 @@ h2 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--headin
   gap: 0.25rem;
 }
 
+/* Separates Tempo/Transports/Messaging from whatever comes before each -
+   .connect-row's own gap already provides the spacing, this just adds the
+   visible rule down the middle of it. */
+.connect-divider {
+  border-left: 1px solid var(--border);
+  padding-left: 1rem;
+}
+
+/* Its own bordered box (not a .connect-field - it holds two side-by-side
+   items, Send XG System On and the Messaging field, rather than a single
+   label+control column). */
+.messaging-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 2px solid var(--qy100);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+
 #connect-bar .label-row {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+}
+
+/* flex-end rather than center - the knob widget is dial-on-top,
+   value-input-below, so centering the Tap button against its full height
+   lines it up with the dial instead of the value input beside it. */
+#tempo-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+#tap-tempo-btn {
+  font-size: 0.7rem;
+  padding: 0.35rem 0.5rem;
+}
+
+#song-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#song-select-input {
+  width: 4rem;
+}
+
+#song-select-btn {
+  font-size: 0.7rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.transport-controls {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.transport-controls button {
+  width: 2rem;
+  height: 1.7rem;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.transport-controls button:hover {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+#transport-play-btn {
+  color: var(--accent);
+}
+
+/* Section Control buttons carry text labels (Main A, Fill AB, etc.) rather
+   than the transport icons above, so they need their own width/padding
+   instead of the fixed 2rem icon-button box. */
+.section-controls {
+  flex-wrap: wrap;
+  max-width: 14rem;
+}
+
+.section-controls .section-btn {
+  width: auto;
+  height: auto;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+/* Blank only applies in Song mode (unlike the other sections, which work
+   in either mode) - the other section buttons are var(--panel) background
+   on var(--muted) text; Blank swaps that pairing (var(--muted) background
+   on var(--panel) text) so it reads as inverted rather than blending in
+   as just another section button. */
+.section-controls .section-btn[data-section="BLANK"] {
+  background: var(--muted);
+  color: var(--panel);
+  border-color: var(--muted);
+}
+
+.section-controls .section-btn[data-section="BLANK"]:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
 }
 
 #input-select, #output-select {
@@ -134,15 +296,51 @@ button {
   color: #ffffff;
   border-color: var(--accent);
   font-weight: 500;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.08s ease;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   opacity: 0.88;
+}
+
+/* A pressed-in look for every button in the app - nothing previously
+   distinguished :active from :hover, so clicks had no tactile feedback.
+   Shifting down + shrinking slightly plus an inset shadow reads as "being
+   pushed", same idea as a physical button. */
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35);
+  opacity: 0.85;
+}
+
+/* Previously only #voice-file-controls and #graphics-controls buttons
+   dimmed when disabled - any disabled button elsewhere (e.g. Stop
+   Message before anything's playing) rendered at full opacity with no
+   visual difference from an enabled one, despite doing nothing when
+   clicked. Those two scoped rules are now redundant with this and have
+   been removed. */
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-warning {
   background: var(--qy100);
   border-color: var(--qy100);
+}
+
+/* Matches #join-btn's own look (the header's "Support Future Projects"
+   button) - same soft white glow and accent-blue background, rather
+   than the orange .btn-warning family every other System On/reset-style
+   button here uses. Distinguishes GM System On (rarely used, less
+   consequential day-to-day) at a glance from XG System On right next to
+   it (the app's primary/default mode, and everything else's target). */
+#gm-on-btn {
+  border: none;
+  border-radius: 5px;
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.5);
 }
 
 #log-controls {
@@ -167,12 +365,78 @@ button:hover {
   color: var(--muted);
 }
 
+/* main now just stacks its three pieces vertically (tabs, the active
+   tab's panel, MIDI Log) - the Voice Browser/Parameters 2-column grid
+   that used to live directly on main moved to .tab-panel below, since
+   MIDI Log is no longer part of that grid. */
 main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+#main-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.main-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 0.6rem 1rem;
+  margin-bottom: -1px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.main-tab:hover {
+  opacity: 1;
+  color: var(--heading);
+}
+
+.main-tab.active {
+  color: var(--heading);
+  border-bottom-color: var(--accent);
+}
+
+/* Data Filer's panel is just a "Coming soon." placeholder (see
+   #data-filer in index.html) - strikethrough on the tab label itself
+   flags that up front, before a click reveals the empty panel. Still
+   clickable rather than actually disabled, so "Coming soon." remains
+   reachable. */
+.main-tab[data-tab="data-filer"] {
+  text-decoration: line-through;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* Voice/Parameters is the only panel that needs the 2-column grid - a
+   plain block would stack Voice Browser above Parameters instead of
+   side by side. */
+#tab-panel-voice-parameters.active {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   grid-template-rows: auto auto;
   gap: 1rem;
-  padding: 1.5rem;
+}
+
+#main-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
 }
 
 section {
@@ -207,10 +471,6 @@ section {
   margin: 0.5rem 0 0.75rem;
 }
 
-#voice-file-controls button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 
 #param-file-controls {
   display: flex;
@@ -440,6 +700,11 @@ section {
   margin: 0.1rem 0;
   padding: 0.15rem 0;
   border-bottom: 1px solid var(--border);
+  /* Toggle-widget rows (Key Assign, Rcv Note Off/On, etc.) are naturally
+     much shorter than a knob row - without a floor here, the Insert/Active
+     columns (which stretch to match this row's height) get too little
+     vertical space for "REC-ARM INSERT" to wrap onto just 2 lines. */
+  min-height: 4.5rem;
 }
 
 /* Greyed out to show it's not currently applicable (e.g. Variation Part
@@ -511,6 +776,18 @@ section {
   border-color: var(--qy100);
 }
 
+/* The global button:active press effect (see button:active:not(:disabled)
+   above) sets its own transform, which would otherwise replace this
+   button's rotate(180deg) outright - since both target the same property,
+   the click briefly un-rotates the vertical text back to horizontal and
+   then snaps back, reading as a 180-degree flip instead of a press.
+   Composing rotate(180deg) with a plain scale (no translateY - shifting
+   "down" in rotated text space doesn't read as a press) keeps the text
+   upright while still giving a pressed-in feel. */
+.ignore-toggle:active:not(:disabled) {
+  transform: rotate(180deg) scale(0.97);
+}
+
 /* "Punch Insert"/"Rec-Arm Insert" - each gets its own narrow column (icon
    stacked above its button) matching the Active/Ignored toggle's footprint,
    sized down (see .insert-btn below) since a full-size button here would
@@ -549,6 +826,12 @@ section {
   background: var(--accent);
   color: #ffffff;
   border-color: var(--accent);
+}
+
+/* Same fix as .ignore-toggle:active above, for the same reason - this
+   button is also rotate(180deg) for vertical text. */
+.insert-btn:active:not(:disabled) {
+  transform: rotate(180deg) scale(0.97);
 }
 
 .info-icon, .attention-icon, .label-info-icon {
@@ -600,24 +883,26 @@ section {
   opacity: 1;
 }
 
-/* Shared tooltip-box styling for both icon types, kept as one rule so their
-   popups can't visually drift apart - custom tooltip instead of the native
-   title attribute, which most browsers delay by ~1s before showing. Solid
-   background (no alpha), regular weight, and the app's own font regardless
-   of which icon triggered it. */
-.info-icon::after, .attention-icon::after, .label-info-icon::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  z-index: 30;
-  top: 140%;
-  left: 0;
-  width: max-content;
+/* #global-tooltip (a single shared element appended to <body> - see
+   index.html) replaces what used to be each icon's own CSS ::after
+   pseudo-element. That per-icon approach could only ever render inside
+   whatever ancestor happened to contain the icon - if that ancestor
+   scrolled or clipped overflow (e.g. #param-list's overflow-y: auto, or
+   any of the scrollable hex-output/list boxes throughout the app), the
+   tooltip got cut off right along with it, no matter how high its own
+   z-index claimed to be; overflow clipping always wins over z-index.
+   position: fixed here means every tooltip escapes ALL such ancestors
+   and is positioned in plain viewport coordinates, computed fresh per
+   hover in app.js (see showGlobalTooltip/positionGlobalTooltip) instead
+   of the hardcoded per-icon left:0/right:0 anchors this replaces. */
+#global-tooltip {
+  position: fixed;
+  z-index: 9999;
   max-width: 22rem;
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
   background: var(--heading);
   color: #ffffff;
-  font-style: normal;
   font-weight: 400;
   font-family: "Sora", Helvetica, Arial, sans-serif;
   font-size: 0.72rem;
@@ -631,43 +916,7 @@ section {
   transition: opacity 0.05s linear;
 }
 
-.info-icon:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* This icon sits at the top-right of the page, right against the edge - the
-   default left:0 anchor made its tooltip extend rightward off the viewport,
-   where it ended up rendered underneath the page's own scrollbar instead of
-   above it. Anchoring from the right edge instead keeps it fully on-screen. */
-.header-info-icon::after {
-  left: auto;
-  right: 0;
-}
-
-/* Same edge problem as the header icon above, just on the opposite side -
-   this icon sits at the right edge of the Parameters panel, right against
-   its vertical scrollbar, so the default left:0 anchor pushed the tooltip
-   under/behind the scrollbar instead of showing it in full. */
-.insert-info-icon::after {
-  left: auto;
-  right: 0;
-}
-
-/* Same edge problem again - this icon sits toward the right end of the
-   connect bar, so the default left:0 anchor could push its tooltip past
-   the right edge of narrower browser windows. */
-.label-info-icon::after {
-  left: auto;
-  right: 0;
-}
-
-/* attention-icon's (and label-info-icon's) tooltip visibility is driven by
-   JS (mouseenter/mouseleave bound directly to the button, see app.js)
-   instead of bare :hover - both sit right next to a select/input inside the
-   same <label>, and relying on :hover made the tooltip pop open while
-   hovering that sibling control or the label text too. */
-.attention-icon.tooltip-open::after, .label-info-icon.tooltip-open::after {
+#global-tooltip.visible {
   opacity: 1;
   visibility: visible;
 }
@@ -762,9 +1011,18 @@ section {
 
 .toggle-wrap { justify-content: center; }
 
+/* flex-shrink:0 matters here specifically because the switch's only
+   "content" (.toggle-track and its ::before knob) is position:absolute,
+   so the switch itself has no in-flow content to give it a min-content
+   width floor. Without this, a flex row squeezed by a narrow viewport
+   (Onion Skin/Loop/Ping-Pong/Reverse toggles, the header Messaging
+   toggle, etc.) would shrink the switch's rendered width right down
+   toward 0 instead of just wrapping it onto its own line - collapsing
+   the track into a thin sliver with the knob sitting outside it. */
 .toggle-switch {
   position: relative;
   display: inline-block;
+  flex-shrink: 0;
   width: 2.4rem;
   height: 1.3rem;
   margin: 0.35rem 0;
@@ -807,7 +1065,14 @@ section {
   transform: translateX(1.1rem);
 }
 
-.segmented-control {
+/* :not([hidden]) rather than a bare selector - same reason as
+   #graphics-load-progress-row's own comment above: an author-stylesheet
+   class always beats the UA stylesheet's [hidden] { display: none } at
+   equal specificity, regardless of source order, so a plain `display:
+   flex` here would keep a hidden segmented-control visible. Only
+   #marquee-orbit-direction-toggle actually toggles `hidden` today, but
+   this is the shared rule for every .segmented-control. */
+.segmented-control:not([hidden]) {
   display: flex;
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -834,7 +1099,12 @@ section {
   color: #ffffff;
 }
 
-#log { grid-column: 2; max-height: 40vh; display: flex; flex-direction: column; }
+#log { max-height: 40vh; display: flex; flex-direction: column; }
+/* #log's own display:flex above (an ID selector) outranks the UA
+   stylesheet's [hidden]{display:none} (an attribute selector), so the
+   hidden attribute set from JS while the Diagnostics tab is open would
+   otherwise be silently overridden and the section would stay visible. */
+#log[hidden] { display: none; }
 
 #log-output {
   flex: 1;
@@ -848,6 +1118,711 @@ section {
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 0.5rem;
+}
+
+#raw-sysex-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+#raw-sysex-controls label {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 20rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  gap: 0.25rem;
+}
+
+#raw-sysex-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+/* Fixed F0/F7 badges instead of a hint sentence explaining they're added
+   automatically - shows the framing is already handled at a glance,
+   right where the bytes get typed. */
+.raw-sysex-frame-byte {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 0.6rem;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  cursor: help;
+  border-radius: 5px;
+}
+
+/* A <textarea> instead of <input type="text"> so a long message (like the
+   placeholder) can wrap and grow taller on a narrow screen instead of
+   scrolling horizontally out of view - app.js grows/shrinks its height to
+   fit content on input. resize:none/overflow:hidden hide the manual
+   resize handle and scrollbar that would otherwise fight that JS sizing;
+   the other #raw-sysex-input-row children (border/background/etc match
+   the shared select/input/button rule below, since that selector doesn't
+   include textarea). */
+#raw-sysex-input {
+  flex: 1;
+  /* A flex item's default min-width is auto (its content's min-content
+     size), not 0 - for a <textarea> that floor is wide enough that on a
+     narrow phone screen, the F0/F7 badges plus this plus the Send
+     button together didn't all fit and overflowed the row instead of
+     the textarea just shrinking to make room like it's supposed to. */
+  min-width: 0;
+  resize: none;
+  overflow: hidden;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.4rem 0.6rem;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.9rem;
+}
+
+#diagnostics .connect-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+#diagnostics .label-row, #graphics .label-row, #display-text .label-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--heading);
+}
+
+#diagnostics-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 3rem;
+  margin: 1rem 0;
+}
+
+.diagnostics-filter-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  max-width: 30rem;
+}
+
+/* A grid instead of flex-wrap - flex-wrap breaks wherever items stop
+   fitting the container's width, which doesn't reliably land on 8 per
+   row; a fixed 8-column grid guarantees channels 1-8 on one row and
+   9-16 on the next regardless of container width. */
+#diag-channel-filters {
+  display: grid;
+  grid-template-columns: repeat(8, 1.8rem);
+  gap: 0.5rem;
+}
+
+.diag-type-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: var(--text);
+}
+
+/* A smaller variant of .toggle-switch (below) for this dense list of 9
+   filters - the default size (used standalone, e.g. the Messaging toggle
+   in the connect bar) reads as oversized packed this tightly. */
+.toggle-switch--sm {
+  width: 1.9rem;
+  height: 1.05rem;
+}
+
+.toggle-switch--sm .toggle-track::before {
+  height: 0.75rem;
+  width: 0.75rem;
+}
+
+.toggle-switch--sm input:checked + .toggle-track::before {
+  transform: translateX(0.85rem);
+}
+
+.channel-filter-btn {
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  font-size: 0.7rem;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.channel-filter-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+#diagnostics-log-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+#diag-log-output {
+  max-height: 40vh;
+  overflow-y: auto;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: pre-wrap;
+  margin: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.5rem;
+}
+
+#graphics-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.graphics-controls-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+}
+
+.graphics-transform-btn {
+  width: 2rem;
+  height: 1.7rem;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.graphics-transform-btn:hover {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Persistent "this is the selected tool" state, unlike the flip/rotate
+   buttons sharing .graphics-transform-btn's base look - those are
+   one-shot actions with no ongoing state to show. */
+.graphics-tool-btn.active {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Mimics the QY70/QY100's own Bitmap Window display - a 16x16 pixel
+   image, worked out from real-hardware corner testing (see
+   buildBitmapWindow in sysex.js). Cells are sized for a comfortable
+   click-and-drag icon canvas rather than 1:1 with the underlying data
+   layout. */
+#graphics-canvas-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+#graphics-grid {
+  display: flex;
+  gap: 1px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  background: var(--border);
+  /* No padding - the outer edge is exactly this 1px border, the same
+     thickness as the 1px inter-cell gaps above (padding here previously
+     made the outer edge read as a thicker line than the gridlines
+     between cells). */
+  border: 1px solid var(--border);
+  user-select: none;
+}
+
+#graphics-frames-panel {
+  flex: 1;
+  min-width: 16rem;
+}
+
+.graphics-frames-count {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+#graphics-frames-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+#graphics-frames-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 21.5rem;
+  overflow-y: auto;
+}
+
+.graphics-frame-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.graphics-frame-item:hover {
+  border-color: var(--accent);
+}
+
+.graphics-frame-number {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.graphics-frame-item button {
+  font-size: 0.7rem;
+  padding: 0.3rem 0.5rem;
+}
+
+.graphics-frame-move-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.graphics-frame-move-btn {
+  width: 1.4rem;
+  height: 0.95rem;
+  padding: 0 !important;
+  font-size: 0.55rem !important;
+  line-height: 1;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.graphics-frame-move-btn:hover:not(:disabled) {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.graphics-frame-move-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* The frame currently mirroring the canvas live (see graphicsSelectedFrameId
+   in app.js) - a colored left edge instead of a full border change, so it
+   doesn't compete visually with the button colors in the same row. */
+.graphics-frame-item.selected {
+  border-color: var(--accent);
+  border-left-width: 3px;
+}
+
+#graphics-onion-skin-row, #graphics-onion-skin-row-2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+#graphics-onion-skin-depth-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#graphics-onion-skin-depth {
+  width: 6rem;
+}
+
+#graphics-onion-skin-depth:disabled {
+  opacity: 0.45;
+}
+
+#graphics-onion-skin-depth-value {
+  color: var(--muted);
+  font-size: 0.85rem;
+  min-width: 3.6rem;
+}
+
+.graphics-sysex-panel {
+  margin-top: 1rem;
+}
+
+#graphics-animation-loop-label, #graphics-animation-pingpong-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+#graphics-hex-output, #graphics-animation-hex-output, #display-text-hex-output, #marquee-hex-output, #split-hex-output {
+  margin: 0.4rem 0 0;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.5rem;
+}
+
+#graphics-animation-hex-output, #marquee-hex-output, #split-hex-output {
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+/* Extra bottom margin (well beyond the usual 0.5rem row spacing) - the
+   Message label's own info icon tooltip drops down far enough to
+   otherwise overlap the Message SysEx panel's icon directly below it,
+   which could pop its own tooltip open mid-hover and visually clobber
+   this one. */
+#display-text-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.5rem 0 4rem;
+}
+
+#display-text-controls .label-row {
+  align-self: flex-start;
+}
+
+#display-text-input {
+  width: 100%;
+  min-height: 2.4rem;
+  background: var(--bg);
+  border-radius: 0;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+#display-text-count {
+  align-self: flex-end;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Column layout (label, then a full-width textarea, then the counter
+   below-right) rather than a single flex row like the static Message
+   field above - a textarea that grows to fit longer marquee text needs
+   its own line to grow into, and full width so it stays usable/responsive
+   at any panel width instead of being capped to a fixed max-width. */
+#marquee-text-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.5rem 0 3rem;
+}
+
+#marquee-text-controls .label-row {
+  align-self: flex-start;
+}
+
+/* resize:none + overflow:hidden because height is driven by JS
+   (auto-grow to scrollHeight on input - see the marquee-text-input
+   listener in app.js) rather than the browser's own resize handle or
+   scrollbar, so the box grows to fit typed text instead of scrolling
+   internally or being manually dragged. */
+#marquee-text-input {
+  width: 100%;
+  min-height: 2.4rem;
+  resize: none;
+  overflow: hidden;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+#marquee-text-count {
+  align-self: flex-end;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+#marquee-loop-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+/* :not([hidden]) for the same reason as #graphics-load-progress-row and
+   .segmented-control above - an author-stylesheet display value beats
+   the UA stylesheet's [hidden] { display: none } at equal specificity
+   regardless of source order. */
+#marquee-orbit-direction-row:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#marquee-orbit-direction-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+  min-width: 1.8rem;
+}
+
+/* Split Message (Display Text tab) - same column layout (label, then a
+   full-width growable textarea, then the counter below-right) as
+   #marquee-text-controls above, just as a reusable class since there
+   are two of these (Line 1, Line 2) rather than one. Extra bottom
+   margin for the same reason as #marquee-text-controls too - the label's
+   own info icon tooltip otherwise reaches down into whatever's below it
+   (here, the OTHER line's row, or the mode segmented control). */
+.split-line-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.5rem 0 3rem;
+}
+
+.split-line-row .label-row {
+  align-self: flex-start;
+}
+
+.split-line-input {
+  width: 100%;
+  min-height: 2.4rem;
+  resize: none;
+  overflow: hidden;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.split-line-count {
+  align-self: flex-end;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* :not([hidden]) on the directions row - it starts hidden and is
+   toggled by setSplitMode in app.js - for the same reason as
+   #marquee-orbit-direction-row above: an author-stylesheet display value
+   beats the UA stylesheet's [hidden] { display: none } at equal
+   specificity regardless of source order. #split-shared-wait-row is
+   never hidden, so it doesn't strictly need the guard, but it's kept
+   consistent with its sibling here. */
+#split-shared-wait-row:not([hidden]), #split-marquee-directions-row:not([hidden]) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.5rem 0 3rem;
+}
+
+#split-loop-label, .split-direction-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.graphics-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+/* The real QY70/QY100 LCD's own Bitmap Window pixels aren't square - the
+   display reads them wider than tall, so square cells here made a drawn
+   image look squashed compared to how it actually renders on the
+   device. 1.6:1 wide:tall (adjusted down from an initial 2:1 estimate). */
+.graphics-cell {
+  width: 1.92rem;
+  height: 1.2rem;
+  padding: 0;
+  background: var(--bg);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+/* Custom per-tool cursors over the canvas itself, not just the toolbar
+   button - a small inline SVG glyph (accent-colored fill, white outline
+   so it reads on both light and dark cell backgrounds) with its hotspot
+   (the two numbers before the fallback keyword) placed at the tip/pour
+   point, matching where the click actually lands. Falls back to
+   crosshair/cell if the browser can't load the data URI for any reason. */
+#graphics-grid.graphics-tool-pencil .graphics-cell {
+  cursor:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><polygon points='3,21 6,21 20,7 17,4 3,18' fill='%23475260' stroke='white' stroke-width='1' stroke-linejoin='round'/></svg>")
+    3 21,
+    crosshair;
+}
+
+#graphics-grid.graphics-tool-bucket .graphics-cell {
+  cursor:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M6 9 L18 9 L16 19 L8 19 Z' fill='%23475260' stroke='white' stroke-width='1'/><path d='M8 9 Q12 3 16 9' fill='none' stroke='white' stroke-width='1.5'/><circle cx='4' cy='21' r='2' fill='%23475260' stroke='white' stroke-width='1'/></svg>")
+    4 21,
+    cell;
+}
+
+.graphics-cell:hover {
+  opacity: 1;
+  background: var(--border);
+}
+
+.graphics-cell.active {
+  background: var(--accent);
+}
+
+/* Grid cells are real <button> elements, so they'd otherwise pick up the
+   global button:active press effect (shift + shrink + inset shadow) -
+   fine for a single button, but distracting on a pixel-art grid where a
+   click-and-drag paint stroke passes over many cells in a row, and it's
+   redundant besides: .active above already shows which pixels are on. */
+.graphics-cell:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  opacity: 1;
+}
+
+/* Onion skin ghost - a pixel that's on in an earlier frame but off in the
+   current one. Only applied when the cell isn't already .active (see
+   renderGraphicsOnionSkin in app.js), so a genuinely-drawn pixel always
+   reads as solid, never as a faint ghost. --onion-opacity is set per-cell
+   in JS, fading with how many frames back the ghost came from. */
+.graphics-cell.onion {
+  background: rgba(71, 82, 96, var(--onion-opacity, 0.35));
+}
+
+/* Future onion skin ghost - same idea as .onion above, but for a pixel
+   that's on in a LATER frame, shown in light orange so past and future
+   ghosts stay visually distinct on the same canvas. If a cell is ghosted
+   by both directions at once, this rule is declared after .onion so the
+   future ghost wins. */
+.graphics-cell.onion-future {
+  background: rgba(230, 149, 64, var(--onion-future-opacity, 0.35));
+}
+
+#graphics-library-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1rem 0 0.75rem;
+}
+
+#graphics-library-controls h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--heading);
+}
+
+/* Load from File and Save to Library grouped together with their own
+   small gap, so justify-content:space-between above only pushes this
+   whole group away from the h3 - not the two buttons apart from
+   each other too. */
+#graphics-library-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#graphics-library-source-toggle {
+  margin-bottom: 0.75rem;
+}
+
+/* Roughly 6 rows tall before scrolling - a long library shouldn't push
+   the rest of the page down indefinitely. */
+#graphics-library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 21.5rem;
+  overflow-y: auto;
+}
+
+/* Not .hint - that class's negative margin-top (meant to pull hint text
+   up under a label elsewhere) instead clipped this empty-state message
+   against the scrollable list's own top edge here. */
+.graphics-library-empty {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.graphics-library-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+/* A tiny 16x16 read-only rendering of the saved image, same 1.6:1 pixel
+   proportions as the main canvas but far smaller - just the pixels
+   themselves (no gap between them, so it reads as a picture rather than
+   a grid) inside a single thin frame, enough to recognize an entry at a
+   glance without opening it. */
+.graphics-library-preview {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(16, 3.2px);
+  grid-template-rows: repeat(16, 2px);
+  border: 1px solid var(--border);
+}
+
+.graphics-library-preview span {
+  width: 3.2px;
+  height: 2px;
+  background: var(--panel);
+}
+
+.graphics-library-preview span.active {
+  background: var(--accent);
+}
+
+.graphics-library-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-dialog {
@@ -1053,6 +2028,37 @@ section {
   color: var(--muted);
 }
 
+/* Inline (non-modal) progress feedback for Load Image/Load Animation -
+   unlike the progress-dialog above (a blocking modal for MIDI-send
+   operations that shouldn't be interrupted), file decoding here can
+   still need a per-file overwrite confirmation dialog mid-loop, so this
+   stays a plain row in the page flow rather than a <dialog> that would
+   have to stack with that confirm. */
+/* :not([hidden]) rather than a bare selector - an ID selector's
+   specificity otherwise beats the UA stylesheet's [hidden] { display:
+   none }, so setting row.hidden = true in JS would toggle the attribute
+   correctly but never actually hide the element on screen. */
+#graphics-load-progress-row:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+}
+
+#graphics-load-progress-bar {
+  flex: 1;
+  min-width: 0;
+  height: 0.6rem;
+  accent-color: var(--qy100);
+}
+
+#graphics-load-progress-status {
+  flex: none;
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* ---- Responsive ----
    The three-panel grid and the fixed-width param rows assume real
    horizontal room. Below tablet width the grid drops to a single column
@@ -1062,7 +2068,7 @@ section {
    scrolling. */
 
 @media (max-width: 900px) {
-  main {
+  #tab-panel-voice-parameters.active {
     grid-template-columns: 1fr;
     grid-template-rows: none;
   }
@@ -1080,7 +2086,6 @@ section {
   }
 
   #log {
-    grid-column: auto;
     height: 30vh;
   }
 }
@@ -1096,8 +2101,31 @@ section {
     overflow-x: hidden;
   }
 
+  /* The 5 main tabs (Voice/Parameters, Data Filer, Diagnostics + Raw
+     SysEx, Graphics, Display Text) don't fit on one line below phone
+     width - wrapping keeps every tab reachable with a tap instead of
+     silently pushing the later ones off the right edge (the general
+     html/body overflow-x:hidden above would otherwise just clip them,
+     making Display Text unreachable). */
+  #main-tabs {
+    flex-wrap: wrap;
+  }
+
+  .main-tab {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.82rem;
+  }
+
   header {
     padding: 0.75rem 1rem;
+  }
+
+  /* Matches header's own reduced side padding at this width, so the
+     negative margin still cancels it exactly (see the desktop rule's
+     comment) instead of over-canceling and overflowing the viewport. */
+  #header-top {
+    margin: 0 -1rem 0.75rem;
+    padding: 0 1rem 0.75rem;
   }
 
   main {
@@ -1122,7 +2150,25 @@ section {
     padding: 0.75rem;
   }
 
-  #connect-bar,
+  #connect-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .connect-right-column {
+    margin-left: 0;
+  }
+
+  .connect-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .connect-row-1-right,
+  .connect-row-2-right {
+    justify-content: flex-start;
+  }
+
   #param-file-controls,
   #fx-file-controls,
   #param-controls {
@@ -1130,8 +2176,42 @@ section {
     align-items: stretch;
   }
 
-  #connect-bar label {
+  #connect-bar label, #connect-bar .connect-field {
     width: 100%;
+  }
+
+  /* .toggle-switch (the Messaging toggle) is itself a <label>, and its
+     nested Messaging field is a .connect-field - both get caught by the
+     blanket width:100% rule above, stretching the small toggle pill into
+     a giant bar and forcing the field wrapper to claim the full width of
+     .messaging-box's row, squeezing/wrapping Send XG System On instead of
+     sitting beside it. Restoring their normal fixed sizing here keeps
+     Messaging matching every other fixed-size control in the connect bar. */
+  #connect-bar .toggle-switch {
+    width: 2.4rem;
+  }
+
+  .messaging-box .connect-field {
+    width: auto;
+  }
+
+  /* Send GM System On + its info icon + Send XG System On + its info
+     icon + the Messaging toggle field together are just wide enough to
+     overflow a phone-width screen with nowrap - wrapping lets Messaging
+     drop to its own line instead of pushing past the right edge. */
+  .messaging-box {
+    flex-wrap: wrap;
+  }
+
+  /* A left border reads as a vertical divider in the desktop row layout -
+     once #connect-bar stacks to a column above, that same border just runs
+     down the left edge of a full-width block, which doesn't read as a
+     separator at all. A top border does the equivalent job stacked. */
+  #connect-bar .connect-divider {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 0.6rem;
   }
 
   #input-select, #output-select, #channel-select,
@@ -1234,10 +2314,20 @@ section {
     padding: 0.2rem 0.5rem;
   }
 
-  /* The tooltip popup's own box (22rem max-width) still counts toward the
-     page's scrollable area on a narrow viewport even while hidden - cap it
-     to the viewport so it can't force a horizontal scrollbar. */
-  .info-icon::after, .attention-icon::after, .label-info-icon::after {
+  /* Text is horizontal at this width (no rotate(180deg) base transform
+     to compose with here, unlike the wide-layout :active rules above),
+     so the press effect just needs a plain scale. */
+  .insert-btn:active:not(:disabled),
+  .ignore-toggle:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  /* #global-tooltip's default 22rem max-width can be wider than a narrow
+     viewport itself - the JS positioning (positionGlobalTooltip in
+     app.js) clamps its left edge to stay on-screen, but that alone can't
+     stop a too-wide box from still overflowing the right edge, so the
+     box itself needs a viewport-relative cap too. */
+  #global-tooltip {
     max-width: calc(100vw - 3rem);
   }
 
@@ -1249,5 +2339,74 @@ section {
   #help-btn, #contact-btn {
     width: 100%;
     text-align: center;
+  }
+
+  /* The Graphics canvas's 16 columns are sized in fixed rem at desktop
+     (see .graphics-cell's own comment on the 1.6:1 aspect ratio) - below
+     phone width that fixed size no longer fits, so #graphics-grid fell
+     back to its max-width:100%; overflow-x:auto and made the canvas
+     itself require horizontal scrolling to draw on or even see in full.
+     A calc() against 100vw here would need to guess how much padding/
+     border/scrollbar width stands between the viewport and the grid's
+     actual available space, which is fragile (a vertical scrollbar
+     alone silently eats ~15-17px that 100vw doesn't account for). Flex
+     percentages sidestep that entirely: stretching #graphics-grid to
+     fill 100% of whatever width its container actually laid out for it,
+     then letting all 16 .graphics-col flex equally within that (with
+     min-width:0 so they're actually allowed to shrink), means the total
+     is exactly right by construction - no arithmetic to get wrong.
+     aspect-ratio keeps each cell's own 1.6:1 proportions as the now-
+     fluid width changes. */
+  #graphics-grid {
+    width: 100%;
+  }
+
+  .graphics-col {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .graphics-cell {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1.6 / 1;
+  }
+
+  /* Both toolbar rows (drawing tools/undo/flip/rotate/clear, and the
+     Image Presets/User Images/Animation Presets/User Animations source
+     picker) are wide enough on their own to overflow a phone-width
+     screen with flex-wrap left at its nowrap default - wrapping keeps
+     every control reachable instead of pushing the later ones off the
+     right edge. */
+  #graphics-controls,
+  #graphics-library-controls,
+  #graphics-library-buttons,
+  #graphics-frames-toolbar,
+  #raw-sysex-input-row {
+    flex-wrap: wrap;
+  }
+
+  /* #raw-sysex-controls label's desktop min-width:20rem (enough room for
+     a comfortable one-line Raw SysEx label+textarea+button row) is wider
+     than the viewport itself below phone width - overriding it lets the
+     label (and #raw-sysex-input inside it, already min-width:0) actually
+     shrink to fit instead of forcing the whole row past the right edge. */
+  #raw-sysex-controls label {
+    min-width: 0;
+  }
+
+  /* The 16 channel-filter buttons' fixed 8-column x 1.8rem grid (286px
+     total, sized for comfortable desktop click targets) is wider than
+     the available width below phone width - shrinking both the grid's
+     columns/gap and the buttons themselves together keeps all 8 columns
+     on one row instead of the grid overflowing past the right edge. */
+  #diag-channel-filters {
+    grid-template-columns: repeat(8, 1.5rem);
+    gap: 0.35rem;
+  }
+
+  .channel-filter-btn {
+    width: 1.5rem;
+    height: 1.5rem;
   }
 }

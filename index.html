@@ -39,35 +39,105 @@
     instead.
   </p>
   <div id="connect-bar">
-    <button id="connect-btn">Find Devices</button>
-    <label>
-      <span class="label-row">MIDI In
-        <button type="button" class="attention-icon" data-tooltip="Recommended: leave this set to (none) for most tasks - incoming MIDI messages while this app is mid-action (Push Parameters, Load Voice/Kit/.qyparam, Reset, etc.) can trigger unexpected parameter changes on the device.
+    <div class="connect-left-column">
+    <div class="connect-row connect-row-1-left">
+      <button id="connect-btn">Find Devices</button>
+      <label>
+        <span class="label-row">MIDI In
+          <button type="button" class="attention-icon" data-tooltip="Recommended: leave this set to (none) for most tasks - incoming MIDI messages while this app is mid-action (Push Parameters, Load Voice/Kit/.qyparam, Reset, etc.) can trigger unexpected parameter changes on the device.
 
 Turn it on when editing Drum Setup: playing a note on the QY70/QY100 jumps the web console to that kit element for editing.
 
 It also lets the web console follow the device's own Drum Kit/SFX Kit voice changes on Ds1/Ds2 (Song mode), updating the kit picker here to match.">!</button>
-      </span>
-      <select id="input-select"><option value="">(none)</option></select>
-    </label>
-    <label>MIDI Out
-      <select id="output-select"><option value="">(none)</option></select>
-    </label>
-    <label>Channel
-      <select id="channel-select"></select>
-    </label>
-    <button id="xg-on-btn" class="btn-warning">Send XG System On</button>
-    <label>
-      <span class="label-row">Tempo
-        <button type="button" class="label-info-icon" data-tooltip="The tempo to use if the QY70/QY100's MIDI SYNC setting is set to EXTERNAL">i</button>
-      </span>
-      <input type="number" id="tempo-input" min="20" max="300" step="1" value="120">
-    </label>
+        </span>
+        <select id="input-select"><option value="">(none)</option></select>
+      </label>
+      <label>MIDI Out
+        <select id="output-select"><option value="">(none)</option></select>
+      </label>
+      <label>Channel
+        <select id="channel-select"></select>
+      </label>
+    </div>
     <span id="status"></span>
+    </div>
+    <div class="connect-right-column">
+    <div class="connect-row connect-row-1-right">
+      <div class="connect-field connect-divider">
+        <span class="label-row">Tempo
+          <button type="button" class="label-info-icon" data-tooltip="The tempo to use if the QY70/QY100's MIDI SYNC setting is set to EXTERNAL">i</button>
+        </span>
+        <div id="tempo-row">
+          <div id="tempo-knob"></div>
+          <button type="button" id="tap-tempo-btn" title="Tap a few times in rhythm to set the tempo by ear">Tap</button>
+        </div>
+      </div>
+      <div class="connect-field connect-divider">
+        <span class="label-row">Transports</span>
+        <div class="transport-controls">
+          <button type="button" id="transport-rewind-btn" title="Rewind to start (relocates without playing)">&#9198;</button>
+          <button type="button" id="transport-play-btn" title="Play (Start - rewinds to the top)">&#9654;</button>
+          <button type="button" id="transport-continue-btn" title="Continue (resumes from the current position)">&#9199;</button>
+          <button type="button" id="transport-stop-btn" title="Stop">&#9632;</button>
+        </div>
+      </div>
+      <div class="connect-field connect-divider">
+        <span class="label-row">Song/Pattern #
+          <button type="button" class="label-info-icon" data-tooltip="Sends a MIDI Song/Pattern Select message - in Song Mode selects song 1-20, and in Pattern Mode selects user pattern 1-64.">i</button>
+        </span>
+        <div id="song-select-row">
+          <input type="number" id="song-select-input" min="1" max="64" step="1" value="1">
+          <button type="button" id="song-select-btn">Select</button>
+        </div>
+      </div>
+      <div class="connect-field connect-divider">
+        <span class="label-row">Sections
+          <button type="button" class="label-info-icon" data-tooltip="Switches section selection in Song Mode. Navigates sections in Pattern Mode
+
+Note: 'Blank' section only applies in Song Mode.">i</button>
+        </span>
+        <div class="transport-controls section-controls">
+          <button type="button" class="section-btn" data-section="INTRO">Intro</button>
+          <button type="button" class="section-btn" data-section="MAIN_A">Main A</button>
+          <button type="button" class="section-btn" data-section="MAIN_B">Main B</button>
+          <button type="button" class="section-btn" data-section="FILL_AB">Fill AB</button>
+          <button type="button" class="section-btn" data-section="FILL_BA">Fill BA</button>
+          <button type="button" class="section-btn" data-section="ENDING">Ending</button>
+          <button type="button" class="section-btn" data-section="BLANK">Blank</button>
+        </div>
+      </div>
+    </div>
+    <div class="connect-row connect-row-2-right">
+      <div class="messaging-box">
+        <button id="gm-on-btn">Send GM System On</button>
+        <button type="button" class="info-icon" data-tooltip="Switches the QY70/QY100 into General MIDI mode instead of XG mode - resets volume, pan, program, bank, and most controllers to GM defaults. Rarely needed; XG mode (the default) is what unlocks the QY100's own extended parameters below.">i</button>
+        <button id="xg-on-btn" class="btn-warning">Send XG System On</button>
+        <button type="button" class="info-icon" data-tooltip="Switches the QY70/QY100 to XG mode. Resets every voice on every channel to its default.">i</button>
+        <div class="connect-field connect-divider">
+          <span class="label-row">Messaging
+            <button type="button" class="label-info-icon" data-tooltip="When enabled, certain action confirmation messages will display on the QY70/QY100's screen. Turn off if you would rather leave the device's screen alone.">i</button>
+          </span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="messaging-enabled" checked>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+    </div>
   </div>
 </header>
 
 <main>
+  <div id="main-tabs" role="tablist">
+    <button type="button" class="main-tab active" data-tab="voice-parameters" role="tab" aria-selected="true">Voice/Parameters</button>
+    <button type="button" class="main-tab" data-tab="data-filer" role="tab" aria-selected="false">Data Filer</button>
+    <button type="button" class="main-tab" data-tab="diagnostics" role="tab" aria-selected="false">Diagnostics + Raw SysEx</button>
+    <button type="button" class="main-tab" data-tab="graphics" role="tab" aria-selected="false">Graphics</button>
+    <button type="button" class="main-tab" data-tab="display-text" role="tab" aria-selected="false">Display Text</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-panel-voice-parameters" role="tabpanel">
   <section id="voice-browser">
     <h2>Voice Browser</h2>
     <p class="hint">Entries marked <span class="qy100-badge">QY100</span> aren't present on the QY70.</p>
@@ -184,11 +254,366 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
 
     <div id="param-list"></div>
   </section>
+  </div>
+
+  <div class="tab-panel" id="tab-panel-data-filer" role="tabpanel">
+    <section id="data-filer">
+      <h2>Data Filer</h2>
+      <p class="hint">Coming soon.</p>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-panel-diagnostics" role="tabpanel">
+    <section id="diagnostics">
+      <h2>Diagnostics + Raw SysEx</h2>
+
+      <div id="raw-sysex-controls">
+        <label>Raw SysEx (hex bytes - spaces, commas, periods, or none, any mix is fine)
+          <div id="raw-sysex-input-row">
+            <span class="raw-sysex-frame-byte" data-tooltip="F0 - Start of SysEx message automatically included.">F0</span>
+            <textarea id="raw-sysex-input" rows="1" placeholder="43 10 4C 06 00 00 4E 45 56 45 52 20 47 4F 4E 4E 41 20 47 49 56 45 20 59 4F 55 20 55 50 20 20 20 20 20 20 20 20 20"></textarea>
+            <span class="raw-sysex-frame-byte raw-sysex-frame-byte-end" data-tooltip="F7 - End of SysEx message automatically included.">F7</span>
+          </div>
+        </label>
+        <button type="button" id="raw-sysex-send-btn">Send Raw SysEx</button>
+      </div>
+
+      <hr>
+
+      <div id="diagnostics-filters">
+        <div class="connect-field">
+          <span class="label-row">Message Types
+            <button type="button" class="label-info-icon" data-tooltip="Uncheck a type to hide it from the log below - it's still received/sendable, just not logged.">i</button>
+          </span>
+          <div class="diagnostics-filter-toggles" id="diag-type-filters">
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="noteOnOff" checked><span class="toggle-track"></span></span>
+              Note On/Off
+            </label>
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="controlChange" checked><span class="toggle-track"></span></span>
+              Control Change
+            </label>
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="programChange" checked><span class="toggle-track"></span></span>
+              Program Change
+            </label>
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="pitchBend" checked><span class="toggle-track"></span></span>
+              Pitch Bend
+            </label>
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="aftertouch" checked><span class="toggle-track"></span></span>
+              Aftertouch
+            </label>
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="sysex" checked><span class="toggle-track"></span></span>
+              System Exclusive
+            </label>
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="transport" checked><span class="toggle-track"></span></span>
+              Transport (Start/Stop/Continue)
+            </label>
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="songPosition" checked><span class="toggle-track"></span></span>
+              Song Position/Select
+            </label>
+            <label class="diag-type-toggle">
+              <span class="toggle-switch toggle-switch--sm"><input type="checkbox" class="diag-type-filter" value="clock"><span class="toggle-track"></span></span>
+              Clock/Active Sensing
+            </label>
+          </div>
+        </div>
+
+        <div class="connect-field">
+          <span class="label-row">Channels
+            <button type="button" class="label-info-icon" data-tooltip="Untoggle a channel to hide its channel messages from the log below. System messages (SysEx, Transport, etc.) have no channel and always pass this filter.">i</button>
+          </span>
+          <div class="diagnostics-filter-toggles" id="diag-channel-filters"></div>
+        </div>
+      </div>
+
+      <div id="diagnostics-log-controls">
+        <button type="button" id="diag-log-clear-btn">Clear</button>
+        <span class="hint">History of the last 100 messages.</span>
+      </div>
+      <pre id="diag-log-output"></pre>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-panel-graphics" role="tabpanel">
+    <section id="graphics">
+      <h2>Graphics</h2>
+      <div id="graphics-controls">
+        <button type="button" class="info-icon" data-tooltip="Draws to the QY70/QY100's Bitmap Window display, a 16x16 pixel image - only visible while the device is in Song Mode. Click and drag to draw or erase multiple pixels at once.">i</button>
+        <button type="button" id="graphics-tool-pencil-btn" class="graphics-transform-btn graphics-tool-btn active" title="Pencil - click or drag to draw/erase individual pixels">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="M3 21l1.5-5.5L15 5l4.5 4.5L9 20z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M13.5 6.5l4 4" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+        <button type="button" id="graphics-tool-bucket-btn" class="graphics-transform-btn graphics-tool-btn" title="Bucket Fill - click a pixel to fill every connected pixel of the same state">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path d="M6 9 L18 9 L16 19 L8 19 Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 9 Q12 3 16 9" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+        <span class="graphics-controls-divider"></span>
+        <button type="button" id="graphics-undo-btn" disabled>Undo</button>
+        <button type="button" id="graphics-redo-btn" disabled>Redo</button>
+        <span class="graphics-controls-divider"></span>
+        <button type="button" id="graphics-flip-h-btn" class="graphics-transform-btn" title="Flip horizontally">&#8596;</button>
+        <button type="button" id="graphics-flip-v-btn" class="graphics-transform-btn" title="Flip vertically">&#8597;</button>
+        <button type="button" id="graphics-rotate-ccw-btn" class="graphics-transform-btn" title="Rotate 90&deg; counter-clockwise">&#8634;</button>
+        <button type="button" id="graphics-rotate-cw-btn" class="graphics-transform-btn" title="Rotate 90&deg; clockwise">&#8635;</button>
+        <span class="graphics-controls-divider"></span>
+        <button type="button" id="graphics-clear-btn">Clear</button>
+      </div>
+      <div id="graphics-canvas-row">
+        <div id="graphics-grid"></div>
+        <div id="graphics-frames-panel">
+          <span class="label-row">Frames <span id="graphics-frames-count" class="graphics-frames-count">(0/32)</span>
+            <button type="button" class="info-icon" data-tooltip="Builds an animation from a sequence of canvas snapshots - up to 128 frames. Add Frame captures the canvas as-is; click a frame's own Load button to bring it back for editing.">i</button>
+          </span>
+          <div id="graphics-frames-toolbar">
+            <button type="button" id="graphics-add-frame-btn">+ Add Frame</button>
+            <span class="label-row">Wait
+              <button type="button" class="info-icon" data-tooltip="Delay between frames when Play Animation sends the sequence to the device. Not part of the SysEx bytes themselves - MIDI has no way to encode a pause inside a message, so this only affects timing at send time.">i</button>
+            </span>
+            <div id="graphics-wait-knob"></div>
+            <button type="button" id="graphics-clear-frames-btn" class="btn-warning">Clear All Frames</button>
+          </div>
+          <div id="graphics-onion-skin-row">
+            <span class="label-row">Onion Skin (Past)
+              <button type="button" class="info-icon" data-tooltip="Shows a faint gray ghost of the previous frames' pixels on the canvas, to help line up the next frame - the closer frame shows strongest, fading out for frames further back. Frames before the first one aren't shown unless Loop Onion Skin is on.">i</button>
+            </span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="graphics-onion-skin-toggle">
+              <span class="toggle-track"></span>
+            </label>
+            <span id="graphics-onion-skin-depth-row">
+              <input type="range" id="graphics-onion-skin-depth" min="1" max="8" value="1" step="1" disabled>
+              <span id="graphics-onion-skin-depth-value">1 frame</span>
+            </span>
+          </div>
+          <div id="graphics-onion-skin-row-2">
+            <span class="label-row">Onion Skin (Future)
+              <button type="button" class="info-icon" data-tooltip="Shows a light orange ghost of the NEXT frames' pixels (using the same frame-count slider above), for lining up an in-between frame against what comes after it, not just what came before.">i</button>
+            </span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="graphics-onion-skin-future-toggle">
+              <span class="toggle-track"></span>
+            </label>
+            <span class="label-row">Loop Onion Skin
+              <button type="button" class="info-icon" data-tooltip="Wraps ghosting around the ends of the sequence instead of stopping there - editing frame 1 ghosts from the end, editing the last frame ghosts from the start. Useful for lining up a looping animation's seam.">i</button>
+            </span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="graphics-onion-skin-loop-toggle">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <ul id="graphics-frames-list"></ul>
+        </div>
+      </div>
+
+      <hr id="graphics-canvas-divider">
+
+      <div class="graphics-sysex-panel">
+        <span class="label-row">Frame SysEx
+          <button type="button" class="info-icon" data-tooltip="The exact Bitmap Window SysEx message for the current canvas - updates live as you draw.">i</button>
+          <button type="button" id="graphics-push-frame-btn">Play Frame</button>
+        </span>
+        <pre id="graphics-hex-output"></pre>
+      </div>
+
+      <div class="graphics-sysex-panel">
+        <span class="label-row">Animation SysEx
+          <button type="button" class="info-icon" data-tooltip="One Bitmap Window message per frame, in sequence. The wait time shown between frames isn't part of the bytes themselves (see the Wait knob's own tooltip) - it's applied as a real delay only when Play Animation actually sends this.">i</button>
+          <button type="button" id="graphics-push-animation-btn">Play Animation</button>
+          <button type="button" id="graphics-stop-animation-btn" class="btn-warning" hidden>Stop Animation</button>
+          <label class="toggle-switch" title="Loop the animation indefinitely until Stop Animation is clicked">
+            <input type="checkbox" id="graphics-animation-loop-toggle">
+            <span class="toggle-track"></span>
+          </label>
+          <span id="graphics-animation-loop-label">Loop</span>
+          <label class="toggle-switch" title="Play all the way through, then back again, instead of restarting from frame 1">
+            <input type="checkbox" id="graphics-animation-pingpong-toggle">
+            <span class="toggle-track"></span>
+          </label>
+          <span id="graphics-animation-pingpong-label">Ping-Pong</span>
+        </span>
+        <pre id="graphics-animation-hex-output"></pre>
+      </div>
+
+      <hr>
+
+      <div id="graphics-library-controls">
+        <h3>Graphics Library</h3>
+        <div id="graphics-library-buttons">
+          <input type="file" id="graphics-file-input" accept=".bmp" multiple hidden>
+          <input type="file" id="graphics-animation-file-input" accept=".gif" multiple hidden>
+          <button type="button" id="graphics-load-btn">Load Image</button>
+          <button type="button" id="graphics-save-btn">Save Image</button>
+          <button type="button" id="graphics-load-animation-btn">Load Animation</button>
+          <button type="button" id="graphics-save-animation-btn">Save Animation</button>
+        </div>
+      </div>
+      <div id="graphics-load-progress-row" hidden>
+        <progress id="graphics-load-progress-bar" max="100" value="0"></progress>
+        <span id="graphics-load-progress-status"></span>
+      </div>
+      <div class="segmented-control" id="graphics-library-source-toggle">
+        <button type="button" class="segment-btn active" data-source="image-presets">Image Presets</button>
+        <button type="button" class="segment-btn" data-source="user-images">User Images</button>
+        <button type="button" class="segment-btn" data-source="animation-presets">Animation Presets</button>
+        <button type="button" class="segment-btn" data-source="user-animations">User Animations</button>
+      </div>
+      <ul id="graphics-library-list"></ul>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="tab-panel-display-text" role="tabpanel">
+    <section id="display-text">
+      <h2>Display Text</h2>
+      <div class="dialog-tabs" id="display-text-subtabs" role="tablist">
+        <button type="button" class="dialog-tab active" data-subtab="whole" role="tab" aria-selected="true">Whole Message</button>
+        <button type="button" class="dialog-tab" data-subtab="split" role="tab" aria-selected="false">Split Message</button>
+      </div>
+      <div class="display-text-subtab-panel" data-subpanel="whole">
+      <div id="display-text-controls">
+        <span class="label-row">Message
+          <button type="button" class="info-icon" data-tooltip="Writes text to the QY70/QY100's 32-character LCD Message Window (Song Mode only). Non-ASCII characters show as blank spaces.">i</button>
+        </span>
+        <input type="text" id="display-text-input" maxlength="32" placeholder="Type a message...">
+        <span id="display-text-count">0/32</span>
+      </div>
+      <div class="graphics-sysex-panel">
+        <span class="label-row">Message SysEx
+          <button type="button" class="info-icon" data-tooltip="The exact Message Window SysEx message for the text above - updates live as you type.">i</button>
+          <button type="button" id="display-text-push-btn">Display Message</button>
+        </span>
+        <pre id="display-text-hex-output"></pre>
+      </div>
+
+      <hr>
+
+      <h3>Animated Message</h3>
+      <div id="marquee-text-controls">
+        <span class="label-row">Message
+          <button type="button" class="info-icon" data-tooltip="Text for the animation mode selected below. Not capped at 32 characters like the static message above - Marquee/Ping-Pong modes are exactly for text too long to fit in one screen.">i</button>
+        </span>
+        <textarea id="marquee-text-input" maxlength="1000" rows="1" placeholder="Type a message..."></textarea>
+        <span id="marquee-text-count">0/1000</span>
+      </div>
+      <div class="segmented-control" id="marquee-mode-toggle">
+        <button type="button" class="segment-btn active" data-mode="marquee" title="Scrolls the text across the display once, starting and ending off-screen.">Marquee</button>
+        <button type="button" class="segment-btn" data-mode="pingpong" title="Scrolls all the way across, then back again, instead of resetting straight to the start.">Ping-Pong</button>
+        <button type="button" class="segment-btn" data-mode="blink" title="Flashes the message on and off in place, using the Wait knob below. Text beyond 32 characters is truncated, same as the static message above.">Blink</button>
+        <button type="button" class="segment-btn" data-mode="orbit" title="Rotates the message's characters around the display's two stacked 16-char lines, tracing their combined rectangle's border. Text beyond 32 characters is truncated, same as the static message above.">Orbit</button>
+      </div>
+      <div class="graphics-sysex-panel">
+        <span class="label-row">Animated Message SysEx
+          <button type="button" class="info-icon" data-tooltip="One Message Window message per step - updates live as you type. The wait time isn't part of the bytes themselves, only applied as a real delay when Play Message actually sends this.">i</button>
+          <button type="button" id="marquee-play-btn">Play Message</button>
+          <button type="button" id="marquee-stop-btn" class="btn-warning">Stop Message</button>
+          <label class="toggle-switch" title="Loop indefinitely until Stop Message is clicked">
+            <input type="checkbox" id="marquee-loop-toggle">
+            <span class="toggle-track"></span>
+          </label>
+          <span id="marquee-loop-label">Loop</span>
+          <span class="graphics-controls-divider"></span>
+          <span class="label-row">Wait
+            <button type="button" class="info-icon" data-tooltip="Delay between each step (scroll character, on/off flash in Blink mode, or rotation step in Orbit mode) when Play Message sends the sequence to the device.">i</button>
+          </span>
+          <div id="marquee-speed-knob"></div>
+          <span id="marquee-orbit-direction-row" hidden>
+            <label class="toggle-switch" title="Rotation direction in Orbit mode">
+              <input type="checkbox" id="marquee-orbit-direction-toggle">
+              <span class="toggle-track"></span>
+            </label>
+            <span id="marquee-orbit-direction-label">CW</span>
+          </span>
+        </span>
+        <pre id="marquee-hex-output"></pre>
+      </div>
+      </div>
+      <div class="display-text-subtab-panel" data-subpanel="split" hidden>
+        <p class="hint">The display's 32 characters are really two stacked 16-char lines - type each line separately below and animate them independently of one another.</p>
+
+        <div class="split-line-row">
+          <span class="label-row">Line 1
+            <button type="button" class="info-icon" data-tooltip="Top line (16 characters). In Marquee mode, not capped to 16 - it scrolls through this line's own 16-char window, independently of Line 2.">i</button>
+          </span>
+          <textarea id="split-line1-input" class="split-line-input" maxlength="16" rows="1" placeholder="Type line 1..."></textarea>
+          <span id="split-line1-count" class="split-line-count">0/16</span>
+        </div>
+        <div class="split-line-row">
+          <span class="label-row">Line 2
+            <button type="button" class="info-icon" data-tooltip="Bottom line (16 characters). In Marquee mode, not capped to 16 - it scrolls through this line's own 16-char window, independently of Line 1.">i</button>
+          </span>
+          <textarea id="split-line2-input" class="split-line-input" maxlength="16" rows="1" placeholder="Type line 2..."></textarea>
+          <span id="split-line2-count" class="split-line-count">0/16</span>
+        </div>
+
+        <div class="segmented-control" id="split-mode-toggle">
+          <button type="button" class="segment-btn active" data-mode="flipflop" title="Swaps which line each message is on - Line 1 moves to the bottom while Line 2 moves to the top, then back again.">Flip-Flop</button>
+          <button type="button" class="segment-btn" data-mode="blink" title="Alternates which line is lit - Line 1 shows while Line 2 is blank, then Line 2 shows while Line 1 is blank.">Alternate Blink</button>
+          <button type="button" class="segment-btn" data-mode="marquee" title="Scrolls each line across the display on the same shared clock - set either line to Reverse or Ping-Pong below so they visually drift apart instead of moving in lockstep.">Marquee</button>
+        </div>
+
+        <div id="split-shared-wait-row">
+          <span class="label-row">Wait
+            <button type="button" class="info-icon" data-tooltip="Delay between each step, whatever the current mode - a Flip-Flop swap, an Alternate Blink switch, or a Marquee scroll step. One shared clock for both lines, even in Marquee mode.">i</button>
+          </span>
+          <div id="split-shared-wait-knob"></div>
+        </div>
+        <div id="split-marquee-directions-row" hidden>
+          <span class="label-row">Line 1
+            <button type="button" class="info-icon" data-tooltip="How Line 1 scrolls on the shared clock, independent of Line 2's own settings. Reverse flips scroll direction; Ping-Pong bounces back and forth once it reaches the end - combine both for a ping-pong that starts by scrolling in reverse.">i</button>
+          </span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="split-line1-reverse-toggle">
+            <span class="toggle-track"></span>
+          </label>
+          <span id="split-line1-reverse-label" class="split-direction-label">Forward</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="split-line1-pingpong-toggle">
+            <span class="toggle-track"></span>
+          </label>
+          <span class="split-direction-label">Ping-Pong</span>
+          <span class="graphics-controls-divider"></span>
+          <span class="label-row">Line 2
+            <button type="button" class="info-icon" data-tooltip="How Line 2 scrolls on the shared clock, independent of Line 1's own settings above.">i</button>
+          </span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="split-line2-reverse-toggle">
+            <span class="toggle-track"></span>
+          </label>
+          <span id="split-line2-reverse-label" class="split-direction-label">Forward</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="split-line2-pingpong-toggle">
+            <span class="toggle-track"></span>
+          </label>
+          <span class="split-direction-label">Ping-Pong</span>
+        </div>
+
+        <div class="graphics-sysex-panel">
+          <span class="label-row">Split Message SysEx
+            <button type="button" class="info-icon" data-tooltip="One Message Window message per step, always the full 32 bytes for both lines at once (even in Marquee mode) - updates live as you type. The wait time isn't part of the bytes themselves, only applied as a real delay when Play Split Message actually sends this.">i</button>
+            <button type="button" id="split-play-btn">Play Split Message</button>
+            <button type="button" id="split-stop-btn" class="btn-warning">Stop Split Message</button>
+            <label class="toggle-switch" title="Loop indefinitely until Stop Split Message is clicked">
+              <input type="checkbox" id="split-loop-toggle">
+              <span class="toggle-track"></span>
+            </label>
+            <span id="split-loop-label">Loop</span>
+          </span>
+          <pre id="split-hex-output"></pre>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <hr id="main-divider">
 
   <section id="log">
     <h2>MIDI Log</h2>
     <div id="log-controls">
-      <label id="log-enable-label"><input type="checkbox" id="log-enabled" checked> Enabled</label>
+      <label id="log-enable-label"><input type="checkbox" id="log-enabled"> Enabled</label>
       <button id="clear-log-btn">Clear</button>
     </div>
     <p class="hint">History of the last 30 messages.</p>
@@ -282,12 +707,25 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
   </div>
 </dialog>
 
+<dialog id="graphics-save-dialog" class="app-dialog">
+  <h3 class="app-dialog-title" id="graphics-save-dialog-title">Save Image</h3>
+  <label>Name
+    <input type="text" id="graphics-save-name-input" maxlength="40">
+  </label>
+  <div class="app-dialog-actions">
+    <button id="graphics-save-cancel">Cancel</button>
+    <button id="graphics-save-ok" class="btn-warning">Save</button>
+  </div>
+</dialog>
+
 <dialog id="progress-dialog" class="app-dialog">
   <h3 id="progress-dialog-title" class="app-dialog-title"></h3>
   <p id="progress-dialog-warning" class="hint required" hidden></p>
   <progress id="progress-dialog-bar" max="100" value="0"></progress>
   <p id="progress-dialog-status"></p>
 </dialog>
+
+<div id="global-tooltip" role="tooltip"></div>
 
 <script type="module" src="./js/app.js"></script>
 </body>

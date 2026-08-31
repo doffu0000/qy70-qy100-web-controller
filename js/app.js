@@ -4,7 +4,9 @@
 // Support future development: <https://www.patreon.com/doffu>
 
 import { MidiLink } from './midi.js';
-import { buildXgSystemOn } from './sysex.js';
+import { buildXgSystemOn, buildGmSystemOn, buildMessageWindow, buildMessageWindowLine, buildSectionControl, SECTION, buildSongSelect, buildBitmapWindow } from './sysex.js';
+import { encodeMonoBmp16x16, decodeMonoBmp } from './bmp.js';
+import { encodeAnimatedGif, decodeAnimatedGif } from './gif.js';
 import { loadVoices, filterVoices, categoriesFor, bankLabel, voiceDisplayName } from './voices.js';
 import { loadParameters, expandRows, sendParam, sendParamGroup } from './params.js';
 import { createKnob, createToggle, createMultiToggle } from './knob.js';
@@ -202,38 +204,1961 @@ function log(direction, bytes) {
   logOutput.scrollTop = logOutput.scrollHeight;
 }
 
+// Classifies a message for the Diagnostics tab's type/channel filters -
+// deliberately separate from the simple in/out log above, which just
+// hard-excludes Clock/Active Sensing rather than offering real filtering.
+function classifyMessage(bytes) {
+  const status = bytes[0];
+  if (status === 0xf0) return { type: 'sysex', channel: null };
+  if (status === 0xf8 || status === 0xfe) return { type: 'clock', channel: null };
+  if (status === 0xfa || status === 0xfb || status === 0xfc) return { type: 'transport', channel: null };
+  if (status === 0xf2 || status === 0xf3) return { type: 'songPosition', channel: null };
+  if (status >= 0xf1) return { type: 'other', channel: null };
+  const channel = status & 0x0f;
+  switch (status & 0xf0) {
+    case 0x80:
+    case 0x90: return { type: 'noteOnOff', channel };
+    case 0xa0:
+    case 0xd0: return { type: 'aftertouch', channel };
+    case 0xb0: return { type: 'controlChange', channel };
+    case 0xc0: return { type: 'programChange', channel };
+    case 0xe0: return { type: 'pitchBend', channel };
+    default: return { type: 'other', channel };
+  }
+}
+
+const DIAG_LOG_MAX_LINES = 100;
+const diagLogOutput = el('diag-log-output');
+let diagLogEntries = [];
+
+function matchesDiagFilters(type, channel) {
+  if (type !== 'other') {
+    const cb = document.querySelector(`.diag-type-filter[value="${type}"]`);
+    if (cb && !cb.checked) return false;
+  }
+  if (channel !== null) {
+    const btn = document.querySelector(`.channel-filter-btn[data-channel="${channel}"]`);
+    if (btn && !btn.classList.contains('active')) return false;
+  }
+  return true;
+}
+
+// Independent of the simple log's Enabled checkbox above and of its
+// hard-coded Clock/Active Sensing exclusion - the Diagnostics tab has its
+// own always-on capture. Filtered-out messages (Clock/Active Sensing by
+// default) are never stored at all, rather than stored-but-hidden - a
+// high-frequency type like that would otherwise silently burn through the
+// 100-message cap in seconds and evict genuinely wanted history the user
+// never even saw arrive. Toggling a filter back on won't retroactively
+// reveal messages that arrived while it was off, since they were never
+// captured, but it does immediately reveal/hide already-stored messages -
+// renderDiagLog re-applies the same filter to what's on hand.
+function diagLog(direction, bytes) {
+  const { type, channel } = classifyMessage(bytes);
+  if (!matchesDiagFilters(type, channel)) return;
+  diagLogEntries.push({ direction, bytes: Array.from(bytes), timestamp: new Date() });
+  if (diagLogEntries.length > DIAG_LOG_MAX_LINES) diagLogEntries = diagLogEntries.slice(-DIAG_LOG_MAX_LINES);
+  renderDiagLog();
+}
+
+function renderDiagLog() {
+  const lines = diagLogEntries
+    .filter((entry) => {
+      const { type, channel } = classifyMessage(entry.bytes);
+      return matchesDiagFilters(type, channel);
+    })
+    .map((entry) => {
+      const hex = entry.bytes.map((b) => b.toString(16).padStart(2, '0')).join(' ');
+      return `${entry.timestamp.toLocaleTimeString()} ${entry.direction} ${hex}`;
+    });
+  diagLogOutput.textContent = lines.join('\n') + (lines.length ? '\n' : '');
+  diagLogOutput.scrollTop = diagLogOutput.scrollHeight;
+}
+
+const diagChannelFilters = el('diag-channel-filters');
+for (let i = 0; i < 16; i++) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'channel-filter-btn active';
+  btn.dataset.channel = String(i);
+  btn.textContent = String(i + 1);
+  btn.title = `Channel ${i + 1}`;
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    renderDiagLog();
+  });
+  diagChannelFilters.appendChild(btn);
+}
+
+document.querySelectorAll('.diag-type-filter').forEach((cb) => {
+  cb.addEventListener('change', renderDiagLog);
+});
+
+el('diag-log-clear-btn').addEventListener('click', () => {
+  diagLogEntries = [];
+  renderDiagLog();
+});
+
+// Turns hex text like "43 10 4C 00 00 7E 00" into a full SysEx message,
+// adding the F0/F7 frame if it's missing so the field can hold either the
+// full message or just its body.
+// Accepts hex bytes separated by spaces, commas, periods, any mix of
+// those, or no separator at all (one continuous run of hex digits, read
+// two digits per byte) - stripping every separator down to a bare hex
+// string first handles all of those the same way instead of committing to
+// one delimiter format.
+function parseRawSysexInput(text) {
+  const hex = text.replace(/[\s,.]+/g, '');
+  if (hex.length === 0) throw new Error('Enter at least one hex byte.');
+  if (!/^[0-9a-fA-F]+$/.test(hex)) throw new Error(`Invalid hex characters in "${text}".`);
+  if (hex.length % 2 !== 0) throw new Error('Hex input has an odd number of digits - each byte needs 2.');
+  const bytes = [];
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes.push(parseInt(hex.slice(i, i + 2), 16));
+  }
+  if (bytes[0] !== 0xf0) bytes.unshift(0xf0);
+  if (bytes[bytes.length - 1] !== 0xf7) bytes.push(0xf7);
+  return new Uint8Array(bytes);
+}
+
+el('raw-sysex-send-btn').addEventListener('click', () => {
+  try {
+    link.send(parseRawSysexInput(el('raw-sysex-input').value));
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+// Grows/shrinks the raw SysEx textarea to fit its content instead of
+// scrolling horizontally - resetting height to 'auto' first lets
+// scrollHeight shrink back down too, not just grow, e.g. after deleting
+// text. Runs on input, on window resize (wrapping shifts when the box's
+// own width changes), and once up front so it sizes correctly for
+// wrapped placeholder text before anything's been typed.
+const rawSysexInput = el('raw-sysex-input');
+function autoGrowRawSysexInput() {
+  rawSysexInput.style.height = 'auto';
+  rawSysexInput.style.height = `${rawSysexInput.scrollHeight}px`;
+}
+rawSysexInput.addEventListener('input', autoGrowRawSysexInput);
+window.addEventListener('resize', autoGrowRawSysexInput);
+autoGrowRawSysexInput();
+
+// Builds the Graphics tab's pixel grid - a 16-row x 16-column image,
+// worked out by identifying all 4 real on-device corners empirically
+// (pushing single pixels and observing where they landed) rather than
+// guessing: a byte's index within its own group of 16 (0-15) is the ROW
+// (0=top, 15=bottom - confirmed for both Data0-15 and Data32-47's own
+// extremes), and which of the 3 data groups it's in is the horizontal
+// section - Data0-15 leftmost, Data32-47 rightmost, so Data16-31 (the
+// only untested group) is assumed to sit in the middle. Bits b0-b6 of
+// Data0-15/16-31 give 7 columns each; bits b5/b6 of Data32-47 (the only
+// bits that address there, per the doc's "Data 32-47 only uses bit 6 and
+// bit 5" note) give 2 more, for 7+7+2=16 columns total. Within each
+// group's own slice, the HIGHEST bit is the column closest to that
+// slice's outer edge (bit6 of Data0-15 = the image's absolute left edge;
+// bit6 of Data32-47 = one step in from its right edge, with bit5 landing
+// exactly on it) - confirmed by the corner tests themselves, not
+// assumed: the same "bit0=left,bit6=right" ordering used on the first
+// pass placed both corner pixels one column short of the real edge.
+const GRAPHICS_SIZE = 16;
+const GRAPHICS_COLUMNS = [
+  ...Array.from({ length: 7 }, (_, i) => ({ dataOffset: 0, bit: 6 - i })),
+  ...Array.from({ length: 7 }, (_, i) => ({ dataOffset: 16, bit: 6 - i })),
+  ...Array.from({ length: 2 }, (_, i) => ({ dataOffset: 32, bit: 6 - i })),
+];
+const graphicsGrid = el('graphics-grid');
+
+// The 48-byte SysEx data array is the canonical representation used
+// throughout (history, the library, Push to Device) - reading/writing it
+// through GRAPHICS_COLUMNS' (dataIndex, bit) mapping instead of raw (x, y)
+// keeps history entries and saved library images valid even if that
+// mapping is refined further later, rather than baking in today's visual
+// layout.
+function graphicsCanvasToData48() {
+  const data48 = new Array(48).fill(0);
+  graphicsGrid.querySelectorAll('.graphics-cell.active').forEach((cell) => {
+    data48[Number(cell.dataset.dataIndex)] |= (1 << Number(cell.dataset.bit));
+  });
+  return data48;
+}
+
+function graphicsApplyData48(data48) {
+  graphicsGrid.querySelectorAll('.graphics-cell').forEach((cell) => {
+    const value = data48[Number(cell.dataset.dataIndex)] || 0;
+    const active = (value & (1 << Number(cell.dataset.bit))) !== 0;
+    cell.classList.toggle('active', active);
+  });
+  graphicsOnCanvasChanged();
+}
+
+// The Frame SysEx panel - the exact bytes Play Frame would send for
+// whatever's on the canvas right now, kept live rather than only shown
+// after pushing.
+const graphicsHexOutput = el('graphics-hex-output');
+function renderGraphicsHexPreview() {
+  const bytes = buildBitmapWindow(0, graphicsCanvasToData48());
+  graphicsHexOutput.textContent = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(' ');
+}
+
+// Single entry point for "the canvas just changed" - called from every
+// code path that changes it: graphicsApplyData48 (undo/redo, frame
+// select, library/file load) and graphicsPushHistory (paint stroke end,
+// Clear, flip/rotate) cover the committed-change paths, and the
+// mousedown/mouseenter handlers below call it directly too so it updates
+// pixel-by-pixel while actively dragging, not just once the stroke ends.
+// Keeps the Frame SysEx preview live, mirrors edits back into whichever
+// frame is currently selected, and refreshes the onion-skin overlay
+// (which depends on what's now active vs. the reference frame).
+function graphicsOnCanvasChanged() {
+  renderGraphicsHexPreview();
+  graphicsSyncSelectedFrame();
+  renderGraphicsOnionSkin();
+}
+
+// Tool selection - Pencil (click/drag individual pixels, the original
+// and default behavior) or Bucket Fill (click once to flood-fill every
+// pixel connected to the clicked one that shares its current state).
+// Toggling a class on the grid (rather than each cell) lets one CSS rule
+// per tool set the cursor for every cell at once - see .graphics-tool-*
+// in style.css for the actual cursor images.
+let graphicsTool = 'pencil';
+const graphicsToolPencilBtn = el('graphics-tool-pencil-btn');
+const graphicsToolBucketBtn = el('graphics-tool-bucket-btn');
+
+function setGraphicsTool(tool) {
+  graphicsTool = tool;
+  graphicsToolPencilBtn.classList.toggle('active', tool === 'pencil');
+  graphicsToolBucketBtn.classList.toggle('active', tool === 'bucket');
+  graphicsGrid.classList.toggle('graphics-tool-pencil', tool === 'pencil');
+  graphicsGrid.classList.toggle('graphics-tool-bucket', tool === 'bucket');
+}
+graphicsToolPencilBtn.addEventListener('click', () => setGraphicsTool('pencil'));
+graphicsToolBucketBtn.addEventListener('click', () => setGraphicsTool('bucket'));
+// The Pencil button already starts marked .active in the HTML, but that
+// alone doesn't put #graphics-grid's own graphics-tool-pencil class in
+// place - without this call, the custom cursor CSS (keyed off that
+// class) had nothing to match until the user clicked Pencil once, even
+// though it was already the selected tool.
+setGraphicsTool(graphicsTool);
+
+// 4-directional flood fill (not diagonal - matches how a paint bucket
+// reads "connected" in every other pixel editor): starting from
+// (startX, startY), every pixel reachable through that state without
+// crossing into the opposite one gets flipped to the opposite state.
+// Iterative with an explicit stack rather than recursive - at 16x16 =
+// 256 cells max this doesn't need it for stack-depth safety, but it's
+// just as simple either way.
+function graphicsFloodFill(startX, startY) {
+  const targetActive = graphicsIsActiveAt(startX, startY);
+  const fillActive = !targetActive;
+  const visited = new Set();
+  const stack = [[startX, startY]];
+  while (stack.length) {
+    const [x, y] = stack.pop();
+    if (x < 0 || x >= GRAPHICS_SIZE || y < 0 || y >= GRAPHICS_SIZE) continue;
+    const key = `${x},${y}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+    if (graphicsIsActiveAt(x, y) !== targetActive) continue;
+    const cell = graphicsGrid.querySelector(`.graphics-cell[data-col="${x}"][data-row="${y}"]`);
+    cell.classList.toggle('active', fillActive);
+    stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+  }
+  graphicsOnCanvasChanged();
+  graphicsPushHistory();
+}
+
+// Tracks an in-progress click-and-drag paint stroke: true/false = the
+// value being painted (matching whatever the first cell in the stroke
+// was just set to), null = no stroke in progress. A cell dragged back
+// over mid-stroke is SET to this value (not re-toggled), so a stroke
+// paints or erases consistently regardless of each cell's prior state.
+let graphicsPaintValue = null;
+for (let x = 0; x < GRAPHICS_SIZE; x++) {
+  const { dataOffset, bit } = GRAPHICS_COLUMNS[x];
+  const colEl = document.createElement('div');
+  colEl.className = 'graphics-col';
+  for (let y = 0; y < GRAPHICS_SIZE; y++) {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'graphics-cell';
+    cell.dataset.col = String(x);
+    cell.dataset.row = String(y);
+    cell.dataset.dataIndex = String(dataOffset + y);
+    cell.dataset.bit = String(bit);
+    cell.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (graphicsTool === 'bucket') {
+        graphicsFloodFill(x, y);
+        return;
+      }
+      graphicsPaintValue = !cell.classList.contains('active');
+      cell.classList.toggle('active', graphicsPaintValue);
+      graphicsOnCanvasChanged();
+    });
+    cell.addEventListener('mouseenter', () => {
+      if (graphicsPaintValue === null) return;
+      cell.classList.toggle('active', graphicsPaintValue);
+      graphicsOnCanvasChanged();
+    });
+    colEl.appendChild(cell);
+  }
+  graphicsGrid.appendChild(colEl);
+}
+window.addEventListener('mouseup', () => {
+  // Only the END of a whole stroke becomes one undo step, not every
+  // individual cell touched during it.
+  if (graphicsPaintValue !== null) {
+    graphicsPaintValue = null;
+    graphicsPushHistory();
+  }
+});
+
+// Undo/redo history - snapshots the whole 48-byte state after each
+// completed action (a paint stroke, Clear, or a library Load), not per
+// cell, so one stroke/action is one undo step.
+let graphicsHistory = [graphicsCanvasToData48()];
+let graphicsHistoryIndex = 0;
+
+function updateGraphicsUndoRedoButtons() {
+  el('graphics-undo-btn').disabled = graphicsHistoryIndex <= 0;
+  el('graphics-redo-btn').disabled = graphicsHistoryIndex >= graphicsHistory.length - 1;
+}
+
+function graphicsPushHistory() {
+  const snapshot = graphicsCanvasToData48();
+  // A no-op stroke (e.g. a drag that started and ended without changing
+  // anything visible) shouldn't create an empty undo step.
+  const prev = graphicsHistory[graphicsHistoryIndex];
+  if (prev.length === snapshot.length && prev.every((v, i) => v === snapshot[i])) return;
+  graphicsHistory = graphicsHistory.slice(0, graphicsHistoryIndex + 1);
+  graphicsHistory.push(snapshot);
+  graphicsHistoryIndex++;
+  updateGraphicsUndoRedoButtons();
+  // Covers Clear and flip/rotate, which change the canvas directly
+  // rather than through graphicsApplyData48 (mousedown/mouseenter above
+  // already run this live during an actual paint stroke).
+  graphicsOnCanvasChanged();
+}
+
+el('graphics-undo-btn').addEventListener('click', () => {
+  if (graphicsHistoryIndex <= 0) return;
+  graphicsHistoryIndex--;
+  graphicsApplyData48(graphicsHistory[graphicsHistoryIndex]);
+  updateGraphicsUndoRedoButtons();
+});
+
+el('graphics-redo-btn').addEventListener('click', () => {
+  if (graphicsHistoryIndex >= graphicsHistory.length - 1) return;
+  graphicsHistoryIndex++;
+  graphicsApplyData48(graphicsHistory[graphicsHistoryIndex]);
+  updateGraphicsUndoRedoButtons();
+});
+
+// Flip/rotate operate on the visual (x, y) grid, not the underlying
+// data48 bytes - each new cell's state is read from wherever it maps
+// back to in the CURRENT (pre-transform) grid, snapshotted up front so
+// reads during the loop aren't affected by writes earlier in the same
+// loop. mapToOldXY(x, y) returns [oldX, oldY] to read from for new
+// position (x, y).
+function graphicsTransformCanvas(mapToOldXY) {
+  const oldActive = [];
+  for (let x = 0; x < GRAPHICS_SIZE; x++) {
+    oldActive.push([]);
+    for (let y = 0; y < GRAPHICS_SIZE; y++) oldActive[x].push(graphicsIsActiveAt(x, y));
+  }
+  for (let x = 0; x < GRAPHICS_SIZE; x++) {
+    for (let y = 0; y < GRAPHICS_SIZE; y++) {
+      const [oldX, oldY] = mapToOldXY(x, y);
+      const cell = graphicsGrid.querySelector(`.graphics-cell[data-col="${x}"][data-row="${y}"]`);
+      cell.classList.toggle('active', oldActive[oldX][oldY]);
+    }
+  }
+  graphicsPushHistory();
+}
+
+el('graphics-flip-h-btn').addEventListener('click', () => {
+  graphicsTransformCanvas((x, y) => [GRAPHICS_SIZE - 1 - x, y]);
+});
+
+el('graphics-flip-v-btn').addEventListener('click', () => {
+  graphicsTransformCanvas((x, y) => [x, GRAPHICS_SIZE - 1 - y]);
+});
+
+// Rotating a non-square-pixel (1.6:1) canvas 90 degrees doesn't preserve
+// how the image physically looks on the real device (width and height
+// swap roles), same inherent tradeoff any pixel editor with non-square
+// pixels has - this rotates the underlying 16x16 grid itself, which is
+// what "rotate" conventionally means in a pixel editor.
+el('graphics-rotate-cw-btn').addEventListener('click', () => {
+  graphicsTransformCanvas((x, y) => [y, GRAPHICS_SIZE - 1 - x]);
+});
+
+el('graphics-rotate-ccw-btn').addEventListener('click', () => {
+  graphicsTransformCanvas((x, y) => [GRAPHICS_SIZE - 1 - y, x]);
+});
+
+el('graphics-clear-btn').addEventListener('click', () => {
+  document.querySelectorAll('.graphics-cell.active').forEach((cell) => cell.classList.remove('active'));
+  graphicsPushHistory();
+});
+
+el('graphics-push-frame-btn').addEventListener('click', () => {
+  try {
+    link.send(buildBitmapWindow(0, graphicsCanvasToData48()));
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+// Renders a 16x16 read-only preview of a data48 array - the pixels only,
+// no gridlines, at the same 1.6:1 aspect as the main canvas. Shared by
+// the Image Library list and the Frames list below.
+function graphicsBuildThumbnail(data48) {
+  const preview = document.createElement('div');
+  preview.className = 'graphics-library-preview';
+  for (let y = 0; y < GRAPHICS_SIZE; y++) {
+    for (let x = 0; x < GRAPHICS_SIZE; x++) {
+      const { dataOffset, bit } = GRAPHICS_COLUMNS[x];
+      const active = ((data48[dataOffset + y] || 0) & (1 << bit)) !== 0;
+      const dot = document.createElement('span');
+      if (active) dot.className = 'active';
+      preview.appendChild(dot);
+    }
+  }
+  return preview;
+}
+
+// An animation is just a sequence of canvas snapshots (up to 32) plus a
+// shared wait time between them - there's no Yamaha-defined "animation"
+// SysEx format, so Play Animation just resends the same Bitmap Window
+// message once per frame with a real delay in between (see the Wait
+// knob's own tooltip for why that delay can't be encoded in the bytes
+// themselves).
+const GRAPHICS_MAX_FRAMES = 128;
+let graphicsFrames = [];
+// The frame currently mirroring the canvas live - editing the canvas
+// while a frame is selected writes straight back into that frame (see
+// graphicsSyncSelectedFrame, called from graphicsOnCanvasChanged). null
+// means the canvas is just a free-draw scratch pad, same as before this
+// existed.
+let graphicsSelectedFrameId = null;
+
+const graphicsWaitKnobWidget = createKnob({
+  min: 50,
+  max: 2000,
+  value: 120,
+  step: 10,
+  resetValue: 120,
+  onChange: () => renderGraphicsAnimationHexPreview(),
+});
+el('graphics-wait-knob').appendChild(graphicsWaitKnobWidget.element);
+
+// Called from graphicsOnCanvasChanged (i.e. after every canvas edit) -
+// if a frame is selected, mirrors the canvas's current state into it so
+// "select a frame, then draw" edits that frame live instead of only
+// updating a one-time copy.
+function graphicsSyncSelectedFrame() {
+  if (graphicsSelectedFrameId === null) return;
+  const frame = graphicsFrames.find((f) => f.id === graphicsSelectedFrameId);
+  if (!frame) return;
+  frame.data48 = graphicsCanvasToData48();
+  renderGraphicsFrames();
+  renderGraphicsAnimationHexPreview();
+}
+
+// Loads a frame onto the canvas and marks it selected so further edits
+// write back into it live. Selecting the ALREADY-selected frame instead
+// deselects it (returns to free-draw), without touching the canvas.
+function graphicsSelectFrame(frameId) {
+  if (graphicsSelectedFrameId === frameId) {
+    graphicsSelectedFrameId = null;
+    renderGraphicsFrames();
+    renderGraphicsOnionSkin();
+    return;
+  }
+  const frame = graphicsFrames.find((f) => f.id === frameId);
+  if (!frame) return;
+  graphicsSelectedFrameId = frameId;
+  graphicsApplyData48(frame.data48);
+  graphicsPushHistory();
+}
+
+function renderGraphicsFrames() {
+  el('graphics-frames-count').textContent = `(${graphicsFrames.length}/${GRAPHICS_MAX_FRAMES})`;
+  el('graphics-add-frame-btn').disabled = graphicsFrames.length >= GRAPHICS_MAX_FRAMES;
+
+  const listEl = el('graphics-frames-list');
+  listEl.innerHTML = '';
+  if (graphicsFrames.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'graphics-library-empty';
+    li.textContent = 'No frames yet - draw something and click + Add Frame.';
+    listEl.appendChild(li);
+    return;
+  }
+  graphicsFrames.forEach((frame, index) => {
+    const li = document.createElement('li');
+    const isSelected = frame.id === graphicsSelectedFrameId;
+    li.className = isSelected ? 'graphics-frame-item selected' : 'graphics-frame-item';
+    li.title = isSelected
+      ? 'Editing this frame live - click to stop and return to free drawing'
+      : 'Click to bring this frame onto the canvas and edit it live';
+    li.addEventListener('click', () => graphicsSelectFrame(frame.id));
+
+    const number = document.createElement('span');
+    number.className = 'graphics-frame-number';
+    number.textContent = `Frame ${index + 1}`;
+
+    const moveUpBtn = document.createElement('button');
+    moveUpBtn.type = 'button';
+    moveUpBtn.className = 'graphics-frame-move-btn';
+    moveUpBtn.textContent = '▲';
+    moveUpBtn.title = 'Move earlier in the sequence';
+    moveUpBtn.disabled = index === 0;
+    moveUpBtn.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      graphicsMoveFrame(frame.id, -1);
+    });
+
+    const moveDownBtn = document.createElement('button');
+    moveDownBtn.type = 'button';
+    moveDownBtn.className = 'graphics-frame-move-btn';
+    moveDownBtn.textContent = '▼';
+    moveDownBtn.title = 'Move later in the sequence';
+    moveDownBtn.disabled = index === graphicsFrames.length - 1;
+    moveDownBtn.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      graphicsMoveFrame(frame.id, 1);
+    });
+
+    const moveGroup = document.createElement('div');
+    moveGroup.className = 'graphics-frame-move-group';
+    moveGroup.append(moveUpBtn, moveDownBtn);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-warning';
+    removeBtn.textContent = 'Remove';
+    removeBtn.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      if (graphicsSelectedFrameId === frame.id) graphicsSelectedFrameId = null;
+      graphicsFrames = graphicsFrames.filter((f) => f.id !== frame.id);
+      renderGraphicsFrames();
+      renderGraphicsAnimationHexPreview();
+      renderGraphicsOnionSkin();
+    });
+
+    li.append(graphicsBuildThumbnail(frame.data48), number, moveGroup, removeBtn);
+    listEl.appendChild(li);
+  });
+}
+
+// Swaps a frame with its neighbor in the sequence (direction -1 = earlier,
+// +1 = later). Selection tracks by id, not index, so reordering never
+// disturbs which frame is currently live-editing; onion skin and the
+// Animation SysEx preview both depend on array order (as "the previous
+// frame"), so both are re-rendered after every move.
+function graphicsMoveFrame(frameId, direction) {
+  const index = graphicsFrames.findIndex((f) => f.id === frameId);
+  if (index === -1) return;
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= graphicsFrames.length) return;
+  [graphicsFrames[index], graphicsFrames[targetIndex]] = [graphicsFrames[targetIndex], graphicsFrames[index]];
+  renderGraphicsFrames();
+  renderGraphicsAnimationHexPreview();
+  renderGraphicsOnionSkin();
+}
+
+// Ghosts up to graphicsOnionSkinDepth frames on either side of whichever
+// frame is selected: earlier frames in gray (.onion, the "Onion Skin"
+// toggle), later frames in light orange (.onion-future, the "Future
+// Onion Skin" toggle) - either or both can be on at once, both sharing
+// the same depth slider. The nearest frame in each direction ghosts at
+// GRAPHICS_ONION_SKIN_MAX opacity, fading linearly down to
+// GRAPHICS_ONION_SKIN_MIN for the farthest one shown. With "Loop Onion
+// Skin" on, running past the first/last frame wraps around to the other
+// end of the sequence instead of stopping there, so a looping
+// animation's seam can be lined up too; depth is capped at
+// (frame count - 1) in that case so it never wraps back onto a frame
+// already shown. Only applied to cells that aren't already active on the
+// canvas, so a genuinely-drawn pixel always reads as solid, never as a
+// faint ghost.
+const GRAPHICS_ONION_SKIN_MAX_OPACITY = 0.4;
+const GRAPHICS_ONION_SKIN_MIN_OPACITY = 0.08;
+
+function graphicsOnionSkinOpacityAt(stepsAway, depth) {
+  return depth <= 1
+    ? GRAPHICS_ONION_SKIN_MAX_OPACITY
+    : GRAPHICS_ONION_SKIN_MAX_OPACITY - (stepsAway - 1) * ((GRAPHICS_ONION_SKIN_MAX_OPACITY - GRAPHICS_ONION_SKIN_MIN_OPACITY) / (depth - 1));
+}
+
+function renderGraphicsOnionSkin() {
+  const pastEnabled = el('graphics-onion-skin-toggle').checked;
+  const futureEnabled = graphicsOnionSkinFutureToggle.checked;
+  const loop = graphicsOnionSkinLoopToggle.checked;
+  const cells = graphicsGrid.querySelectorAll('.graphics-cell');
+  cells.forEach((cell) => {
+    cell.classList.remove('onion', 'onion-future');
+    cell.style.removeProperty('--onion-opacity');
+    cell.style.removeProperty('--onion-future-opacity');
+  });
+  const total = graphicsFrames.length;
+  const selectedIndex = graphicsFrames.findIndex((f) => f.id === graphicsSelectedFrameId);
+  if (selectedIndex === -1 || (!pastEnabled && !futureEnabled)) return;
+
+  function paintDirection(direction, enabled, cssClass, cssVar) {
+    if (!enabled) return;
+    const roomInDirection = direction < 0 ? selectedIndex : total - 1 - selectedIndex;
+    const depth = Math.min(graphicsOnionSkinDepth, loop ? total - 1 : roomInDirection);
+    if (depth <= 0) return;
+    for (let stepsAway = depth; stepsAway >= 1; stepsAway--) {
+      let index = selectedIndex + direction * stepsAway;
+      if (loop) index = ((index % total) + total) % total;
+      if (index < 0 || index >= total || index === selectedIndex) continue;
+      const frame = graphicsFrames[index];
+      const opacity = graphicsOnionSkinOpacityAt(stepsAway, depth);
+      cells.forEach((cell) => {
+        if (cell.classList.contains('active')) return;
+        const value = frame.data48[Number(cell.dataset.dataIndex)] || 0;
+        const wasActive = (value & (1 << Number(cell.dataset.bit))) !== 0;
+        if (wasActive) {
+          cell.classList.add(cssClass);
+          cell.style.setProperty(cssVar, opacity);
+        }
+      });
+    }
+  }
+
+  paintDirection(-1, pastEnabled, 'onion', '--onion-opacity');
+  paintDirection(1, futureEnabled, 'onion-future', '--onion-future-opacity');
+}
+
+const graphicsOnionSkinDepthInput = el('graphics-onion-skin-depth');
+const graphicsOnionSkinDepthValueEl = el('graphics-onion-skin-depth-value');
+const graphicsOnionSkinFutureToggle = el('graphics-onion-skin-future-toggle');
+const graphicsOnionSkinLoopToggle = el('graphics-onion-skin-loop-toggle');
+let graphicsOnionSkinDepth = Number(graphicsOnionSkinDepthInput.value) || 1;
+
+function graphicsUpdateOnionSkinDepthEnabled() {
+  graphicsOnionSkinDepthInput.disabled = !(el('graphics-onion-skin-toggle').checked || graphicsOnionSkinFutureToggle.checked);
+}
+
+el('graphics-onion-skin-toggle').addEventListener('change', () => {
+  graphicsUpdateOnionSkinDepthEnabled();
+  renderGraphicsOnionSkin();
+});
+
+graphicsOnionSkinFutureToggle.addEventListener('change', () => {
+  graphicsUpdateOnionSkinDepthEnabled();
+  renderGraphicsOnionSkin();
+});
+
+graphicsOnionSkinLoopToggle.addEventListener('change', renderGraphicsOnionSkin);
+
+graphicsOnionSkinDepthInput.addEventListener('input', () => {
+  graphicsOnionSkinDepth = Number(graphicsOnionSkinDepthInput.value);
+  graphicsOnionSkinDepthValueEl.textContent = `${graphicsOnionSkinDepth} frame${graphicsOnionSkinDepth === 1 ? '' : 's'}`;
+  renderGraphicsOnionSkin();
+});
+
+// Shared by the preview below and Play Animation's own send loop, so the
+// preview always shows exactly what would actually be sent. Which frames
+// come back for Ping-Pong depends on Loop: off, a single pass should
+// return all the way to frame 1 so it ends where it started, so only the
+// last frame is dropped from the reversed half; on, frame 1 already
+// reappears at the START of the next lap once this loops, so it's ALSO
+// dropped here - otherwise it plays twice in a row at every loop seam
+// (once ending one lap, again starting the next) instead of once. Same
+// reasoning as the Animated Message tab's own Ping-Pong mode.
+function graphicsBuildAnimationSequence() {
+  if (!graphicsAnimationPingPongToggle.checked || graphicsFrames.length <= 1) return graphicsFrames;
+  const reversedMiddle = graphicsAnimationLoopToggle.checked
+    ? graphicsFrames.slice(1, -1).reverse()
+    : graphicsFrames.slice(0, -1).reverse();
+  return [...graphicsFrames, ...reversedMiddle];
+}
+
+function renderGraphicsAnimationHexPreview() {
+  const output = el('graphics-animation-hex-output');
+  if (graphicsFrames.length === 0) {
+    output.textContent = 'No frames added yet - use + Add Frame to start building an animation.';
+    return;
+  }
+  const waitMs = Math.round(graphicsWaitKnobWidget.getValue());
+  output.textContent = graphicsBuildAnimationSequence()
+    .map((frame, index) => {
+      const bytes = buildBitmapWindow(0, frame.data48);
+      const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(' ');
+      return `; Frame ${index + 1} (wait ${waitMs}ms)\n${hex}`;
+    })
+    .join('\n\n');
+}
+
+el('graphics-add-frame-btn').addEventListener('click', () => {
+  if (graphicsFrames.length >= GRAPHICS_MAX_FRAMES) return;
+  const newFrame = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, data48: graphicsCanvasToData48() };
+  graphicsFrames.push(newFrame);
+  // Selecting the new frame means further drawing continues editing it
+  // live, rather than needing a separate click to pick it up.
+  graphicsSelectedFrameId = newFrame.id;
+  renderGraphicsFrames();
+  renderGraphicsAnimationHexPreview();
+  renderGraphicsOnionSkin();
+});
+
+el('graphics-clear-frames-btn').addEventListener('click', async () => {
+  if (graphicsFrames.length === 0) return;
+  const confirmed = await showConfirm(
+    'Clear all frames?',
+    `Remove all ${graphicsFrames.length} frame${graphicsFrames.length === 1 ? '' : 's'} from this animation? This can't be undone.`,
+    'Clear All'
+  );
+  if (!confirmed) return;
+  graphicsFrames = [];
+  graphicsSelectedFrameId = null;
+  renderGraphicsFrames();
+  renderGraphicsAnimationHexPreview();
+  renderGraphicsOnionSkin();
+});
+
+// Loop Animation just changes what happens after the last frame plays:
+// off, Play Animation runs the sequence once and stops on its own (as
+// before); on, it goes back to frame 1 and keeps going indefinitely,
+// same delay between frames and between the last-to-first wrap, until
+// Stop Animation is clicked or graphicsAnimationStopRequested is set some
+// other way (e.g. switching tabs away mid-loop isn't handled specially -
+// this is a fire-and-forget background loop, matching the MIDI Clock
+// generator's own always-running-until-stopped design elsewhere in this
+// file).
+let graphicsAnimationPlaying = false;
+let graphicsAnimationStopRequested = false;
+const graphicsAnimationLoopToggle = el('graphics-animation-loop-toggle');
+const graphicsAnimationPingPongToggle = el('graphics-animation-pingpong-toggle');
+const graphicsStopAnimationBtn = el('graphics-stop-animation-btn');
+
+graphicsAnimationLoopToggle.addEventListener('change', () => {
+  graphicsStopAnimationBtn.hidden = !graphicsAnimationLoopToggle.checked;
+  renderGraphicsAnimationHexPreview();
+});
+
+graphicsAnimationPingPongToggle.addEventListener('change', renderGraphicsAnimationHexPreview);
+
+el('graphics-push-animation-btn').addEventListener('click', async () => {
+  if (graphicsAnimationPlaying) return;
+  if (graphicsFrames.length === 0) {
+    statusEl.textContent = 'Error: add at least one frame before playing the animation.';
+    return;
+  }
+  const sequence = graphicsBuildAnimationSequence();
+  graphicsAnimationPlaying = true;
+  graphicsAnimationStopRequested = false;
+  el('graphics-push-animation-btn').disabled = true;
+  try {
+    do {
+      for (let i = 0; i < sequence.length; i++) {
+        link.send(buildBitmapWindow(0, sequence[i].data48));
+        const waitMs = Math.round(graphicsWaitKnobWidget.getValue());
+        const isLastFrame = i === sequence.length - 1;
+        if (graphicsAnimationStopRequested) break;
+        if (!isLastFrame || graphicsAnimationLoopToggle.checked) await new Promise((resolve) => setTimeout(resolve, waitMs));
+        if (graphicsAnimationStopRequested) break;
+      }
+    } while (graphicsAnimationLoopToggle.checked && !graphicsAnimationStopRequested);
+    statusEl.textContent = graphicsAnimationStopRequested
+      ? 'Animation stopped.'
+      : `Played ${graphicsFrames.length}-frame animation.`;
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  } finally {
+    graphicsAnimationPlaying = false;
+    graphicsAnimationStopRequested = false;
+    el('graphics-push-animation-btn').disabled = false;
+  }
+});
+
+graphicsStopAnimationBtn.addEventListener('click', () => {
+  graphicsAnimationStopRequested = true;
+});
+
+// A small free-text-name dialog, the one shape of dialog this app didn't
+// already have (showConfirm/showAlert take no input, showSaveAsDialog
+// picks from a fixed <select> of targets rather than naming something).
+const graphicsSaveDialog = el('graphics-save-dialog');
+const graphicsSaveNameInput = el('graphics-save-name-input');
+function showGraphicsSaveDialog(defaultName, title = 'Save Image') {
+  return new Promise((resolve) => {
+    el('graphics-save-dialog-title').textContent = title;
+    graphicsSaveNameInput.value = defaultName;
+    const onOk = () => settle(graphicsSaveNameInput.value.trim() || defaultName);
+    const onCancel = () => settle(null);
+    const onBackdropClick = (evt) => { if (evt.target === graphicsSaveDialog) settle(null); };
+    function settle(result) {
+      el('graphics-save-ok').removeEventListener('click', onOk);
+      el('graphics-save-cancel').removeEventListener('click', onCancel);
+      graphicsSaveDialog.removeEventListener('cancel', onCancel);
+      graphicsSaveDialog.removeEventListener('click', onBackdropClick);
+      graphicsSaveDialog.close();
+      resolve(result);
+    }
+    el('graphics-save-ok').addEventListener('click', onOk);
+    el('graphics-save-cancel').addEventListener('click', onCancel);
+    graphicsSaveDialog.addEventListener('cancel', onCancel);
+    graphicsSaveDialog.addEventListener('click', onBackdropClick);
+    graphicsSaveDialog.showModal();
+  });
+}
+
+// Real .bmp files on disk (via the File System Access API where
+// available, falling back to a download link / hidden file input,
+// matching every other Save/Load pair in this app - e.g. savePatchBtn/
+// loadPatchBtn) are the actual source of truth for User images; this
+// in-memory list is just a session-local convenience so images already
+// saved/loaded don't need re-picking from disk to switch between them
+// again. Nothing here persists across a reload - reload and re-load the
+// .bmp file from disk. Presets are the opposite: bundled with the app
+// (data/graphics_presets.json, fetched at boot - see loadGraphicsPresets
+// below) and always available, same "Presets vs User" split as the FX
+// preset browser (fxPresetSource/userFxPresets above).
+let graphicsLibrary = []; // User Images
+let graphicsPresets = []; // Image Presets
+let graphicsUserAnimations = []; // User Animations
+let graphicsAnimationPresets = []; // Animation Presets
+let graphicsLibrarySource = 'image-presets';
+
+const graphicsLibrarySourceToggle = el('graphics-library-source-toggle');
+const graphicsLibrarySourceBtns = [...graphicsLibrarySourceToggle.querySelectorAll('.segment-btn')];
+graphicsLibrarySourceBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    graphicsLibrarySource = btn.dataset.source;
+    graphicsLibrarySourceBtns.forEach((b) => b.classList.toggle('active', b === btn));
+    renderGraphicsLibrary();
+  });
+});
+
+async function loadGraphicsPresets() {
+  const res = await fetch('./data/graphics_presets.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load graphics_presets.json: ${res.status}`);
+  return res.json();
+}
+
+async function loadGraphicsAnimationPresets() {
+  const res = await fetch('./data/graphics_animation_presets.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load graphics_animation_presets.json: ${res.status}`);
+  return res.json();
+}
+
+function graphicsIsActiveAt(x, y) {
+  const cell = graphicsGrid.querySelector(`.graphics-cell[data-col="${x}"][data-row="${y}"]`);
+  return !!(cell && cell.classList.contains('active'));
+}
+
+function graphicsXYGridToData48(isActiveGrid) {
+  const data48 = new Array(48).fill(0);
+  for (let x = 0; x < GRAPHICS_SIZE; x++) {
+    const { dataOffset, bit } = GRAPHICS_COLUMNS[x];
+    for (let y = 0; y < GRAPHICS_SIZE; y++) {
+      if (isActiveGrid[y][x]) data48[dataOffset + y] |= (1 << bit);
+    }
+  }
+  return data48;
+}
+
+// Row-major (0/1 per pixel) form of a frame's data48, the shape
+// encodeAnimatedGif expects - reuses the same GRAPHICS_COLUMNS mapping
+// every other canvas<->data48 conversion in this file goes through.
+function graphicsData48ToIndices(data48) {
+  const indices = new Array(GRAPHICS_SIZE * GRAPHICS_SIZE);
+  for (let x = 0; x < GRAPHICS_SIZE; x++) {
+    const { dataOffset, bit } = GRAPHICS_COLUMNS[x];
+    for (let y = 0; y < GRAPHICS_SIZE; y++) {
+      const active = ((data48[dataOffset + y] || 0) & (1 << bit)) !== 0;
+      indices[y * GRAPHICS_SIZE + x] = active ? 1 : 0;
+    }
+  }
+  return indices;
+}
+
+// The inverse of graphicsData48ToIndices - rebuilds a data48 array from a
+// decoded GIF frame's row-major (0/1) pixel indices.
+function graphicsIndicesToData48(indices) {
+  const data48 = new Array(48).fill(0);
+  for (let x = 0; x < GRAPHICS_SIZE; x++) {
+    const { dataOffset, bit } = GRAPHICS_COLUMNS[x];
+    for (let y = 0; y < GRAPHICS_SIZE; y++) {
+      if (indices[y * GRAPHICS_SIZE + x]) data48[dataOffset + y] |= (1 << bit);
+    }
+  }
+  return data48;
+}
+
+// Which array/behavior each of the 4 segmented-control sources maps to.
+// isAnimation controls whether a row's thumbnail comes from frame[0] and
+// whether its Load button replaces graphicsFrames vs. the canvas;
+// removable controls whether a Remove button appears (bundled presets
+// aren't user-removable, matching the FX preset browser's own
+// built-in-vs-user split).
+const GRAPHICS_LIBRARY_SOURCES = {
+  'image-presets': { get list() { return graphicsPresets; }, isAnimation: false, removable: false, emptyText: 'No presets available.' },
+  'user-images': { get list() { return graphicsLibrary; }, isAnimation: false, removable: true, emptyText: 'No images loaded/saved this session yet.' },
+  'animation-presets': { get list() { return graphicsAnimationPresets; }, isAnimation: true, removable: false, emptyText: 'No animation presets available.' },
+  'user-animations': { get list() { return graphicsUserAnimations; }, isAnimation: true, removable: true, emptyText: 'No animations saved this session yet.' },
+};
+
+function renderGraphicsLibrary() {
+  graphicsLibrarySourceBtns.forEach((b) => b.classList.toggle('active', b.dataset.source === graphicsLibrarySource));
+  const source = GRAPHICS_LIBRARY_SOURCES[graphicsLibrarySource];
+  const list = source.list;
+  const listEl = el('graphics-library-list');
+  listEl.innerHTML = '';
+  if (list.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'graphics-library-empty';
+    li.textContent = source.emptyText;
+    listEl.appendChild(li);
+    return;
+  }
+  list.forEach((entry) => {
+    const li = document.createElement('li');
+    li.className = 'graphics-library-item';
+
+    const thumbnailData48 = source.isAnimation ? (entry.frames[0]?.data48 || new Array(48).fill(0)) : entry.data48;
+    const preview = graphicsBuildThumbnail(thumbnailData48);
+
+    const name = document.createElement('span');
+    name.className = 'graphics-library-name';
+    name.textContent = source.isAnimation ? `${entry.name} (${entry.frames.length}fr, ${entry.waitMs}ms)` : entry.name;
+
+    const loadBtn = document.createElement('button');
+    loadBtn.type = 'button';
+    loadBtn.textContent = 'Load';
+    if (source.isAnimation) {
+      loadBtn.addEventListener('click', () => {
+        graphicsFrames = entry.frames.map((f) => ({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          data48: f.data48.slice(),
+        }));
+        graphicsSelectedFrameId = null;
+        graphicsWaitKnobWidget.setValue(entry.waitMs, true);
+        renderGraphicsFrames();
+        renderGraphicsAnimationHexPreview();
+        renderGraphicsOnionSkin();
+      });
+    } else {
+      loadBtn.addEventListener('click', () => {
+        graphicsApplyData48(entry.data48);
+        graphicsPushHistory();
+      });
+    }
+
+    li.append(preview, name, loadBtn);
+
+    if (source.removable) {
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn-warning';
+      removeBtn.textContent = 'Remove';
+      if (!source.isAnimation) removeBtn.title = 'Removes it from this list only - the .bmp file on disk (if saved) is untouched.';
+      removeBtn.addEventListener('click', () => {
+        const list2 = source.list;
+        const idx = list2.findIndex((e) => e.id === entry.id);
+        if (idx !== -1) list2.splice(idx, 1);
+        renderGraphicsLibrary();
+      });
+      li.append(removeBtn);
+    }
+
+    listEl.appendChild(li);
+  });
+}
+
+// writeFile (used by Save Parameters etc.) is hardcoded to JSON text -
+// this is the same File System Access API / download-link fallback
+// pattern, but for arbitrary binary content.
+async function writeBinaryFile(filename, bytes, description, extension, mimeType = 'image/bmp') {
+  if (window.showSaveFilePicker) {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{ description, accept: { [mimeType]: [extension] } }],
+    });
+    const writable = await handle.createWritable();
+    await writable.write(bytes);
+    await writable.close();
+    return handle.name;
+  }
+  const blob = new Blob([bytes], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  return filename;
+}
+
+// Mirrors loadFxFileText's own already-loaded-preset check above - if
+// list already has an entry with this name, confirms overwriting it
+// (removing the old entry, mutating list in place) before the caller
+// adds the new one. Returns false if the name is free OR the user
+// declined, in EITHER of which case the caller should NOT still add the
+// entry if false-with-collision (see call sites) - to spell that
+// distinction out, this returns true only when it's clear to proceed
+// (either no collision, or overwrite confirmed). kindLabel is just for
+// the dialog's wording ("image"/"animation").
+async function graphicsConfirmOverwriteIfNeeded(list, name, kindLabel) {
+  const existingIndex = list.findIndex((entry) => entry.name === name);
+  if (existingIndex === -1) return true;
+  const overwrite = await showConfirm(
+    `${kindLabel} already in library`,
+    `An ${kindLabel.toLowerCase()} named "${name}" is already in the User library. Overwrite it, or cancel to skip?`,
+    'Overwrite'
+  );
+  if (!overwrite) return false;
+  list.splice(existingIndex, 1);
+  return true;
+}
+
+el('graphics-save-btn').addEventListener('click', async () => {
+  const name = await showGraphicsSaveDialog(`Image ${new Date().toISOString().slice(0, 10)}`);
+  if (!name) return;
+  if (!(await graphicsConfirmOverwriteIfNeeded(graphicsLibrary, name, 'Image'))) return;
+  try {
+    const bytes = encodeMonoBmp16x16(graphicsIsActiveAt);
+    const savedName = await writeBinaryFile(`${name}.bmp`, bytes, 'QY70/QY100 Graphics', '.bmp');
+    graphicsLibrary.push({ id: `${Date.now()}`, name, data48: graphicsCanvasToData48() });
+    graphicsLibrarySource = 'user-images';
+    renderGraphicsLibrary();
+    statusEl.textContent = `Saved ${savedName}.`;
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+// Inline (non-modal) progress feedback for Load Image/Load Animation,
+// shown while graphicsLoadBmpFiles/graphicsLoadAnimationFiles are reading
+// and decoding the picked file(s). Deliberately NOT the showProgress
+// modal used elsewhere for MIDI-send operations - a per-file overwrite
+// confirmation (graphicsConfirmOverwriteIfNeeded) can still need to pop
+// up mid-loop here, and stacking that on top of a blocking dialog would
+// be awkward, so this is just a row in the normal page flow instead.
+const graphicsLoadProgressRow = el('graphics-load-progress-row');
+const graphicsLoadProgressBar = el('graphics-load-progress-bar');
+const graphicsLoadProgressStatus = el('graphics-load-progress-status');
+
+// A fast load (one small file, already cached on disk) can finish well
+// under a second - hiding the bar the instant it hits 100% would make it
+// flash by too quickly to actually register as feedback. Tracking when it
+// was shown and padding hideGraphicsLoadProgress out to at least this
+// long keeps it visible long enough to read, without slowing down a
+// large/slow batch (which already naturally takes longer than this).
+const GRAPHICS_LOAD_PROGRESS_MIN_VISIBLE_MS = 1000;
+let graphicsLoadProgressShownAt = 0;
+
+function showGraphicsLoadProgress() {
+  graphicsLoadProgressBar.value = 0;
+  graphicsLoadProgressStatus.textContent = '';
+  graphicsLoadProgressRow.hidden = false;
+  graphicsLoadProgressShownAt = performance.now();
+}
+
+function updateGraphicsLoadProgress(label, current, total) {
+  graphicsLoadProgressBar.value = total ? Math.round((current / total) * 100) : 0;
+  graphicsLoadProgressStatus.textContent = `${label} ${current} of ${total}...`;
+}
+
+// Deliberately not awaited by its callers - the load's own result
+// (library/status updates) should land immediately once decoding
+// finishes, not wait on this cosmetic grace period too. The bar just
+// lingers in the background for whatever's left of the minimum, then
+// hides itself.
+async function hideGraphicsLoadProgress() {
+  const elapsed = performance.now() - graphicsLoadProgressShownAt;
+  const remaining = GRAPHICS_LOAD_PROGRESS_MIN_VISIBLE_MS - elapsed;
+  if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+  graphicsLoadProgressRow.hidden = true;
+}
+
+// A valid 16x16 BMP (any bit depth this app reads) is well under 1KB - a
+// generous 256KB cap rejects an oversized/wrong file before it's ever
+// fully read into memory, rather than after (e.g. someone accidentally
+// picking a multi-hundred-MB file with a renamed .bmp extension, which
+// would otherwise sit reading/decoding a mostly-pointless buffer).
+const GRAPHICS_MAX_BMP_FILE_SIZE = 256 * 1024;
+
+// Decodes and adds ONE file's bytes to the User library. Returns the new
+// entry on success, or null (after reporting the error, or after the user
+// declined an overwrite prompt) on failure - the caller decides
+// whether/how to summarize across a multi-file batch.
+async function graphicsAddBmpToLibrary(bytes, filename) {
+  let isActiveGrid;
+  try {
+    isActiveGrid = decodeMonoBmp(bytes);
+  } catch (err) {
+    statusEl.textContent = `Error: ${filename ? `${filename}: ` : ''}${err.message}`;
+    return null;
+  }
+  const name = filename?.replace(/\.bmp$/i, '') || 'Loaded Image';
+  if (!(await graphicsConfirmOverwriteIfNeeded(graphicsLibrary, name, 'Image'))) return null;
+  const entry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name, data48: graphicsXYGridToData48(isActiveGrid) };
+  graphicsLibrary.push(entry);
+  return entry;
+}
+
+// Loads one or more File objects (from either the File System Access API
+// or the plain <input type=file multiple> fallback below). Every file
+// that decodes successfully is added to the User library; if exactly one
+// file was picked, it's also applied to the canvas directly (preserving
+// the original single-file UX) - with several picked at once there's no
+// single obvious choice to apply, so they're just left in the library
+// for the user to pick from via each entry's own Load button.
+async function graphicsLoadBmpFiles(files) {
+  const fileArray = Array.from(files);
+  if (fileArray.length === 0) return;
+  let succeeded = 0;
+  let lastEntry = null;
+  showGraphicsLoadProgress();
+  try {
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      updateGraphicsLoadProgress('Loading image', i, fileArray.length);
+      if (file.size > GRAPHICS_MAX_BMP_FILE_SIZE) {
+        statusEl.textContent = `Error: ${file.name} is too large to be a valid 16x16 BMP (${Math.round(file.size / 1024)}KB) - skipped.`;
+        continue;
+      }
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const entry = await graphicsAddBmpToLibrary(bytes, file.name);
+      if (entry) {
+        succeeded++;
+        lastEntry = entry;
+      }
+    }
+    updateGraphicsLoadProgress('Loading image', fileArray.length, fileArray.length);
+  } finally {
+    hideGraphicsLoadProgress();
+  }
+  if (succeeded === 0) return;
+  graphicsLibrarySource = 'user-images';
+  renderGraphicsLibrary();
+  if (fileArray.length === 1 && lastEntry) {
+    graphicsApplyData48(lastEntry.data48);
+    graphicsPushHistory();
+  } else {
+    statusEl.textContent = `Loaded ${succeeded} of ${fileArray.length} image${fileArray.length === 1 ? '' : 's'} into the library.`;
+  }
+}
+
+const graphicsFileInput = el('graphics-file-input');
+el('graphics-load-btn').addEventListener('click', async () => {
+  try {
+    if (window.showOpenFilePicker) {
+      const handles = await window.showOpenFilePicker({
+        multiple: true,
+        types: [{ description: 'QY70/QY100 Graphics', accept: { 'image/bmp': ['.bmp'] } }],
+      });
+      const files = await Promise.all(handles.map((handle) => handle.getFile()));
+      await graphicsLoadBmpFiles(files);
+    } else {
+      graphicsFileInput.click();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+graphicsFileInput.addEventListener('change', async () => {
+  // files is a snapshot copy, not the input's own live FileList -
+  // clearing .value right after (needed so re-picking the same file(s)
+  // later still fires change) would otherwise empty that live list out
+  // from under this handler before the async loop below ever runs.
+  const files = Array.from(graphicsFileInput.files);
+  graphicsFileInput.value = '';
+  if (files.length) await graphicsLoadBmpFiles(files);
+});
+
+// Like images, animations round-trip through a real file on disk - an
+// animated .gif, since GIF's own per-frame delay field is exactly the
+// "wait time between frames" this app already tracks, and any image
+// viewer/browser can preview it without this app. The .gif is written
+// alongside adding the frames + wait time to the User Animations list,
+// mirroring Save Image's own bmp-plus-library-entry behavior.
+el('graphics-save-animation-btn').addEventListener('click', async () => {
+  if (graphicsFrames.length === 0) {
+    statusEl.textContent = 'Error: add at least one frame before saving an animation.';
+    return;
+  }
+  const name = await showGraphicsSaveDialog(`Animation ${new Date().toISOString().slice(0, 10)}`, 'Save Animation');
+  if (!name) return;
+  if (!(await graphicsConfirmOverwriteIfNeeded(graphicsUserAnimations, name, 'Animation'))) return;
+  const waitMs = Math.round(graphicsWaitKnobWidget.getValue());
+  try {
+    const gifBytes = encodeAnimatedGif({
+      width: GRAPHICS_SIZE,
+      height: GRAPHICS_SIZE,
+      frames: graphicsFrames.map((f) => ({ indices: graphicsData48ToIndices(f.data48), delayCs: Math.round(waitMs / 10) })),
+    });
+    const savedName = await writeBinaryFile(`${name}.gif`, gifBytes, 'QY70/QY100 Animation', '.gif', 'image/gif');
+    graphicsUserAnimations.push({
+      id: `${Date.now()}`,
+      name,
+      waitMs,
+      frames: graphicsFrames.map((f) => ({ data48: f.data48.slice() })),
+    });
+    graphicsLibrarySource = 'user-animations';
+    renderGraphicsLibrary();
+    statusEl.textContent = `Saved ${savedName} (${graphicsFrames.length} frames).`;
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+// Builds a new animation by importing one or more .gif files (in
+// selection order) - every frame from every selected file is decoded and
+// concatenated into ONE sequence (this app only has a single shared Wait
+// time, not a per-frame one, so it's taken from the first loaded frame's
+// own delay). More frames than GRAPHICS_MAX_FRAMES allows are truncated
+// to the first GRAPHICS_MAX_FRAMES, reported in the status message
+// rather than silently dropped. The combined result is added to the
+// User Animations library
+// only (like Save Animation writes there) rather than replacing the
+// current working frames outright - use the library entry's own Load
+// button to bring it into the frame editor.
+async function graphicsLoadAnimationFiles(files) {
+  const fileArray = Array.from(files);
+  if (fileArray.length === 0) return;
+  const newFrames = [];
+  let firstDelayCs = null;
+  let filesFailed = 0;
+  let filesOk = 0;
+  let firstFileName = null;
+  showGraphicsLoadProgress();
+  try {
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      updateGraphicsLoadProgress('Loading animation', i, fileArray.length);
+      if (file.size > GRAPHICS_MAX_BMP_FILE_SIZE) {
+        filesFailed++;
+        continue;
+      }
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const decoded = decodeAnimatedGif(bytes);
+        filesOk++;
+        if (firstFileName === null) firstFileName = file.name;
+        for (const frame of decoded.frames) {
+          if (firstDelayCs === null) firstDelayCs = frame.delayCs;
+          newFrames.push({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            data48: graphicsIndicesToData48(frame.indices),
+          });
+        }
+      } catch (err) {
+        filesFailed++;
+      }
+    }
+    updateGraphicsLoadProgress('Loading animation', fileArray.length, fileArray.length);
+    if (newFrames.length === 0) {
+      statusEl.textContent = 'Error: no valid 16x16 GIF animations were selected.';
+      return;
+    }
+    let truncated = false;
+    let frames = newFrames;
+    if (frames.length > GRAPHICS_MAX_FRAMES) {
+      frames = frames.slice(0, GRAPHICS_MAX_FRAMES);
+      truncated = true;
+    }
+    const waitMs = Math.round(firstDelayCs * 10);
+    const name = filesOk === 1
+      ? (firstFileName?.replace(/\.gif$/i, '') || 'Loaded Animation')
+      : `${filesOk} Combined GIFs ${new Date().toISOString().slice(0, 10)}`;
+    // Kept inside this try (rather than after the finally below) so the
+    // progress row stays up behind the overwrite-confirm dialog instead
+    // of disappearing right before it appears.
+    if (!(await graphicsConfirmOverwriteIfNeeded(graphicsUserAnimations, name, 'Animation'))) return;
+    graphicsUserAnimations.push({
+      id: `${Date.now()}`,
+      name,
+      waitMs,
+      frames: frames.map((f) => ({ data48: f.data48.slice() })),
+    });
+    graphicsLibrarySource = 'user-animations';
+    renderGraphicsLibrary();
+    const parts = [`Loaded a ${frames.length}-frame animation from ${filesOk} file${filesOk === 1 ? '' : 's'} into the User Animations library.`];
+    if (truncated) parts.push(`Only the first ${GRAPHICS_MAX_FRAMES} of ${newFrames.length} decoded frames were used (${GRAPHICS_MAX_FRAMES}-frame limit).`);
+    if (filesFailed) parts.push(`${filesFailed} file${filesFailed === 1 ? '' : 's'} failed to decode and ${filesFailed === 1 ? 'was' : 'were'} skipped.`);
+    statusEl.textContent = parts.join(' ');
+  } finally {
+    hideGraphicsLoadProgress();
+  }
+}
+
+const graphicsAnimationFileInput = el('graphics-animation-file-input');
+el('graphics-load-animation-btn').addEventListener('click', async () => {
+  try {
+    if (window.showOpenFilePicker) {
+      const handles = await window.showOpenFilePicker({
+        multiple: true,
+        types: [{ description: 'QY70/QY100 Animation', accept: { 'image/gif': ['.gif'] } }],
+      });
+      const files = await Promise.all(handles.map((handle) => handle.getFile()));
+      await graphicsLoadAnimationFiles(files);
+    } else {
+      graphicsAnimationFileInput.click();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+graphicsAnimationFileInput.addEventListener('change', async () => {
+  const files = Array.from(graphicsAnimationFileInput.files);
+  graphicsAnimationFileInput.value = '';
+  if (files.length) await graphicsLoadAnimationFiles(files);
+});
+
+renderGraphicsLibrary();
+updateGraphicsUndoRedoButtons();
+renderGraphicsHexPreview();
+renderGraphicsFrames();
+renderGraphicsAnimationHexPreview();
+renderGraphicsOnionSkin();
+
+// Display Text sub-tabs (Whole Message / Split Message) - same pattern
+// as the Instructions dialog's own .dialog-tab/.dialog-tab-panel
+// switching (see helpTabs below), just scoped to this section instead of
+// a <dialog>.
+const displayTextSubtabs = [...document.querySelectorAll('#display-text-subtabs .dialog-tab')];
+const displayTextSubpanels = [...document.querySelectorAll('#display-text .display-text-subtab-panel')];
+displayTextSubtabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    displayTextSubtabs.forEach((t) => {
+      t.classList.toggle('active', t === tab);
+      t.setAttribute('aria-selected', String(t === tab));
+    });
+    displayTextSubpanels.forEach((p) => { p.hidden = p.dataset.subpanel !== tab.dataset.subtab; });
+  });
+});
+
+// Display Text tab - a friendlier text-input wrapper around
+// buildMessageWindow, the same 32-char LCD Message Window SysEx that
+// sendMessageWindow (below) already uses internally for action
+// confirmations - this tab just lets the user compose and push arbitrary
+// text to the device directly, working the same way the Graphics tab's
+// own canvas-to-SysEx panels do: a live hex preview plus a button to
+// actually send it.
+const displayTextInput = el('display-text-input');
+const displayTextCount = el('display-text-count');
+const displayTextHexOutput = el('display-text-hex-output');
+
+function renderDisplayTextHexPreview() {
+  const bytes = buildMessageWindow(0, displayTextInput.value);
+  displayTextHexOutput.textContent = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(' ');
+}
+
+displayTextInput.addEventListener('input', () => {
+  displayTextCount.textContent = `${displayTextInput.value.length}/32`;
+  renderDisplayTextHexPreview();
+});
+
+displayTextInput.addEventListener('keydown', (evt) => {
+  if (evt.key === 'Enter') el('display-text-push-btn').click();
+});
+
+el('display-text-push-btn').addEventListener('click', () => {
+  try {
+    link.send(buildMessageWindow(0, displayTextInput.value));
+    statusEl.textContent = 'Sent to display.';
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+renderDisplayTextHexPreview();
+
+// Animated Message - builds a sequence of Message Window snapshots that
+// animate the typed text across the 32-char display, the same "sequence
+// of snapshots plus a shared wait time" shape as the Graphics tab's own
+// frame animation (see graphicsFrames/Play Animation above), just
+// generated from text instead of drawn by hand. Marquee/Ping-Pong pad 32
+// blank characters onto both ends so a message of any length starts and
+// ends fully off-screen, unlike the static Message field above, which
+// just truncates at 32 characters.
+//
+// The 1000-char maxlength on the textarea (enforced by the browser, same
+// idea as the static field's 32) bounds how many steps a sequence can
+// ever have, and every step is built via buildMessageWindow, which
+// already sanitizes each character (anything outside printable ASCII
+// becomes a space - see its own comment in sysex.js) before turning it
+// into bytes. Every render below writes this text via .textContent,
+// never innerHTML, so there's no way typed text can be interpreted as
+// markup.
+const MARQUEE_WINDOW_LENGTH = 32;
+const MARQUEE_MAX_LENGTH = 1000;
+const MARQUEE_BLANK_STEP = ' '.repeat(MARQUEE_WINDOW_LENGTH);
+
+function marqueeBuildScrollSteps(text) {
+  const padded = MARQUEE_BLANK_STEP + text + MARQUEE_BLANK_STEP;
+  const steps = [];
+  for (let i = 0; i <= padded.length - MARQUEE_WINDOW_LENGTH; i++) {
+    steps.push(padded.slice(i, i + MARQUEE_WINDOW_LENGTH));
+  }
+  return steps;
+}
+
+// Orbit treats the 32-char display as two 16-char rows forming one
+// closed loop - top row left-to-right, then bottom row right-to-left,
+// the same direction you'd trace a rectangle's border clockwise - and
+// animates the message's characters flowing around that loop, one
+// slot per step, for a full 32-step lap back to where they started.
+// MARQUEE_ORBIT_CW_ORDER lists which raw byte index sits at each
+// position going around the loop; MARQUEE_ORBIT_LOOP_POS_OF_RAW is its
+// inverse (raw byte index -> loop position), used to find how far along
+// the loop each raw slot is.
+const MARQUEE_ORBIT_CW_ORDER = (() => {
+  const order = [];
+  for (let i = 0; i < 16; i++) order.push(i);
+  for (let i = 15; i >= 0; i--) order.push(16 + i);
+  return order;
+})();
+const MARQUEE_ORBIT_LOOP_POS_OF_RAW = (() => {
+  const map = new Array(MARQUEE_WINDOW_LENGTH);
+  MARQUEE_ORBIT_CW_ORDER.forEach((rawIndex, loopPos) => { map[rawIndex] = loopPos; });
+  return map;
+})();
+
+// The resting (step 1) frame reads normally - raw index r shows
+// content[r], same as Blink's single static frame - so
+// loopContentAtStart[loopPos] is just that same content reindexed by
+// loop position. Each later step re-reads every raw slot from
+// `clockwise ? loopPos - t : loopPos + t` steps earlier in that array,
+// i.e. "what was t slots behind this one, moving forward around the
+// loop" - which is what makes the whole ring appear to rotate as t
+// increases, rather than each character just independently cycling.
+function marqueeBuildOrbitSteps(text, clockwise) {
+  const content = (text + MARQUEE_BLANK_STEP).slice(0, MARQUEE_WINDOW_LENGTH);
+  const loopContentAtStart = MARQUEE_ORBIT_CW_ORDER.map((rawIndex) => content[rawIndex]);
+  const steps = [];
+  for (let t = 0; t < MARQUEE_WINDOW_LENGTH; t++) {
+    const raw = new Array(MARQUEE_WINDOW_LENGTH);
+    for (let r = 0; r < MARQUEE_WINDOW_LENGTH; r++) {
+      const loopPos = MARQUEE_ORBIT_LOOP_POS_OF_RAW[r];
+      const sourcePos = clockwise
+        ? (loopPos - t + MARQUEE_WINDOW_LENGTH) % MARQUEE_WINDOW_LENGTH
+        : (loopPos + t) % MARQUEE_WINDOW_LENGTH;
+      raw[r] = loopContentAtStart[sourcePos];
+    }
+    steps.push(raw.join(''));
+  }
+  return steps;
+}
+
+// Marquee, Ping-Pong, Blink, and Orbit are mutually exclusive modes (a
+// segmented-control selection, not independent toggles - see
+// #marquee-mode-toggle below), so building a sequence only ever needs to
+// look at which one is currently selected. Blink alternates the message
+// with a blank screen; Ping-Pong is the same scroll as plain Marquee,
+// just with all steps but the last appended again in reverse so it
+// bounces back to the start instead of cutting straight back to the
+// beginning; Orbit is described above.
+let marqueeMode = 'marquee';
+let marqueeOrbitClockwise = true;
+
+function marqueeBuildSteps(text) {
+  if (marqueeMode === 'blink') return [text, MARQUEE_BLANK_STEP];
+  if (marqueeMode === 'orbit') return marqueeBuildOrbitSteps(text, marqueeOrbitClockwise);
+  const forward = marqueeBuildScrollSteps(text);
+  if (marqueeMode !== 'pingpong') return forward;
+  // Off, a single pass should return all the way to the first step so it
+  // ends where it started, so only the last step is dropped from the
+  // reversed half. On, that first step already reappears at the START
+  // of the next lap once this loops, so it's ALSO dropped here -
+  // otherwise it plays twice in a row at every loop seam (once ending
+  // one lap, again starting the next) instead of once. Same reasoning
+  // as Graphics' own Play Animation Ping-Pong.
+  const reversedMiddle = marqueeLoopToggle.checked ? forward.slice(1, -1).reverse() : forward.slice(0, -1).reverse();
+  return [...forward, ...reversedMiddle];
+}
+
+const marqueeTextInput = el('marquee-text-input');
+const marqueeTextCount = el('marquee-text-count');
+const marqueeHexOutput = el('marquee-hex-output');
+
+const marqueeModeToggle = el('marquee-mode-toggle');
+const marqueeModeBtns = [...marqueeModeToggle.querySelectorAll('.segment-btn')];
+const marqueeOrbitDirectionRow = el('marquee-orbit-direction-row');
+const marqueeOrbitDirectionToggle = el('marquee-orbit-direction-toggle');
+const marqueeOrbitDirectionLabel = el('marquee-orbit-direction-label');
+marqueeModeBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    marqueeMode = btn.dataset.mode;
+    marqueeModeBtns.forEach((b) => b.classList.toggle('active', b === btn));
+    marqueeOrbitDirectionRow.hidden = marqueeMode !== 'orbit';
+    renderMarqueeHexPreview();
+  });
+});
+marqueeOrbitDirectionToggle.addEventListener('change', () => {
+  marqueeOrbitClockwise = !marqueeOrbitDirectionToggle.checked;
+  marqueeOrbitDirectionLabel.textContent = marqueeOrbitClockwise ? 'CW' : 'CCW';
+  renderMarqueeHexPreview();
+});
+
+const marqueeWaitKnobWidget = createKnob({
+  min: 50,
+  max: 2000,
+  value: 300,
+  step: 10,
+  resetValue: 300,
+  onChange: () => renderMarqueeHexPreview(),
+});
+el('marquee-speed-knob').appendChild(marqueeWaitKnobWidget.element);
+
+// Grows the textarea to fit its content (reset to auto first so it can
+// shrink back down too, e.g. after deleting text) rather than scrolling
+// internally - see the resize:none/overflow:hidden pairing on
+// #marquee-text-input in style.css, which hands height control to this
+// entirely. scrollHeight excludes border width, but the app's global
+// box-sizing: border-box (style.css) means the height property being set
+// here DOES include it - without adding it back, the box would land
+// consistently a couple pixels short of its own content, clipping the
+// last line just enough to force the very internal scroll this is meant
+// to avoid.
+function marqueeAutoGrowInput() {
+  const cs = getComputedStyle(marqueeTextInput);
+  const borderY = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+  marqueeTextInput.style.height = 'auto';
+  marqueeTextInput.style.height = `${marqueeTextInput.scrollHeight + borderY}px`;
+}
+
+function renderMarqueeHexPreview() {
+  const text = marqueeTextInput.value;
+  if (!text) {
+    marqueeHexOutput.textContent = 'Type a message above to build the sequence.';
+    return;
+  }
+  const waitMs = Math.round(marqueeWaitKnobWidget.getValue());
+  marqueeHexOutput.textContent = marqueeBuildSteps(text)
+    .map((stepText, index) => {
+      const bytes = buildMessageWindow(0, stepText);
+      const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(' ');
+      return `; Step ${index + 1} (wait ${waitMs}ms)\n${hex}`;
+    })
+    .join('\n\n');
+}
+
+marqueeTextInput.addEventListener('input', () => {
+  // maxlength="1000" on the element already stops normal typing/pasting
+  // past the cap, but doesn't cover every input path a browser might
+  // allow (e.g. a dropped text file) - clamping here too keeps the step
+  // count (and therefore how long Play Message runs, and how large the
+  // hex preview gets) bounded no matter how the text arrived.
+  if (marqueeTextInput.value.length > MARQUEE_MAX_LENGTH) marqueeTextInput.value = marqueeTextInput.value.slice(0, MARQUEE_MAX_LENGTH);
+  marqueeTextCount.textContent = `${marqueeTextInput.value.length}/${MARQUEE_MAX_LENGTH}`;
+  marqueeAutoGrowInput();
+  renderMarqueeHexPreview();
+});
+
+// Loop/Stop/Play-button wiring below mirrors Play Animation/Stop
+// Animation above exactly (same do-while-until-stopped shape, same
+// disabled/hidden button choreography) - see that block's own comments
+// for why it's structured this way.
+let marqueePlaying = false;
+let marqueeStopRequested = false;
+const marqueeLoopToggle = el('marquee-loop-toggle');
+const marqueeStopBtn = el('marquee-stop-btn');
+
+// Loop changes which frames Ping-Pong mode's step sequence includes (see
+// marqueeBuildSteps' own comment) - re-render so the preview stays
+// accurate when Loop is flipped while Ping-Pong is selected.
+marqueeLoopToggle.addEventListener('change', renderMarqueeHexPreview);
+
+// Stop Message is always clickable, not just while something's actually
+// playing. Clicking it with nothing playing just sets a flag nothing
+// ever reads before Play Message resets it back to false on its own
+// next run, so it's harmless, and leaving it always enabled means it's
+// never in a state where the one obvious way to interrupt a
+// stuck-looping message is itself unavailable.
+el('marquee-play-btn').addEventListener('click', async () => {
+  if (marqueePlaying) return;
+  const text = marqueeTextInput.value;
+  if (!text) {
+    statusEl.textContent = 'Error: type a message before playing it.';
+    return;
+  }
+  const steps = marqueeBuildSteps(text);
+  marqueePlaying = true;
+  marqueeStopRequested = false;
+  el('marquee-play-btn').disabled = true;
+  try {
+    do {
+      for (let i = 0; i < steps.length; i++) {
+        link.send(buildMessageWindow(0, steps[i]));
+        const waitMs = Math.round(marqueeWaitKnobWidget.getValue());
+        const isLastStep = i === steps.length - 1;
+        if (marqueeStopRequested) break;
+        if (!isLastStep || marqueeLoopToggle.checked) await new Promise((resolve) => setTimeout(resolve, waitMs));
+        if (marqueeStopRequested) break;
+      }
+    } while (marqueeLoopToggle.checked && !marqueeStopRequested);
+    statusEl.textContent = marqueeStopRequested ? 'Message stopped.' : 'Played message.';
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  } finally {
+    marqueePlaying = false;
+    marqueeStopRequested = false;
+    el('marquee-play-btn').disabled = false;
+  }
+});
+
+marqueeStopBtn.addEventListener('click', () => {
+  marqueeStopRequested = true;
+});
+
+renderMarqueeHexPreview();
+
+// Split Message - the 32-char Message Window is really two stacked
+// 16-char lines (see buildMessageWindowLine's own comment in sysex.js).
+// Flip-Flop, Alternate Blink, and Marquee all share ONE clock (one Wait
+// knob, one Loop toggle, one do-while loop) and rebuild the FULL 32-byte
+// frame every step via buildMessageWindow, rather than the two lines
+// running on independent clocks with their own separate sends - an
+// earlier version of Marquee mode did that (two Promise.all'd loops,
+// each only writing its own 16 bytes via buildMessageWindowLine), but
+// the two lines' sends landing at different, unsynchronized moments
+// looked bad in practice. Marquee mode still gets the LOOK of
+// independent per-line movement by giving each line its own
+// Forward/Reverse/Ping-Pong direction (see splitLineFramesFor) and
+// cycling each line's own frame sequence via modulo against a shared
+// frame counter - same clock, different phase/pattern per line.
+const SPLIT_LINE_LENGTH = 16;
+const SPLIT_BLANK_LINE = ' '.repeat(SPLIT_LINE_LENGTH);
+const SPLIT_LINE_MAX_LENGTH = 128;
+
+function splitBuildLineScrollSteps(text) {
+  const padded = SPLIT_BLANK_LINE + text + SPLIT_BLANK_LINE;
+  const steps = [];
+  for (let i = 0; i <= padded.length - SPLIT_LINE_LENGTH; i++) {
+    steps.push(padded.slice(i, i + SPLIT_LINE_LENGTH));
+  }
+  return steps;
+}
+
+// Flip-Flop and Alternate Blink only ever need each line's STATIC
+// content (never longer than one line), unlike Marquee mode's scrolling
+// text - truncating/padding to exactly 16 chars here keeps both modes'
+// step-building below simple string concatenation.
+function splitLineStatic(text) {
+  return (text + SPLIT_BLANK_LINE).slice(0, SPLIT_LINE_LENGTH);
+}
+
+// One line's own frame sequence for Marquee mode, per its own Reverse
+// and Ping-Pong toggles - independent settings, not one exclusive choice,
+// so all four combinations are reachable: plain forward, plain reverse,
+// a ping-pong that starts by scrolling in (forward) then bounces back,
+// or a ping-pong that starts by scrolling out (reverse) then bounces
+// back the other way. Reverse alone is just the forward frames in the
+// opposite order (right-to-left instead of left-to-right); both
+// directions naturally start AND end on an all-blank frame (the window
+// sits fully within the leading/trailing pad at each end), so cycling
+// them via modulo repeats a blank frame at the seam - never visually
+// obvious. Ping-Pong bounces the (possibly already-reversed) sequence
+// back on itself, and DOES need its own seam fix (dropping both
+// endpoints from the reversed half) because unlike a blank seam, its
+// seam frame is real, visible content - same reasoning as Play
+// Animation's own Ping-Pong toggle elsewhere in this file.
+function splitLineFramesFor(text, reverse, pingPong) {
+  const base = reverse ? [...splitBuildLineScrollSteps(text)].reverse() : splitBuildLineScrollSteps(text);
+  if (!pingPong || base.length <= 1) return base;
+  return [...base, ...base.slice(1, -1).reverse()];
+}
+
+function gcd(a, b) {
+  while (b) {
+    [a, b] = [b, a % b];
+  }
+  return a;
+}
+
+function lcm(a, b) {
+  return (a / gcd(a, b)) * b;
+}
+
+// Combines both lines' own frame sequences onto ONE shared frame count,
+// each line cycling its own sequence via modulo - so a short Line 1
+// phrase loops several times over the course of a long Line 2 phrase's
+// single pass, each still keeping its own direction/pattern, all while
+// every step is still one single 32-byte buildMessageWindow send
+// covering both lines at once. That shared count has to be the LEAST
+// COMMON MULTIPLE of the two sequence lengths, not just the longer
+// one's length - using the longer length alone only lets IT complete
+// exactly once, while the shorter one gets cut off mid-cycle at the
+// seam unless its length happens to divide evenly into the longer
+// one's. That mid-cycle cutoff is exactly what produced the "weird
+// reset" reported when the two lines' character counts differ: on
+// Loop (or replaying from the top), the shorter line's Ping-Pong would
+// jump straight back to frame 0 instead of continuing from wherever it
+// left off, since it never got to finish its own bounce. The LCM is
+// the smallest frame count that's a whole multiple of BOTH lengths, so
+// both lines always land back on their own seam at the same instant.
+// frameLimit caps how many frames actually get built (for the live hex
+// preview - with two long, differently-lengthed Ping-Pong lines, their
+// LCM can reach hundreds of thousands of frames, which would otherwise
+// have to be rebuilt from scratch on every keystroke). The true LCM is
+// always attached as .totalFrames so a capped caller can tell whether
+// it got the whole sequence or just the first frameLimit frames of it;
+// Play Split Message calls this with no limit so the device always gets
+// the complete, correct sequence regardless of what the preview showed.
+function splitBuildMarqueeFrames(line1, line2, reverse1, pingPong1, reverse2, pingPong2, frameLimit = Infinity) {
+  const seq1 = line1 ? splitLineFramesFor(line1, reverse1, pingPong1) : [SPLIT_BLANK_LINE];
+  const seq2 = line2 ? splitLineFramesFor(line2, reverse2, pingPong2) : [SPLIT_BLANK_LINE];
+  const totalFrames = lcm(seq1.length, seq2.length);
+  const frameCount = Math.min(totalFrames, frameLimit);
+  const frames = [];
+  for (let t = 0; t < frameCount; t++) {
+    frames.push(seq1[t % seq1.length] + seq2[t % seq2.length]);
+  }
+  frames.totalFrames = totalFrames;
+  return frames;
+}
+
+function splitBuildCombinedSteps(line1, line2, frameLimit = Infinity) {
+  if (splitMode === 'marquee') {
+    return splitBuildMarqueeFrames(line1, line2, splitLine1Reverse, splitLine1PingPong, splitLine2Reverse, splitLine2PingPong, frameLimit);
+  }
+  const l1 = splitLineStatic(line1);
+  const l2 = splitLineStatic(line2);
+  if (splitMode === 'blink') {
+    return [l1 + SPLIT_BLANK_LINE, SPLIT_BLANK_LINE + l2];
+  }
+  return [l1 + l2, l2 + l1]; // flipflop
+}
+
+let splitMode = 'flipflop';
+let splitLine1Reverse = false;
+let splitLine1PingPong = false;
+let splitLine2Reverse = false;
+let splitLine2PingPong = false;
+const splitLine1Input = el('split-line1-input');
+const splitLine2Input = el('split-line2-input');
+const splitLine1Count = el('split-line1-count');
+const splitLine2Count = el('split-line2-count');
+const splitHexOutput = el('split-hex-output');
+const splitMarqueeDirectionsRow = el('split-marquee-directions-row');
+
+const splitModeToggle = el('split-mode-toggle');
+const splitModeBtns = [...splitModeToggle.querySelectorAll('.segment-btn')];
+const splitLine1ReverseToggle = el('split-line1-reverse-toggle');
+const splitLine1ReverseLabel = el('split-line1-reverse-label');
+const splitLine1PingPongToggle = el('split-line1-pingpong-toggle');
+const splitLine2ReverseToggle = el('split-line2-reverse-toggle');
+const splitLine2ReverseLabel = el('split-line2-reverse-label');
+const splitLine2PingPongToggle = el('split-line2-pingpong-toggle');
+
+const splitSharedWaitKnobWidget = createKnob({
+  min: 50, max: 2000, value: 300, step: 10, resetValue: 300,
+  onChange: () => renderSplitHexPreview(),
+});
+el('split-shared-wait-knob').appendChild(splitSharedWaitKnobWidget.element);
+
+// Same border-box height-fix as marqueeAutoGrowInput above, just
+// parameterized so both Line 1 and Line 2 can share it.
+function splitAutoGrowInput(input) {
+  const cs = getComputedStyle(input);
+  const borderY = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+  input.style.height = 'auto';
+  input.style.height = `${input.scrollHeight + borderY}px`;
+}
+
+function setSplitMode(mode) {
+  splitMode = mode;
+  splitModeBtns.forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+  splitMarqueeDirectionsRow.hidden = mode !== 'marquee';
+  const maxLen = mode === 'marquee' ? SPLIT_LINE_MAX_LENGTH : SPLIT_LINE_LENGTH;
+  [splitLine1Input, splitLine2Input].forEach((input) => {
+    input.maxLength = maxLen;
+    if (input.value.length > maxLen) input.value = input.value.slice(0, maxLen);
+  });
+  splitLine1Count.textContent = `${splitLine1Input.value.length}/${maxLen}`;
+  splitLine2Count.textContent = `${splitLine2Input.value.length}/${maxLen}`;
+  renderSplitHexPreview();
+}
+
+splitModeBtns.forEach((btn) => {
+  btn.addEventListener('click', () => setSplitMode(btn.dataset.mode));
+});
+
+splitLine1ReverseToggle.addEventListener('change', () => {
+  splitLine1Reverse = splitLine1ReverseToggle.checked;
+  splitLine1ReverseLabel.textContent = splitLine1Reverse ? 'Reverse' : 'Forward';
+  renderSplitHexPreview();
+});
+splitLine1PingPongToggle.addEventListener('change', () => {
+  splitLine1PingPong = splitLine1PingPongToggle.checked;
+  renderSplitHexPreview();
+});
+splitLine2ReverseToggle.addEventListener('change', () => {
+  splitLine2Reverse = splitLine2ReverseToggle.checked;
+  splitLine2ReverseLabel.textContent = splitLine2Reverse ? 'Reverse' : 'Forward';
+  renderSplitHexPreview();
+});
+splitLine2PingPongToggle.addEventListener('change', () => {
+  splitLine2PingPong = splitLine2PingPongToggle.checked;
+  renderSplitHexPreview();
+});
+
+function splitHandleLineInput(input, countEl) {
+  const maxLen = splitMode === 'marquee' ? SPLIT_LINE_MAX_LENGTH : SPLIT_LINE_LENGTH;
+  if (input.value.length > maxLen) input.value = input.value.slice(0, maxLen);
+  countEl.textContent = `${input.value.length}/${maxLen}`;
+  splitAutoGrowInput(input);
+  renderSplitHexPreview();
+}
+splitLine1Input.addEventListener('input', () => splitHandleLineInput(splitLine1Input, splitLine1Count));
+splitLine2Input.addEventListener('input', () => splitHandleLineInput(splitLine2Input, splitLine2Count));
+
+// Marquee's per-line Ping-Pong sequences can be long enough on their own
+// (up to a few hundred steps each at the 500-char cap) that their LCM -
+// the true combined step count, see splitBuildMarqueeFrames - reaches
+// into the hundreds of thousands when the two lines' lengths don't share
+// many factors. Rebuilding and re-formatting all of that as hex text on
+// every keystroke would freeze typing, so the preview only ever builds
+// the first SPLIT_PREVIEW_MAX_STEPS steps and says so when it's cut the
+// sequence short. Play Split Message always sends the real, complete
+// sequence regardless of what the preview had to truncate.
+const SPLIT_PREVIEW_MAX_STEPS = 500;
+
+function renderSplitHexPreview() {
+  const line1 = splitLine1Input.value;
+  const line2 = splitLine2Input.value;
+  if (!line1 && !line2) {
+    splitHexOutput.textContent = 'Type Line 1 and/or Line 2 above to build the sequence.';
+    return;
+  }
+  const waitMs = Math.round(splitSharedWaitKnobWidget.getValue());
+  const steps = splitBuildCombinedSteps(line1, line2, SPLIT_PREVIEW_MAX_STEPS);
+  const totalSteps = steps.totalFrames ?? steps.length;
+  const hex = steps
+    .map((stepText, index) => {
+      const bytes = buildMessageWindow(0, stepText);
+      const hexBytes = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(' ');
+      return `; Step ${index + 1} (wait ${waitMs}ms)\n${hexBytes}`;
+    })
+    .join('\n\n');
+  splitHexOutput.textContent = totalSteps > steps.length
+    ? `${hex}\n\n; ...showing first ${steps.length} of ${totalSteps} steps - Play Split Message sends the full sequence.`
+    : hex;
+}
+
+let splitPlaying = false;
+let splitStopRequested = false;
+const splitLoopToggle = el('split-loop-toggle');
+const splitStopBtn = el('split-stop-btn');
+
+el('split-play-btn').addEventListener('click', async () => {
+  if (splitPlaying) return;
+  const line1 = splitLine1Input.value;
+  const line2 = splitLine2Input.value;
+  if (!line1 && !line2) {
+    statusEl.textContent = 'Error: type Line 1 and/or Line 2 before playing it.';
+    return;
+  }
+  const steps = splitBuildCombinedSteps(line1, line2);
+  splitPlaying = true;
+  splitStopRequested = false;
+  el('split-play-btn').disabled = true;
+  try {
+    do {
+      for (let i = 0; i < steps.length; i++) {
+        link.send(buildMessageWindow(0, steps[i]));
+        const waitMs = Math.round(splitSharedWaitKnobWidget.getValue());
+        const isLastStep = i === steps.length - 1;
+        if (splitStopRequested) break;
+        if (!isLastStep || splitLoopToggle.checked) await new Promise((resolve) => setTimeout(resolve, waitMs));
+        if (splitStopRequested) break;
+      }
+    } while (splitLoopToggle.checked && !splitStopRequested);
+    statusEl.textContent = splitStopRequested ? 'Split message stopped.' : 'Played split message.';
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  } finally {
+    splitPlaying = false;
+    splitStopRequested = false;
+    el('split-play-btn').disabled = false;
+  }
+});
+
+splitStopBtn.addEventListener('click', () => {
+  splitStopRequested = true;
+});
+
+setSplitMode('flipflop');
+
 const originalSend = link.send.bind(link);
 link.send = (bytes, timestamp) => {
   log('OUT', bytes);
+  diagLog('OUT', bytes);
   originalSend(bytes, timestamp);
 };
 link.onMessage = (bytes) => {
   log('IN ', bytes);
+  diagLog('IN ', bytes);
   handleIncomingVoiceChange(bytes);
   handleIncomingNoteOn(bytes);
 };
 
-// MIDI Clock generator for "Rec-Arm Insert" - a bare Start byte isn't
-// enough to make the QY70/QY100 (or most MIDI-synced hardware) actually
-// run; it needs a continuous stream of Timing Clock pulses (24 per quarter
-// note) behind it to sync playback to, the same way a DAW does when it
-// starts external gear. setInterval alone drifts too much for this, so a
-// look-ahead scheduler runs every 25ms and hands each pulse a precise send
-// timestamp (performance.now()-domain) instead of relying on the
-// interval's own firing time. There's no Stop control here by design - the
-// user stops playback/recording on the device itself, and this stream just
-// keeps running harmlessly in the background until then (or the output
-// disconnects, which does stop it - see the catch in scheduleClockPulses).
+// MIDI Clock generator for "Rec-Arm Insert" and the transport Play button -
+// a bare Start byte isn't enough to make the QY70/QY100 (or most
+// MIDI-synced hardware) actually run; it needs a continuous stream of
+// Timing Clock pulses (24 per quarter note) behind it to sync playback to,
+// the same way a DAW does when it starts external gear. setInterval alone
+// drifts too much for this, so a look-ahead scheduler runs every 25ms and
+// hands each pulse a precise send timestamp (performance.now()-domain)
+// instead of relying on the interval's own firing time. This stream just
+// keeps running harmlessly in the background until the transport Stop
+// button stops it (or the output disconnects, which does too - see the
+// catch in scheduleClockPulses).
 const PPQN = 24;
 const CLOCK_LOOKAHEAD_MS = 100;
 const CLOCK_SCHEDULER_INTERVAL_MS = 25;
-const tempoInput = el('tempo-input');
+const messagingEnabledCheckbox = el('messaging-enabled');
 let clockRunning = false;
 let clockTimerId = null;
 let nextPulseTime = 0;
 
+// A continuous knob instead of a plain number field, matching every other
+// value control in this app - lives in the connect bar rather than a
+// param row, so it's built directly here instead of through renderParamPanel.
+const tempoKnobWidget = createKnob({
+  min: 20,
+  max: 300,
+  value: 120,
+  step: 1,
+  resetValue: 120,
+  onChange: (value) => sendMessageWindow(`Ext BPM: ${Math.round(value)}`),
+});
+el('tempo-knob').appendChild(tempoKnobWidget.element);
+
+// Tap Tempo - click along with the beat instead of dialing the knob by
+// hand. Averages the last few gaps between taps for a stable reading and
+// forgets the run if you pause too long, rather than blending an old
+// tempo into a fresh one.
+const TAP_TEMPO_RESET_GAP_MS = 2000;
+const TAP_TEMPO_MEMORY = 6;
+let tapTimes = [];
+el('tap-tempo-btn').addEventListener('click', () => {
+  const now = performance.now();
+  if (tapTimes.length && now - tapTimes[tapTimes.length - 1] > TAP_TEMPO_RESET_GAP_MS) tapTimes = [];
+  tapTimes.push(now);
+  if (tapTimes.length > TAP_TEMPO_MEMORY + 1) tapTimes.shift();
+  if (tapTimes.length < 2) return;
+  const intervals = [];
+  for (let i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i - 1]);
+  const avgMs = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+  const bpm = Math.round(60000 / avgMs);
+  tempoKnobWidget.setValue(bpm, true);
+});
+
 function msPerClockPulse() {
-  const bpm = Math.max(1, Number(tempoInput.value) || 120);
+  const bpm = Math.max(1, Math.round(tempoKnobWidget.getValue()) || 120);
   return 60000 / bpm / PPQN;
 }
 
@@ -243,7 +2168,12 @@ function scheduleClockPulses() {
     try {
       link.send(new Uint8Array([0xf8]), nextPulseTime);
     } catch (err) {
-      stopClock();
+      try {
+        stopClock();
+      } catch {
+        // The Clock pulse above already failed for the same reason (output
+        // gone) - that's the error worth showing, not this follow-up Stop.
+      }
       statusEl.textContent = `Error: ${err.message}`;
       return;
     }
@@ -268,19 +2198,126 @@ function startClock() {
   ensureClockRunning();
 }
 
-// Only called internally (see the catch in scheduleClockPulses) when the
-// output disconnects mid-stream - there's no user-facing Stop control.
+// Called both by the transport Stop button and internally (see the catch
+// in scheduleClockPulses) when the output disconnects mid-stream. Throws
+// like every other send in this file rather than swallowing its own
+// errors - the internal call site below is the one place that needs to
+// suppress it, since it already has a more relevant error to show.
 function stopClock() {
   if (!clockRunning) return;
   clearInterval(clockTimerId);
   clockTimerId = null;
   clockRunning = false;
-  try {
-    link.send(new Uint8Array([0xfc])); // Stop
-  } catch {
-    // Losing the output mid-stream already surfaced its own error above.
-  }
+  link.send(new Uint8Array([0xfc])); // Stop
 }
+
+// Unlike Start, Continue resumes from wherever the QY70/QY100's Song
+// Position currently is instead of rewinding to the top - the complement
+// to Rewind below, which relocates without starting anything.
+function continueClock() {
+  link.send(new Uint8Array([0xfb])); // Continue - throws here if no output selected
+  ensureClockRunning();
+}
+
+// Relocates to the top of the song/pattern without starting playback.
+// Song Position Pointer is only reliably honored while stopped (learned
+// the hard way with the earlier SPP Punch Insert attempt - see README),
+// so this always sends a real Stop first regardless of whether this app's
+// own clockRunning flag thinks anything is currently going, in case
+// playback was started from the device's own front panel rather than the
+// Play button here.
+function rewindToStart() {
+  link.send(new Uint8Array([0xfc])); // Stop - throws here if no output selected, before touching any running state
+  if (clockRunning) {
+    clearInterval(clockTimerId);
+    clockTimerId = null;
+    clockRunning = false;
+  }
+  link.send(new Uint8Array([0xf2, 0x00, 0x00])); // Song Position Pointer = 0
+}
+
+// Standalone transport controls - same Start+Clock/Stop plumbing Rec-Arm
+// Insert and the internal disconnect handling already use, just triggered
+// directly rather than alongside punching in a parameter.
+el('transport-play-btn').addEventListener('click', () => {
+  try {
+    startClock();
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+el('transport-continue-btn').addEventListener('click', () => {
+  try {
+    continueClock();
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+el('transport-stop-btn').addEventListener('click', () => {
+  try {
+    stopClock();
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+el('transport-rewind-btn').addEventListener('click', () => {
+  try {
+    rewindToStart();
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+// Section Control (see buildSectionControl in sysex.js) - jumps the
+// currently playing pattern/song straight to one of the QY70/QY100's
+// arrangement sections, the same as pressing its own section buttons.
+document.querySelectorAll('.section-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    try {
+      link.send(buildSectionControl(SECTION[btn.dataset.section]));
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+    }
+  });
+});
+
+// Top-level main tabs - each .main-tab's data-tab picks the .tab-panel
+// with the matching id suffix (#tab-panel-<data-tab>) to show, hiding the
+// rest. The standing MIDI Log section below the tabs is hidden while
+// Diagnostics is open (it has its own, more capable live log) and shown
+// again for every other tab, so there's never two overlapping logs on
+// screen at once.
+document.querySelectorAll('.main-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.main-tab').forEach((t) => {
+      t.classList.toggle('active', t === tab);
+      t.setAttribute('aria-selected', String(t === tab));
+    });
+    document.querySelectorAll('.tab-panel').forEach((panel) => {
+      panel.classList.toggle('active', panel.id === `tab-panel-${tab.dataset.tab}`);
+    });
+    el('log').hidden = tab.dataset.tab === 'diagnostics';
+    // The raw SysEx textarea's auto-grow sizing (see autoGrowRawSysexInput
+    // above) reads scrollHeight, which is 0 while its tab panel is
+    // display:none - re-run it now that the panel (and its wrapped
+    // placeholder text) actually has a rendered layout to measure.
+    if (tab.dataset.tab === 'diagnostics') autoGrowRawSysexInput();
+  });
+});
+
+// Song Select doubles as Pattern Select - see buildSongSelect's own
+// comment for why there's only one control here rather than two.
+el('song-select-btn').addEventListener('click', () => {
+  try {
+    // Input shows the same 1-based numbering as the device's own display
+    // (Song/Pattern 1, 2, 3...) - the wire value is 0-based, same
+    // convention as Program Number elsewhere in this app.
+    const displayed = Number(el('song-select-input').value) || 1;
+    link.send(buildSongSelect(displayed - 1));
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
 
 // MIDIAccess fires onstatechange for reasons unrelated to the user (e.g. a
 // port re-announcing itself), so preserve the selected device across a
@@ -323,13 +2360,79 @@ outputSelect.addEventListener('change', () => {
   statusEl.textContent = outputSelect.value ? '' : 'No MIDI output selected';
 });
 
-// Tooltip open state is tracked with a class toggled only by this exact
-// button's own mouseenter/mouseleave, rather than a bare CSS :hover on
-// .attention-icon/.label-info-icon - see the .tooltip-open rule in
-// style.css for why.
-document.querySelectorAll('.attention-icon, .label-info-icon').forEach((btn) => {
-  btn.addEventListener('mouseenter', () => btn.classList.add('tooltip-open'));
-  btn.addEventListener('mouseleave', () => btn.classList.remove('tooltip-open'));
+// Global tooltip - a single element (#global-tooltip in index.html,
+// position:fixed) shared by every .info-icon/.attention-icon/
+// .label-info-icon/.raw-sysex-frame-byte in the app, positioned fresh on
+// each hover instead of each icon carrying its own CSS ::after. That
+// per-icon approach could only ever render inside whatever ancestor
+// happened to contain the icon, so an icon inside any scrolling
+// container (e.g. #param-list) had its tooltip clipped at that
+// container's edge no matter its z-index - overflow clipping always
+// wins over z-index. A position:fixed element escapes that entirely.
+//
+// Delegated on `document` (mouseover/mouseout, which bubble, rather than
+// mouseenter/mouseleave, which don't) instead of attached per-icon,
+// because most of these icons are created dynamically well after this
+// script runs (every param row, insert button, etc. - see
+// renderParamPanel and friends) and re-created on every re-render, so a
+// one-time querySelectorAll+forEach at load time would miss them.
+const globalTooltip = el('global-tooltip');
+let globalTooltipTarget = null;
+
+function findTooltipTarget(node) {
+  return node.closest ? node.closest('.info-icon, .attention-icon, .label-info-icon, .raw-sysex-frame-byte') : null;
+}
+
+function positionGlobalTooltip(target) {
+  const margin = 6;
+  const iconRect = target.getBoundingClientRect();
+  const tipRect = globalTooltip.getBoundingClientRect();
+  let left = iconRect.left;
+  if (left + tipRect.width > window.innerWidth - margin) {
+    left = Math.max(margin, window.innerWidth - margin - tipRect.width);
+  }
+  let top = iconRect.bottom + margin;
+  if (top + tipRect.height > window.innerHeight - margin) {
+    top = iconRect.top - margin - tipRect.height;
+  }
+  globalTooltip.style.left = `${left}px`;
+  globalTooltip.style.top = `${top}px`;
+}
+
+function showGlobalTooltip(target) {
+  const text = target.dataset.tooltip;
+  if (!text) return;
+  globalTooltipTarget = target;
+  globalTooltip.textContent = text;
+  globalTooltip.classList.add('visible');
+  positionGlobalTooltip(target);
+}
+
+function hideGlobalTooltip() {
+  globalTooltipTarget = null;
+  globalTooltip.classList.remove('visible');
+}
+
+// mouseover doesn't refire just because the page scrolled under a
+// stationary cursor, so a tooltip left open while the user scrolls (the
+// page itself, or an internal list like #param-list) would otherwise
+// stay anchored to its icon's old position instead of following it -
+// simplest fix is to dismiss it, same as most tooltip implementations do
+// on scroll. `capture: true` catches scrolling on any scrollable
+// ancestor, not just the window, since scroll events don't bubble.
+window.addEventListener('scroll', hideGlobalTooltip, true);
+
+document.addEventListener('mouseover', (evt) => {
+  const target = findTooltipTarget(evt.target);
+  if (target && target !== globalTooltipTarget) showGlobalTooltip(target);
+});
+
+document.addEventListener('mouseout', (evt) => {
+  if (!globalTooltipTarget) return;
+  const target = findTooltipTarget(evt.target);
+  if (target === globalTooltipTarget && (!evt.relatedTarget || !target.contains(evt.relatedTarget))) {
+    hideGlobalTooltip();
+  }
 });
 
 function currentChannel() {
@@ -702,6 +2805,7 @@ function renderUserVoiceList() {
         selectedVoiceLabel = entry.name;
         renderVoiceList();
         renderParamPanel();
+        sendMessageWindow(entry.name);
       } else {
         // Legacy single-part .qyvoice files (saved before Save Voice
         // started capturing all 32 parts at once) still apply to whichever
@@ -724,6 +2828,7 @@ function renderUserVoiceList() {
         selectedVoiceLabel = entry.name;
         renderVoiceList();
         refreshIfViewingPart(part);
+        sendMessageWindow(entry.name);
       }
     });
     voiceListEl.appendChild(li);
@@ -793,6 +2898,7 @@ function renderUserKitList() {
       drumkitSelect.value = kitIndex;
       populateNoteSelect();
       renderParamPanel();
+      sendMessageWindow(entry.name);
       await showAlert(
         'Kit loaded',
         `Ds${ch + 1}'s parameters have been set to ${entry.name}. Navigate to Ds${ch + 1} on any track on your device to hear it.`
@@ -887,6 +2993,7 @@ function renderVoiceList() {
             populateNoteSelect();
             renderParamPanel();
           }
+          sendMessageWindow(name);
           await showAlert('Kit selected', `${name} has been selected for Ds${ch + 1} (Channel ${ch + 1}). Navigate to Ds${ch + 1} on your device to hear it.`);
           return;
         }
@@ -912,6 +3019,7 @@ function renderVoiceList() {
       selectedVoiceObj = v;
       renderVoiceList();
       refreshIfViewingPart(part);
+      sendMessageWindow(name);
     });
     voiceListEl.appendChild(li);
 
@@ -971,6 +3079,7 @@ function renderVoiceList() {
             drumkitSelect.value = kitIndex;
             populateNoteSelect();
             renderParamPanel();
+            sendMessageWindow(preset.name);
             await showAlert('Kit loaded', `Ds${ch + 1}'s parameters have been set to ${preset.name}. Navigate to Ds${ch + 1} on any track on your device to hear it.`);
             return;
           } else if (preset.parts) {
@@ -1004,6 +3113,7 @@ function renderVoiceList() {
           selectedVoiceKey = presetKey;
           selectedVoiceLabel = preset.name;
           renderVoiceList();
+          sendMessageWindow(preset.name);
         });
         voiceListEl.appendChild(presetLi);
       }
@@ -1505,6 +3615,35 @@ function hideProgress() {
   progressDialog.close();
 }
 
+// Sends a Message Window confirmation, but only when the "Messaging"
+// toggle in the connect bar is checked - purely a nice-to-have display on
+// the QY70/QY100's own screen, so it's easy to opt out of entirely rather
+// than fighting it every time an action briefly takes over the LCD. Fails
+// silently (unlike every other link.send call site in this file) - it's
+// always called after the action it's confirming has already succeeded or
+// reported its own error, so surfacing a second, unrelated "No MIDI output
+// selected" here would just clobber that more important status message.
+function sendMessageWindow(text) {
+  if (!messagingEnabledCheckbox.checked) return;
+  try {
+    link.send(buildMessageWindow(0, text));
+  } catch {
+    // Cosmetic only - see comment above.
+  }
+}
+
+// Bypasses sendMessageWindow's own checked-state guard: toggling messaging
+// off should still show that one last "Messaging Off" confirmation before
+// it goes silent, rather than being silently skipped by the same guard it's
+// announcing the state of.
+messagingEnabledCheckbox.addEventListener('change', () => {
+  try {
+    link.send(buildMessageWindow(0, messagingEnabledCheckbox.checked ? 'Messaging On' : 'Messaging Off'));
+  } catch {
+    // Cosmetic only - see sendMessageWindow above.
+  }
+});
+
 el('xg-on-btn').addEventListener('click', async () => {
   const confirmed = await showConfirm(
     'Send XG System On?',
@@ -1516,6 +3655,29 @@ el('xg-on-btn').addEventListener('click', async () => {
   if (!confirmed) return;
   try {
     link.send(buildXgSystemOn(0));
+    sendMessageWindow('XG Sys On');
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+// GM System On is a generic MIDI message (no Yamaha ID/device number),
+// switching the QY70/QY100 into General MIDI mode instead - everything
+// else in this app (Voice/Parameters, Graphics, Display Text) targets XG
+// mode, so this is really only here for playing back/testing plain GM
+// content; XG System On above is what most sessions actually want.
+el('gm-on-btn').addEventListener('click', async () => {
+  const confirmed = await showConfirm(
+    'Send GM System On?',
+    'Switches the QY70/QY100 into General MIDI mode instead of XG mode - ' +
+    "resets volume, pan, program, bank, and most controllers to GM defaults. " +
+    "Every other feature in this app targets XG mode, so this is rarely what you want; " +
+    "use Send XG System On instead unless you specifically need plain GM."
+  );
+  if (!confirmed) return;
+  try {
+    link.send(buildGmSystemOn());
+    sendMessageWindow('GM Sys On');
   } catch (err) {
     statusEl.textContent = `Error: ${err.message}`;
   }
@@ -1550,6 +3712,8 @@ el('help-btn').addEventListener('click', () => {
 el('help-dialog-close').addEventListener('click', () => helpDialog.close());
 helpDialog.addEventListener('click', (evt) => { if (evt.target === helpDialog) helpDialog.close(); });
 
+el('contact-btn').addEventListener('click', () => sendMessageWindow('Looking forward to your message!'));
+
 resetSectionBtn.addEventListener('click', async () => {
   const sectionLabel = parameters[sectionSelect.value]?.label || 'this section';
   const confirmed = await showConfirm(
@@ -1559,6 +3723,7 @@ resetSectionBtn.addEventListener('click', async () => {
   );
   if (!confirmed) return;
   for (const resetFn of currentSectionResetFns) resetFn();
+  sendMessageWindow(`${sectionLabel} Reset`);
 });
 
 el('clear-log-btn').addEventListener('click', () => {
@@ -2575,10 +4740,24 @@ function renderParamPanel() {
     insertBtn.type = 'button';
     insertBtn.className = 'insert-btn';
     insertBtn.textContent = 'Punch Insert';
+    let insertBtnSentTimeoutId = null;
     insertBtn.addEventListener('click', () => {
       sendRowNow();
       insertBtn.classList.add('sent');
-      setTimeout(() => insertBtn.classList.remove('sent'), 250);
+      // Punch Insert is meant to be clicked repeatedly in quick succession
+      // while punching values into a live recording (see the tooltip
+      // above) - clearing any still-pending removal from an earlier click
+      // before scheduling this one means the flash always fades exactly
+      // 250ms after the LAST click, instead of an earlier click's timer
+      // occasionally winning the race and cutting a later flash short,
+      // which read as the button flickering/staying lit during a fast
+      // punch-in sequence rather than animating cleanly like Rec-Arm
+      // Insert (normally clicked once, so it never hit this race).
+      if (insertBtnSentTimeoutId !== null) clearTimeout(insertBtnSentTimeoutId);
+      insertBtnSentTimeoutId = setTimeout(() => {
+        insertBtn.classList.remove('sent');
+        insertBtnSentTimeoutId = null;
+      }, 250);
     });
 
     insertWrap.appendChild(insertInfoIcon);
@@ -2603,6 +4782,7 @@ function renderParamPanel() {
     playInsertBtn.type = 'button';
     playInsertBtn.className = 'insert-btn play-insert-btn';
     playInsertBtn.textContent = 'Rec-Arm Insert';
+    let playInsertBtnSentTimeoutId = null;
     playInsertBtn.addEventListener('click', () => {
       try {
         startClock();
@@ -2612,7 +4792,13 @@ function renderParamPanel() {
       }
       sendRowNow();
       playInsertBtn.classList.add('sent');
-      setTimeout(() => playInsertBtn.classList.remove('sent'), 250);
+      // Same debounce as Punch Insert above, for the same reason - kept
+      // symmetric even though this button is normally only clicked once.
+      if (playInsertBtnSentTimeoutId !== null) clearTimeout(playInsertBtnSentTimeoutId);
+      playInsertBtnSentTimeoutId = setTimeout(() => {
+        playInsertBtn.classList.remove('sent');
+        playInsertBtnSentTimeoutId = null;
+      }, 250);
     });
 
     playInsertWrap.appendChild(playInsertInfoIcon);
@@ -2711,6 +4897,7 @@ function renderFxPresetList(sectionKey) {
         hideProgress();
       }
       renderParamPanel();
+      sendMessageWindow(preset.name);
     });
     fxPresetListEl.appendChild(li);
   }
@@ -2958,6 +5145,8 @@ noteSelect.addEventListener('change', renderParamPanel);
 // Drum Setup's address depends on the main Channel selector now.
 channelSelect.addEventListener('change', () => {
   if (sectionSelect.value === 'drumSetup') renderParamPanel();
+  const displayValue = channelSelect.value === 'all' ? 'All' : Number(channelSelect.value) + 1;
+  sendMessageWindow(`MIDI Ch: ${displayValue}`);
 });
 
 // Manual re-push of everything currently dialed in (or defaulted) for the
@@ -2991,6 +5180,7 @@ pushDrumParamsBtn.addEventListener('click', async () => {
   } finally {
     hideProgress();
   }
+  sendMessageWindow('Kit Pushed');
   await showAlert('Parameters pushed', `Pushed all of ${kitName}'s drum parameters to Ds${ch + 1} (Channel ${ch + 1}).`);
 });
 
@@ -3004,6 +5194,7 @@ pushParamsBtn.addEventListener('click', () => {
   const values = sectionKey === 'multiPart' ? paramState.multiPart[context.part] : paramState[sectionKey];
   resendSectionContext(sectionKey, context, values);
   statusEl.textContent = 'Parameters pushed.';
+  sendMessageWindow(`${parameters[sectionKey]?.label || 'Params'} Pushed`);
 });
 
 // Pushes every Multi Part part this app has any stored parameters for (same
@@ -3023,13 +5214,14 @@ pushAllPartsBtn.addEventListener('click', async () => {
     hideProgress();
   }
   statusEl.textContent = 'All parts pushed.';
+  sendMessageWindow('All Parts Pushed');
 });
 
 // ---- Boot ----
 
 (async () => {
-  [voices, parameters, drumNotes, presets, effectTypes, effectParams, effectValueTables, fxPresets] = await Promise.all(
-    [loadVoices(), loadParameters(), loadDrumNotes(), loadPresets(), loadEffectTypes(), loadEffectParams(), loadEffectValueTables(), loadFxPresets()]);
+  [voices, parameters, drumNotes, presets, effectTypes, effectParams, effectValueTables, fxPresets, graphicsPresets, graphicsAnimationPresets] = await Promise.all(
+    [loadVoices(), loadParameters(), loadDrumNotes(), loadPresets(), loadEffectTypes(), loadEffectParams(), loadEffectValueTables(), loadFxPresets(), loadGraphicsPresets(), loadGraphicsAnimationPresets()]);
   refreshCategoryOptions();
   renderVoiceList();
   populatePartSelect(partSelect);
@@ -3038,4 +5230,5 @@ pushAllPartsBtn.addEventListener('click', async () => {
   populateDrumkitSelect();
   populateNoteSelect();
   renderParamPanel();
+  renderGraphicsLibrary();
 })();

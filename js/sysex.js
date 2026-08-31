@@ -72,6 +72,106 @@ export function buildXgSystemOn(deviceNumber) {
   return buildParameterChange(deviceNumber, [0x00, 0x00, 0x7e], [0x00]);
 }
 
+// General MIDI System On (Universal Non-Realtime Message, Data List
+// 3-6-1-1) - unlike XG System On, this is a generic MIDI message with no
+// Yamaha ID or device number, and switches the QY70/QY100 into GM mode
+// instead of XG mode, resetting volume, pan, program, bank, reverb
+// depth, and most controllers to GM defaults in the process.
+export function buildGmSystemOn() {
+  return new Uint8Array([0xf0, 0x7e, 0x7f, 0x09, 0x01, 0xf7]);
+}
+
+// Writes text into the QY70/QY100's 32-character LCD "Message Window"
+// (Data List Table 1-5, address 06 00 00 - 06 00 1F, one ASCII byte per
+// character). Longer text is truncated; shorter text is space-padded to
+// the full 32 bytes so it fully overwrites whatever was on screen before,
+// rather than leaving trailing characters from a longer previous message.
+export function buildMessageWindow(deviceNumber, text) {
+  const MESSAGE_WINDOW_LENGTH = 32;
+  const bytes = [];
+  for (let i = 0; i < MESSAGE_WINDOW_LENGTH; i++) {
+    const code = text.charCodeAt(i);
+    bytes.push(Number.isNaN(code) || code < 0x20 || code > 0x7f ? 0x20 : code);
+  }
+  return buildParameterChange(deviceNumber, [0x06, 0x00, 0x00], bytes);
+}
+
+// Writes just ONE of the Message Window's two 16-character lines - Table
+// 1-5's 32-byte range splits cleanly into two 16-byte halves (line 0 at
+// address 06 00 00, line 1 at 06 00 10), and XG Parameter Change lets a
+// message target any address/length within a parameter, so this only
+// ever touches its own line's bytes and leaves whatever's on the other
+// line completely alone. That's what makes fully independent per-line
+// animation possible (see the Display Text tab's Split Message mode):
+// each line's own send loop never has to know or coordinate with
+// whatever the other line's loop is doing.
+export function buildMessageWindowLine(deviceNumber, lineIndex, text) {
+  const LINE_LENGTH = 16;
+  const bytes = [];
+  for (let i = 0; i < LINE_LENGTH; i++) {
+    const code = text.charCodeAt(i);
+    bytes.push(Number.isNaN(code) || code < 0x20 || code > 0x7f ? 0x20 : code);
+  }
+  return buildParameterChange(deviceNumber, [0x06, 0x00, (lineIndex & 1) * 0x10], bytes);
+}
+
+// Writes to the QY70/QY100's Bitmap Window display (Data List Table 1-5,
+// address 07 00 00 - 07 00 2F, 48 data bytes). The doc lays these out as
+// 48 flat byte/bit positions with no stated row/column mapping; the
+// actual 16x16-pixel arrangement here was worked out by pushing single
+// pixels and identifying all 4 real on-device corners: a byte's index
+// within its own group of 16 (0-15) is the row (0=top, 15=bottom), and
+// which of the 3 groups it's in is the horizontal section (Data0-15
+// left, Data16-31 middle - untested, assumed by elimination - Data32-47
+// right, bits b5/b6 only per the doc's own "Data 32-47 only uses bit 6
+// and bit 5" note). See the Graphics tab's own grid-building code in
+// app.js for the exact pixel-to-(dataIndex,bit) mapping and its
+// remaining uncertainty (which bit is which column within a group).
+// This function just takes the flat 48-byte array however it was
+// assembled.
+export function buildBitmapWindow(deviceNumber, data48) {
+  const BITMAP_DATA_LENGTH = 48;
+  const data = [];
+  for (let i = 0; i < BITMAP_DATA_LENGTH; i++) {
+    const value = data48[i];
+    data.push(Number.isInteger(value) ? value & 0x7f : 0);
+  }
+  return buildParameterChange(deviceNumber, [0x07, 0x00, 0x00], data);
+}
+
+// Section Control (Data List 3-6-2) - a QY-specific SysEx shape, distinct
+// from XG Parameter Change: no device-number nibble, fixed 7E status byte.
+// F0 43 7E 00 ss dd F7, where ss (08H-0EH) selects INTRO/MAIN A/MAIN B/
+// FILL AB/FILL BA/ENDING/BLANK. The byte structure itself is confirmed
+// against two independently-extracted copies of the doc and real-hardware
+// testing while a pattern was actively playing still didn't switch
+// sections - the doc only ever says "dd=on is received" without spelling
+// out the literal value, so this is now trying 7F (all bits set) instead
+// of 1 as the "on" encoding, since every other hypothesis (byte order,
+// section values, playback state) has been ruled out. Unconfirmed.
+export const SECTION = {
+  INTRO: 0x08,
+  MAIN_A: 0x09,
+  MAIN_B: 0x0a,
+  FILL_AB: 0x0b,
+  FILL_BA: 0x0c,
+  ENDING: 0x0d,
+  BLANK: 0x0e,
+};
+
+export function buildSectionControl(section) {
+  return new Uint8Array([0xf0, YAMAHA_ID, 0x7e, 0x00, section, 0x7f, 0xf7]);
+}
+
+// Song Select (standard MIDI System Common, not XG SysEx) - Data List 3-3-2:
+// the QY70/QY100 interprets the same F3 <number> message as a Song number
+// while in Song mode, or a Pattern number while in Pattern mode - there's
+// no separate "Pattern Select" message, just this one read differently
+// depending on which mode the device is currently in.
+export function buildSongSelect(number) {
+  return new Uint8Array([0xf3, number & 0x7f]);
+}
+
 // cents: -1024.0 .. +1023.9921875 (7-bit nibble-packed as documented in Table 1-2)
 export function buildMidiMasterTuning(deviceNumber, mm, ll) {
   const body = [0x30, 0x00, 0x00, mm & 0x7f, ll & 0x7f];
