@@ -259,7 +259,34 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
   <div class="tab-panel" id="tab-panel-data-filer" role="tabpanel">
     <section id="data-filer">
       <h2>Data Filer</h2>
-      <p class="hint">Coming soon.</p>
+      <p class="hint">Save and load raw .syx SysEx files to/from your computer, and push or pull them to/from the QY100 - a simple file librarian for whatever Bulk Dump data the device sends or accepts.</p>
+
+      <div id="data-filer-controls">
+        <input type="file" id="data-filer-file-input" accept=".syx" multiple hidden>
+        <button type="button" id="data-filer-load-btn">Load File(s)</button>
+      </div>
+      <ul id="data-filer-list"></ul>
+
+      <hr>
+
+      <h3>Pull From Device</h3>
+      <p class="hint">Switches the QY100 into bulk mode, sends a Bulk Dump Request (Data List Table 1-9) for the chosen data, records whatever comes back into a new entry above, then switches bulk mode back off - a single request returns the whole multi-block Song/Pattern, but the device won't answer at all without bulk mode on first.</p>
+      <div id="data-filer-pull-controls">
+        <span class="label-row">Type
+          <button type="button" class="info-icon" data-tooltip="Song and Pattern (actual sequence data), or All Data (everything at once - can be requested but the QY100 won't accept it being pushed back, per Table 1-9).">i</button>
+        </span>
+        <select id="data-filer-pull-type">
+          <option value="song">Song</option>
+          <option value="pattern">Pattern</option>
+          <option value="all">All Data</option>
+        </select>
+        <span id="data-filer-pull-number-row">
+          <span class="label-row" id="data-filer-pull-number-label">Song #</span>
+          <input type="number" id="data-filer-pull-number" min="1" max="20" value="1">
+        </span>
+        <button type="button" id="data-filer-pull-btn">Pull From Device</button>
+      </div>
+      <p id="data-filer-pull-status" class="hint"></p>
     </section>
   </div>
 

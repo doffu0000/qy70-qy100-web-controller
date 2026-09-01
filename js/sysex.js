@@ -172,6 +172,105 @@ export function buildSongSelect(number) {
   return new Uint8Array([0xf3, number & 0x7f]);
 }
 
+// QY-specific Bulk Dump / Bulk Dump Request (Data List 3-6-3, Table 1-9's
+// "Sequencer Parameter Address") - covers Song/Pattern sequence data,
+// Setup data, and Song/Pattern Information, and is a COMPLETELY DIFFERENT
+// SysEx frame from the generic XG Bulk Dump above: model ID 5F (not 4C),
+// and a FIXED substatus byte (00/10/20/30 for Dump/ParamChange/Request/
+// ParamChangeRequest) rather than XG's device-number-nibbled 0n/1n/2n/3n -
+// same "no device-number nibble" shape Section Control already uses
+// elsewhere in this file. Confirmed against the official Yamaha QY100
+// Data List PDF (not just the locally-cached OCR text, which had this
+// particular table's row labels scrambled by the PDF's own text
+// extraction - the OCR copy would have built the wrong request entirely).
+export const MODEL_ID_QY = 0x5f;
+
+export function buildQyBulkDumpRequest(address) {
+  const [ah, am, al] = addr3(address);
+  return new Uint8Array([0xf0, YAMAHA_ID, 0x20, MODEL_ID_QY, ah, am, al, 0xf7]);
+}
+
+// Parameter Change (3-6-3-3) - same frame as the Bulk Dump Request above
+// but substatus 0x10, carrying one data byte after the address instead
+// of nothing. Table 1-9 lists SYSTEM "bulk mode on/off" at address
+// P0 00 00 (0x10 00 00 for QY100's P=1) as this message type, not a
+// Bulk Dump - it's a mode switch, not data itself.
+export function buildQyParameterChange(address, data) {
+  const [ah, am, al] = addr3(address);
+  return new Uint8Array([0xf0, YAMAHA_ID, 0x10, MODEL_ID_QY, ah, am, al, data & 0x7f, 0xf7]);
+}
+
+export const QY_BULK_MODE_ADDRESS = [0x10, 0x00, 0x00];
+
+// A Bulk Dump SEQ Data response for a Song (0x11) or Pattern (0x12) echoes
+// back the address MID byte it was requested with - literally the
+// song/pattern number - but that same byte means something completely
+// different when WRITING: confirmed by the doffu0000/qy100-toolkit
+// project's own hardware reverse-engineering (MIT licensed:
+// https://github.com/doffu0000/qy100-toolkit, qy100-syx/HALLAZGOS.md):
+// "nn = 0x7E means 'the currently selected slot', not a pattern number -
+// that's why its own readme insists on navigating to an empty user slot
+// on the device first." A literal capture of what the device sent back
+// (echoing the requested number) therefore silently gets rejected/
+// ignored if pushed straight back - it has to be rewritten to the 0x7E
+// "current slot" sentinel first, with the checksum recomputed to match,
+// which is exactly what made a pulled Song/Pattern un-push-able before
+// this existed (see dataFilerPull's use of this in app.js).
+//
+// Only apply this to a SINGLE targeted Song/Pattern pull. An "All Data"
+// pull must NOT be run through this - it returns many Song/Pattern
+// blocks in one response, each needing its OWN real slot number to stay
+// distinguishable, and rewriting all of them to the same "current slot"
+// sentinel collapses every song/pattern onto whichever one slot happens
+// to be selected on the device when the file is later pushed back.
+export function qyRewriteAddressForWrite(message) {
+  if (message.length < 12 || message[0] !== 0xf0 || message[2] !== 0x00 || message[3] !== MODEL_ID_QY) return message;
+  const addrHigh = message[6];
+  if (addrHigh !== 0x11 && addrHigh !== 0x12) return message;
+  const rewritten = Uint8Array.from(message);
+  rewritten[7] = 0x7e;
+  const body = Array.from(rewritten.slice(4, -2)); // byteCount(2) + address(3) + data - excludes checksum/F7
+  rewritten[rewritten.length - 2] = checksum(body);
+  return rewritten;
+}
+
+// Required bracketing for ANY Bulk Dump Request/receive, not just writes -
+// confirmed against real hardware by the doffu0000/qy100-toolkit project
+// (MIT licensed: https://github.com/doffu0000/qy100-toolkit, see
+// qy100-syx/qy100syx/cli.py's cmd_dump): "without bulk mode ON, the
+// QY100 ignores Setup requests completely, and for patterns returns
+// fewer blocks than it has." This app initially pulled Song/Pattern data
+// without ever sending this, which produced exactly that symptom (see
+// dataFilerPull* in app.js) until traced back to its absence here.
+export function buildQyBulkModeOn() {
+  return buildQyParameterChange(QY_BULK_MODE_ADDRESS, 1);
+}
+
+export function buildQyBulkModeOff() {
+  return buildQyParameterChange(QY_BULK_MODE_ADDRESS, 0);
+}
+
+// Table 1-9's address High byte bakes in a "P" flag the doc documents as
+// P=1 for QY100 vs P=0 for QY70 (this app only ever targets QY100
+// hardware, so these are all P=1: 0x11/0x12/0x13/0x14/0x15). The Low
+// byte on Song/Pattern addresses is documented only as "tr" with no
+// further explanation; the qy100-toolkit project's own address builders
+// (qy100syx/protocol.py) default it to 0 and a single request at that
+// address returns the WHOLE multi-block song/pattern (the device chunks
+// and streams every track's data back on its own) rather than needing a
+// separate request per track, so it's left as an optional override here
+// mainly for parity with that reference rather than something this app's
+// own Pull flow needs to vary.
+export function qySongAddress(songNumber, track = 0) { // songNumber: 1-20, track: 0-15
+  return [0x11, (songNumber - 1) & 0x7f, track & 0x7f];
+}
+
+export function qyPatternAddress(patternNumber, track = 0) { // patternNumber: 1-64, track: 0-15
+  return [0x12, (patternNumber - 1) & 0x7f, track & 0x7f];
+}
+
+export const QY_ALL_DATA_ADDRESS = [0x14, 0x00, 0x00];
+
 // cents: -1024.0 .. +1023.9921875 (7-bit nibble-packed as documented in Table 1-2)
 export function buildMidiMasterTuning(deviceNumber, mm, ll) {
   const body = [0x30, 0x00, 0x00, mm & 0x7f, ll & 0x7f];

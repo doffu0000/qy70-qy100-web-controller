@@ -4,7 +4,7 @@
 // Support future development: <https://www.patreon.com/doffu>
 
 import { MidiLink } from './midi.js';
-import { buildXgSystemOn, buildGmSystemOn, buildMessageWindow, buildMessageWindowLine, buildSectionControl, SECTION, buildSongSelect, buildBitmapWindow } from './sysex.js';
+import { buildXgSystemOn, buildGmSystemOn, buildMessageWindow, buildMessageWindowLine, buildSectionControl, SECTION, buildSongSelect, buildBitmapWindow, buildQyBulkDumpRequest, buildQyBulkModeOn, buildQyBulkModeOff, qyRewriteAddressForWrite, MODEL_ID_QY, qySongAddress, qyPatternAddress, QY_ALL_DATA_ADDRESS } from './sysex.js';
 import { encodeMonoBmp16x16, decodeMonoBmp } from './bmp.js';
 import { encodeAnimatedGif, decodeAnimatedGif } from './gif.js';
 import { loadVoices, filterVoices, categoriesFor, bankLabel, voiceDisplayName } from './voices.js';
@@ -987,9 +987,10 @@ graphicsStopAnimationBtn.addEventListener('click', () => {
 // picks from a fixed <select> of targets rather than naming something).
 const graphicsSaveDialog = el('graphics-save-dialog');
 const graphicsSaveNameInput = el('graphics-save-name-input');
-function showGraphicsSaveDialog(defaultName, title = 'Save Image') {
+function showGraphicsSaveDialog(defaultName, title = 'Save Image', okLabel = 'Save') {
   return new Promise((resolve) => {
     el('graphics-save-dialog-title').textContent = title;
+    el('graphics-save-ok').textContent = okLabel;
     graphicsSaveNameInput.value = defaultName;
     const onOk = () => settle(graphicsSaveNameInput.value.trim() || defaultName);
     const onCancel = () => settle(null);
@@ -2103,6 +2104,7 @@ link.onMessage = (bytes) => {
   diagLog('IN ', bytes);
   handleIncomingVoiceChange(bytes);
   handleIncomingNoteOn(bytes);
+  handleDataFilerIncoming(bytes);
 };
 
 // MIDI Clock generator for "Rec-Arm Insert" and the transport Play button -
@@ -5217,6 +5219,344 @@ pushAllPartsBtn.addEventListener('click', async () => {
   sendMessageWindow('All Parts Pushed');
 });
 
+// ---- Data Filer ----
+// Save/load raw .syx SysEx files from disk (multiple at once), a list of
+// what's loaded, and Push (send a loaded entry's bytes to the device) /
+// Pull (send a Bulk Dump Request per Table 1-9 and record whatever comes
+// back into a new entry). Entries live in memory only for this session -
+// same as every other "load files into a list" feature in this app
+// (Voice Browser, Graphics Library) - Save writes a chosen entry back out
+// to disk if you want to keep it around.
+let dataFilerEntries = [];
+
+const dataFilerListEl = el('data-filer-list');
+const dataFilerFileInput = el('data-filer-file-input');
+const dataFilerPullType = el('data-filer-pull-type');
+const dataFilerPullNumberRow = el('data-filer-pull-number-row');
+const dataFilerPullNumberLabel = el('data-filer-pull-number-label');
+const dataFilerPullNumber = el('data-filer-pull-number');
+const dataFilerPullStatus = el('data-filer-pull-status');
+
+// Splits a buffer that may hold multiple back-to-back SysEx messages (the
+// normal .syx file shape - F0..F7 F0..F7 ...) into individual complete
+// messages, dropping any stray bytes outside an F0..F7 pair.
+function splitSysexMessages(bytes) {
+  const messages = [];
+  let start = -1;
+  for (let i = 0; i < bytes.length; i++) {
+    if (bytes[i] === 0xf0) {
+      start = i;
+    } else if (bytes[i] === 0xf7 && start !== -1) {
+      messages.push(bytes.slice(start, i + 1));
+      start = -1;
+    }
+  }
+  return messages;
+}
+
+function dataFilerAddEntry(name, bytes) {
+  const entry = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    bytes,
+    messageCount: splitSysexMessages(bytes).length,
+  };
+  dataFilerEntries.push(entry);
+  renderDataFilerList();
+  return entry;
+}
+
+function renderDataFilerList() {
+  dataFilerListEl.innerHTML = '';
+  if (dataFilerEntries.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'data-filer-empty';
+    li.textContent = 'No files loaded yet - use Load .syx File(s) or Pull From Device below.';
+    dataFilerListEl.appendChild(li);
+    return;
+  }
+  dataFilerEntries.forEach((entry) => {
+    const li = document.createElement('li');
+    li.className = 'data-filer-item';
+
+    const name = document.createElement('span');
+    name.className = 'data-filer-name';
+    name.textContent = entry.name;
+    name.title = entry.name;
+
+    const meta = document.createElement('span');
+    meta.className = 'data-filer-meta';
+    meta.textContent = `${entry.bytes.length}B, ${entry.messageCount} msg${entry.messageCount === 1 ? '' : 's'}`;
+
+    const pushBtn = document.createElement('button');
+    pushBtn.type = 'button';
+    pushBtn.textContent = 'Push';
+    pushBtn.title = "Send this file's SysEx messages to the device, one at a time";
+    pushBtn.addEventListener('click', () => dataFilerPush(entry));
+
+    const renameBtn = document.createElement('button');
+    renameBtn.type = 'button';
+    renameBtn.textContent = 'Rename';
+    renameBtn.title = 'Rename this entry (does not touch any copy already saved to disk)';
+    renameBtn.addEventListener('click', async () => {
+      const newName = await showGraphicsSaveDialog(entry.name, 'Rename File', 'Rename');
+      if (newName === null) return;
+      entry.name = newName;
+      renderDataFilerList();
+    });
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.textContent = 'Save';
+    saveBtn.title = 'Download this file to your computer';
+    saveBtn.addEventListener('click', () => dataFilerSave(entry));
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-warning';
+    removeBtn.textContent = 'Remove';
+    removeBtn.title = 'Removes it from this list only - any copy already saved to disk is untouched';
+    removeBtn.addEventListener('click', () => {
+      dataFilerEntries = dataFilerEntries.filter((e) => e.id !== entry.id);
+      renderDataFilerList();
+    });
+
+    li.append(name, meta, pushBtn, renameBtn, saveBtn, removeBtn);
+    dataFilerListEl.appendChild(li);
+  });
+}
+
+async function dataFilerLoadFiles(files) {
+  let loaded = 0;
+  for (const file of files) {
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      dataFilerAddEntry(file.name, bytes);
+      loaded++;
+    } catch (err) {
+      // Skip an unreadable file, keep going with the rest.
+    }
+  }
+  statusEl.textContent = loaded
+    ? `Loaded ${loaded} of ${files.length} file${files.length === 1 ? '' : 's'}.`
+    : 'Error: could not read the selected file(s).';
+}
+
+el('data-filer-load-btn').addEventListener('click', () => dataFilerFileInput.click());
+dataFilerFileInput.addEventListener('change', async () => {
+  const files = Array.from(dataFilerFileInput.files);
+  dataFilerFileInput.value = '';
+  if (files.length) await dataFilerLoadFiles(files);
+});
+
+// 130ms between packets - matches the Data List's own "packets ... will be
+// divided...and transmitted at an appropriate timing interval (120msec or
+// longer)" guidance for anything split across multiple SysEx messages, so
+// pushing a multi-message file back paces the same way the device itself
+// would when sending one.
+const DATA_FILER_PUSH_GAP_MS = 130;
+
+async function dataFilerPush(entry) {
+  const messages = splitSysexMessages(entry.bytes);
+  if (!messages.length) {
+    statusEl.textContent = `Error: "${entry.name}" doesn't contain a valid SysEx message (no F0..F7 found).`;
+    return;
+  }
+  try {
+    for (let i = 0; i < messages.length; i++) {
+      link.send(messages[i]);
+      if (i < messages.length - 1) await new Promise((resolve) => setTimeout(resolve, DATA_FILER_PUSH_GAP_MS));
+    }
+    statusEl.textContent = `Pushed "${entry.name}" (${messages.length} message${messages.length === 1 ? '' : 's'}).`;
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+}
+
+async function dataFilerSave(entry) {
+  try {
+    await writeBinaryFile(entry.name, entry.bytes, 'SysEx file', '.syx', 'application/octet-stream');
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+}
+
+// Sends ONE Bulk Dump Request (Data List Table 1-9), then records every
+// matching SysEx message that comes back until the capture goes quiet
+// (the device is done responding) or a hard deadline elapses (it's not
+// responding at all) - not a fixed message count, since the Data List
+// documents long dumps as being split into multiple messages without
+// saying how many to expect, and a single request already returns every
+// block of a multi-track Song/Pattern (no per-track looping needed - an
+// earlier version of this guessed otherwise and was wrong, see
+// dataFilerPull's own comment below). 1.5s quiet / 20s hard ceiling
+// matches the values doffu0000/qy100-toolkit uses against real hardware
+// (qy100-syx/qy100syx/transfer.py's request()/collect(), MIT licensed:
+// https://github.com/doffu0000/qy100-toolkit) - their own ceiling is
+// 120s, kept shorter here since this blocks an interactive web UI rather
+// than a CLI script.
+const DATA_FILER_PULL_QUIET_MS = 1500;
+const DATA_FILER_PULL_TIMEOUT_MS = 20000;
+
+// "All Data" streams Setup + Song/Pattern Info blocks FIRST and only THEN
+// the actual per-song/per-pattern SEQ data (the bulk of the transfer, one
+// block per track) - so a too-short hard ceiling doesn't truncate the
+// dump evenly, it lops off ALL songs and ALL patterns wholesale while
+// still "succeeding" with a handful of small Info blocks captured, which
+// is exactly the "much smaller than the Push that produced it, entire
+// U01-U64/01-20 ranges missing" symptom this constant exists to fix. A
+// real "All Data" dump (76KB captured from this exact hardware) already
+// takes ~25s just to clock out at MIDI's fixed 31.25kbaud (~3125 B/s),
+// before any inter-block pauses the device inserts while it reads each
+// pattern/song out of flash - comfortably past the 20s ceiling above,
+// which was sized for a single Song/Pattern response, not this. 120s
+// matches doffu0000/qy100-toolkit's own default ceiling for `dump all`
+// against this same hardware (qy100-syx/qy100syx/cli.py).
+const DATA_FILER_PULL_TIMEOUT_MS_ALL = 120000;
+
+let dataFilerCapture = null; // { messages: Uint8Array[], quietTimer, finish } while a Pull is in progress
+
+function handleDataFilerIncoming(bytes) {
+  if (!dataFilerCapture) return;
+  // substatus (byte 2) must be 0x00 (Bulk Dump DATA/SEQ Data, an actual
+  // response) - our own outgoing Bulk Dump REQUEST uses substatus 0x20
+  // with an otherwise IDENTICAL F0 43 .. 5F prefix, and on a MIDI setup
+  // that echoes/thrus sent messages back to MIDI In (common with some
+  // interfaces or a THRU-enabled device), that echo would otherwise get
+  // captured as if it were the device's real reply - exactly what
+  // produced a bogus "16 messages, 128 bytes" pull (16 tracks x this
+  // app's own 8-byte request, not real data) before this check existed.
+  if (bytes[0] !== 0xf0 || bytes[1] !== 0x43 || bytes[2] !== 0x00 || bytes[3] !== MODEL_ID_QY) return;
+  dataFilerCapture.messages.push(bytes);
+  clearTimeout(dataFilerCapture.quietTimer);
+  dataFilerCapture.quietTimer = setTimeout(dataFilerCapture.finish, dataFilerCapture.quietMs);
+}
+
+function dataFilerRunCapture(quietMs = DATA_FILER_PULL_QUIET_MS, timeoutMs = DATA_FILER_PULL_TIMEOUT_MS, onProgress = null) {
+  return new Promise((resolve) => {
+    const capture = { messages: [], quietTimer: null, quietMs };
+    const deadlineTimer = setTimeout(() => capture.finish(), timeoutMs);
+    const progressTimer = onProgress ? setInterval(() => onProgress(capture.messages.length), 1000) : null;
+    capture.finish = () => {
+      clearTimeout(capture.quietTimer);
+      clearTimeout(deadlineTimer);
+      if (progressTimer) clearInterval(progressTimer);
+      dataFilerCapture = null;
+      resolve(capture.messages);
+    };
+    capture.quietTimer = setTimeout(capture.finish, quietMs);
+    dataFilerCapture = capture;
+  });
+}
+
+function concatSysexMessages(messages) {
+  const totalBytes = messages.reduce((sum, m) => sum + m.length, 0);
+  const combined = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const m of messages) {
+    combined.set(m, offset);
+    offset += m.length;
+  }
+  return combined;
+}
+
+function dataFilerPullTypeLabel() {
+  const type = dataFilerPullType.value;
+  const num = Number(dataFilerPullNumber.value) || 1;
+  if (type === 'song') return `Song ${num}`;
+  if (type === 'pattern') return `Pattern ${num}`;
+  return 'All Data';
+}
+
+function dataFilerPullAddress() {
+  const type = dataFilerPullType.value;
+  const num = Number(dataFilerPullNumber.value) || 1;
+  if (type === 'song') return qySongAddress(num);
+  if (type === 'pattern') return qyPatternAddress(num);
+  return QY_ALL_DATA_ADDRESS;
+}
+
+el('data-filer-pull-btn').addEventListener('click', async () => {
+  if (dataFilerCapture) return;
+  const label = dataFilerPullTypeLabel();
+  dataFilerPullStatus.textContent = `Requesting ${label}...`;
+
+  const type = dataFilerPullType.value;
+  let messages;
+  try {
+    // Bulk mode has to bracket the request, not just writes - confirmed
+    // hardware behavior per qy100-toolkit's cmd_dump (see the comment on
+    // buildQyBulkModeOn in sysex.js): without it the QY100 either ignores
+    // the request outright (Setup) or answers with fewer blocks than it
+    // actually has (Song/Pattern). finally guarantees OFF still gets
+    // sent even if the request/capture above throws or times out, so a
+    // failed pull doesn't leave the device stuck in bulk mode.
+    const timeoutMs = type === 'all' ? DATA_FILER_PULL_TIMEOUT_MS_ALL : DATA_FILER_PULL_TIMEOUT_MS;
+    link.send(buildQyBulkModeOn());
+    link.send(buildQyBulkDumpRequest(dataFilerPullAddress()));
+    messages = await dataFilerRunCapture(DATA_FILER_PULL_QUIET_MS, timeoutMs, (count) => {
+      dataFilerPullStatus.textContent = `Requesting ${label}... ${count} message${count === 1 ? '' : 's'} received so far.`;
+    });
+  } catch (err) {
+    dataFilerPullStatus.textContent = `Error: ${err.message}`;
+    return;
+  } finally {
+    try { link.send(buildQyBulkModeOff()); } catch (err) { /* best effort - nothing more to do if this fails too */ }
+  }
+
+  if (!messages.length) {
+    dataFilerPullStatus.textContent = `No response from the device for ${label} - check MIDI In is connected and try again.`;
+    return;
+  }
+  // The bulk mode ON/OFF sent above are requests to the DEVICE, not data
+  // from it, so they were never part of `messages` - but per
+  // qy100-toolkit's cmd_send (see buildQyBulkModeOn's comment in
+  // sysex.js), pushing raw data blocks back WITHOUT that same bracket is
+  // exactly what a plain Push does (it just relays whatever's in the
+  // file), and the device won't accept bare blocks sent outside bulk
+  // mode. Baking the ON/OFF into the saved file itself - not just
+  // sending them ephemerally during the pull - is what makes a pulled
+  // file self-contained and actually push-able later, the same way a
+  // dump captured by another tool with its own framing already is.
+  //
+  // qyRewriteAddressForWrite similarly fixes up each response message's
+  // own echoed address before saving (see its comment in sysex.js) - a
+  // Song/Pattern block otherwise comes back addressed to the literal
+  // slot number it was requested with, which is meaningless for a write
+  // and gets silently rejected. This ONLY applies to a single targeted
+  // Song/Pattern pull, where "current slot" is the right write target
+  // because the user is expected to navigate to one on the device before
+  // pushing back. An "All Data" pull has to keep each block's own real
+  // slot number - it's the only thing that tells 20 different songs and
+  // 64 different patterns apart - so rewriting every one of them to the
+  // same "current slot" sentinel would collapse all of them onto
+  // whichever single slot happens to be selected when later pushed
+  // (confirmed by diffing a real "All Data" pull against a known-good
+  // reference dump: every Song/Pattern block's address had collapsed to
+  // slot 0x7E instead of keeping its own number).
+  const messagesForWrite = type === 'all' ? messages : messages.map(qyRewriteAddressForWrite);
+  const combined = concatSysexMessages([buildQyBulkModeOn(), ...messagesForWrite, buildQyBulkModeOff()]);
+  const entry = dataFilerAddEntry(`${label}.syx`, combined);
+  dataFilerPullStatus.textContent = `Pulled ${label}: ${messages.length} message${messages.length === 1 ? '' : 's'}, ${combined.length} bytes - added as "${entry.name}".`;
+});
+
+function updateDataFilerPullNumberVisibility() {
+  const type = dataFilerPullType.value;
+  const needsNumber = type === 'song' || type === 'pattern';
+  dataFilerPullNumberRow.hidden = !needsNumber;
+  if (type === 'song') {
+    dataFilerPullNumberLabel.textContent = 'Song #';
+    dataFilerPullNumber.min = 1;
+    dataFilerPullNumber.max = 20;
+  } else if (type === 'pattern') {
+    dataFilerPullNumberLabel.textContent = 'Pattern #';
+    dataFilerPullNumber.min = 1;
+    dataFilerPullNumber.max = 64;
+  }
+}
+dataFilerPullType.addEventListener('change', updateDataFilerPullNumberVisibility);
+updateDataFilerPullNumberVisibility();
+
 // ---- Boot ----
 
 (async () => {
@@ -5231,4 +5571,5 @@ pushAllPartsBtn.addEventListener('click', async () => {
   populateNoteSelect();
   renderParamPanel();
   renderGraphicsLibrary();
+  renderDataFilerList();
 })();
