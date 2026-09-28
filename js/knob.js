@@ -12,8 +12,15 @@ const START_DEG = -135;
 const DRAG_PIXELS_FOR_FULL_RANGE = 160;
 // Cap on how often a continuousSend knob fires mid-drag - fast enough to
 // feel live for performance tweaking, slow enough not to flood the MIDI
-// link or the QY70/QY100's SysEx parser.
-const CONTINUOUS_SEND_MS = 60;
+// link or the QY70/QY100's SysEx parser. User-adjustable (connect bar's
+// Continuous Send Rate) since some USB MIDI interfaces were found garbling
+// back-to-back SysEx even at 60ms spacing. The browser's own output was
+// confirmed clean, but the QY still recorded merged/corrupted Exc events.
+let continuousSendMs = 120;
+
+export function setContinuousSendMs(ms) {
+  continuousSendMs = ms;
+}
 
 function valueToAngle(value, min, max) {
   const frac = max === min ? 0 : (value - min) / (max - min);
@@ -90,21 +97,36 @@ export function createKnob({ min, max, value, step = 1, onChange, onInput, reset
     if (onInput) onInput(current);
   }
 
+  let dragStartY = null;
+  let dragStartValue = null;
+  // lastSentAt deliberately persists across drags (and is bumped by any
+  // fired setValue too) so a new drag or a release can never send sooner
+  // than continuousSendMs after the previous send, whatever triggered it.
+  let lastSentAt = 0;
+  let lastSentValue = null;
+  let releaseTimerId = null;
+
+  function cancelPendingRelease() {
+    if (releaseTimerId !== null) {
+      clearTimeout(releaseTimerId);
+      releaseTimerId = null;
+    }
+  }
+
   function setValue(v, fire) {
     current = clamp(v, min, max);
     render();
-    if (fire && onChange) onChange(current);
+    if (fire && onChange) {
+      cancelPendingRelease();
+      lastSentAt = performance.now();
+      onChange(current);
+    }
   }
 
-  let dragStartY = null;
-  let dragStartValue = null;
-  let lastSentAt = 0;
-  let lastSentValue = null;
-
   svg.addEventListener('pointerdown', (e) => {
+    cancelPendingRelease();
     dragStartY = e.clientY;
     dragStartValue = current;
-    lastSentAt = 0;
     lastSentValue = null;
     svg.setPointerCapture(e.pointerId);
     wrap.classList.add('dragging');
@@ -121,7 +143,7 @@ export function createKnob({ min, max, value, step = 1, onChange, onInput, reset
     // and only when the rounded value actually changed.
     if (continuousSend && onChange && Math.round(current) !== lastSentValue) {
       const now = performance.now();
-      if (now - lastSentAt >= CONTINUOUS_SEND_MS) {
+      if (now - lastSentAt >= continuousSendMs) {
         lastSentAt = now;
         lastSentValue = Math.round(current);
         onChange(current);
@@ -132,7 +154,23 @@ export function createKnob({ min, max, value, step = 1, onChange, onInput, reset
     if (dragStartY === null) return;
     dragStartY = null;
     wrap.classList.remove('dragging');
-    if (onChange) onChange(current);
+    if (!onChange) return;
+    // The drag already transmitted this exact value, so resending it would
+    // just be a redundant message landing right after the last one.
+    if (continuousSend && Math.round(current) === lastSentValue) return;
+    // Hold the release send until the throttle window since the last send
+    // has passed. Sending immediately here used to put two messages ~60ms
+    // apart regardless of Continuous Send Rate, the exact spacing a USB MIDI
+    // interface was caught garbling into a corrupted Exc on the QY.
+    const send = () => {
+      releaseTimerId = null;
+      lastSentAt = performance.now();
+      lastSentValue = Math.round(current);
+      onChange(current);
+    };
+    const wait = lastSentAt + continuousSendMs - performance.now();
+    if (wait > 0) releaseTimerId = setTimeout(send, wait);
+    else send();
   }
   svg.addEventListener('pointerup', endDrag);
   svg.addEventListener('pointercancel', endDrag);

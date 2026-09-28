@@ -109,18 +109,37 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
     </div>
     <div class="connect-row connect-row-2-right">
       <div class="messaging-box">
+        <div class="messaging-group">
         <button id="gm-on-btn">Send GM System On</button>
         <button type="button" class="info-icon" data-tooltip="Switches the QY70/QY100 into General MIDI mode instead of XG mode - resets volume, pan, program, bank, and most controllers to GM defaults. Rarely needed; XG mode (the default) is what unlocks the QY100's own extended parameters below.">i</button>
         <button id="xg-on-btn" class="btn-warning">Send XG System On</button>
         <button type="button" class="info-icon" data-tooltip="Switches the QY70/QY100 to XG mode. Resets every voice on every channel to its default.">i</button>
+        </div>
+        <div class="messaging-group messaging-settings">
         <div class="connect-field connect-divider">
           <span class="label-row">Messaging
             <button type="button" class="label-info-icon" data-tooltip="When enabled, certain action confirmation messages will display on the QY70/QY100's screen. Turn off if you would rather leave the device's screen alone.">i</button>
           </span>
           <label class="toggle-switch">
-            <input type="checkbox" id="messaging-enabled" checked>
+            <input type="checkbox" id="messaging-enabled">
             <span class="toggle-track"></span>
           </label>
+        </div>
+        <div class="connect-field connect-divider">
+          <span class="label-row">Continuous Send Rate
+            <button type="button" class="label-info-icon" data-tooltip="Minimum time between messages sent while dragging a knob. If your QY70/QY100 records stray or garbled Exc events while you turn knobs, your MIDI interface may be corrupting closely spaced messages, so try a slower rate.">i</button>
+          </span>
+          <select id="knob-send-rate">
+            <option value="30">30 ms</option>
+            <option value="60">60 ms</option>
+            <option value="100">100 ms</option>
+            <option value="120" selected>120 ms</option>
+            <option value="150">150 ms</option>
+            <option value="200">200 ms</option>
+            <option value="300">300 ms</option>
+            <option value="500">500 ms</option>
+          </select>
+        </div>
         </div>
       </div>
     </div>
@@ -259,10 +278,19 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
   <div class="tab-panel" id="tab-panel-data-filer" role="tabpanel">
     <section id="data-filer">
       <h2>Data Filer</h2>
-      <p class="hint">Save and load raw .syx SysEx files to/from your computer, and push or pull them to/from the QY100 - a simple file librarian for whatever Bulk Dump data the device sends or accepts.</p>
+      <p class="hint">Save and load raw .syx SysEx files to/from your computer, and push or pull them to/from the QY100 - a simple file librarian for whatever Bulk Dump data the device sends or accepts. MIDI files (.mid, .midi, .smf, .kar, .rmi) are converted into a QY song when pushed, and original QY Data Filer .blk backups load as regular bulk data. Pushing a single song or pattern asks which slot to write it to; Export MIDI saves a song as a MIDI file.</p>
+
+      <div id="data-filer-device-row">
+        <span class="label-row">Connected device
+          <button type="button" class="info-icon" data-tooltip="Identified automatically over MIDI (Identity Request, then the QY's own bulk mode address), so pushes and pulls use the right addressing for a QY70 or QY100. Needs both MIDI In and MIDI Out selected.">i</button>
+        </span>
+        <strong id="data-filer-device">Not checked yet</strong>
+        <button type="button" id="data-filer-detect-btn" class="btn-warning">Detect</button>
+        <span id="data-filer-echo-hint" class="hint" hidden>Messages are being echoed back. Set the QY's ECHO BACK to Off (Utility, MIDI) to avoid feedback.</span>
+      </div>
 
       <div id="data-filer-controls">
-        <input type="file" id="data-filer-file-input" accept=".syx" multiple hidden>
+        <input type="file" id="data-filer-file-input" accept=".syx,.blk,.mid,.midi,.smf,.kar,.rmi" multiple hidden>
         <button type="button" id="data-filer-load-btn">Load File(s)</button>
       </div>
       <ul id="data-filer-list"></ul>
@@ -287,6 +315,31 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
         <button type="button" id="data-filer-pull-btn">Pull From Device</button>
       </div>
       <p id="data-filer-pull-status" class="hint"></p>
+
+      <hr>
+
+      <h3>Device Memory</h3>
+      <p class="hint">Reads which songs and user styles are stored on the device, their names and how much memory each uses. Pull copies a song into the file list above; Clear permanently erases a slot.</p>
+      <div id="qy-memory-controls">
+        <button type="button" id="qy-memory-read-btn" class="btn-warning">Read Memory</button>
+        <span id="qy-memory-status" class="hint"></span>
+      </div>
+      <div id="qy-memory-lists" hidden>
+        <div class="qy-memory-col">
+          <div class="qy-memory-col-head">
+            <h4>Songs</h4>
+            <button type="button" id="qy-clear-all-songs" class="btn-warning">Clear All Songs</button>
+          </div>
+          <ul id="qy-song-list" class="qy-memory-list"></ul>
+        </div>
+        <div class="qy-memory-col">
+          <div class="qy-memory-col-head">
+            <h4 id="qy-style-heading">User Styles</h4>
+            <button type="button" id="qy-clear-all-styles" class="btn-warning">Clear All User Styles</button>
+          </div>
+          <ul id="qy-style-list" class="qy-memory-list"></ul>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -731,6 +784,37 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
   <div class="app-dialog-actions">
     <button id="save-as-cancel">Cancel</button>
     <button id="save-as-ok" class="btn-warning">Continue</button>
+  </div>
+</dialog>
+
+<dialog id="slot-dialog" class="app-dialog">
+  <h3 id="slot-dialog-title" class="app-dialog-title"></h3>
+  <label id="slot-dialog-model-row">Device
+    <select id="slot-dialog-model">
+      <option value="QY100">QY100</option>
+      <option value="QY70">QY70</option>
+    </select>
+  </label>
+  <label><span id="slot-dialog-target-label">Song #</span>
+    <select id="slot-dialog-target"></select>
+  </label>
+  <p id="slot-dialog-message" class="hint"></p>
+  <div class="app-dialog-actions">
+    <button id="slot-dialog-cancel">Cancel</button>
+    <button id="slot-dialog-ok" class="btn-warning">Send</button>
+  </div>
+</dialog>
+
+<dialog id="midi-export-dialog" class="app-dialog">
+  <h3 id="midi-export-title" class="app-dialog-title"></h3>
+  <label id="midi-export-song-row">Song
+    <select id="midi-export-song"></select>
+  </label>
+  <label class="checkbox-row"><input type="checkbox" id="midi-export-xg" checked> Add XG voice data header</label>
+  <p class="hint">The header is a setup measure placed before the song that sets up each part's voice, mix, effects and drum edits as they are on the QY, so the file sounds the same on other XG gear. Leave it off for a file with just the performance.</p>
+  <div class="app-dialog-actions">
+    <button id="midi-export-cancel">Cancel</button>
+    <button id="midi-export-ok" class="btn-warning">Save</button>
   </div>
 </dialog>
 

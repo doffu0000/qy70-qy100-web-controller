@@ -4,12 +4,15 @@
 // Support future development: <https://www.patreon.com/doffu>
 
 import { MidiLink } from './midi.js';
-import { buildXgSystemOn, buildGmSystemOn, buildMessageWindow, buildMessageWindowLine, buildSectionControl, SECTION, buildSongSelect, buildBitmapWindow, buildQyBulkDumpRequest, buildQyBulkModeOn, buildQyBulkModeOff, qyRewriteAddressForWrite, MODEL_ID_QY, qySongAddress, qyPatternAddress, QY_ALL_DATA_ADDRESS } from './sysex.js';
+import { buildXgSystemOn, buildGmSystemOn, buildMessageWindow, buildMessageWindowLine, buildSectionControl, SECTION, buildSongSelect, buildBitmapWindow, buildQyBulkDumpRequest, buildQyBulkModeOn, buildQyBulkModeOff, qyAddressForModel, qyRewriteAddressForWrite, qyModelFromDump, MODEL_ID_QY, qySongAddress, qyPatternAddress, QY_ALL_DATA_ADDRESS } from './sysex.js';
 import { encodeMonoBmp16x16, decodeMonoBmp } from './bmp.js';
 import { encodeAnimatedGif, decodeAnimatedGif } from './gif.js';
 import { loadVoices, filterVoices, categoriesFor, bankLabel, voiceDisplayName } from './voices.js';
 import { loadParameters, expandRows, sendParam, sendParamGroup } from './params.js';
-import { createKnob, createToggle, createMultiToggle } from './knob.js';
+import { createKnob, createToggle, createMultiToggle, setContinuousSendMs } from './knob.js';
+import { isStandardMidiFile, unwrapMidiFile, convertMidiToQySong } from './smf.js';
+import { splitSysex, listDumpItems, itemLabel, buildItemTransfer, exportSongToMidi, isDataFilerBulkFile, extractBulkFileMessages, isQyDataBlock, retargetBlock, QY_KIND_SONG, QY_KIND_PATTERN } from './qysong.js';
+import { detectQyModel, enterBulkMode, exitBulkMode, readMemoryList, buildClearCommand, formatTenths } from './qydevice.js';
 
 const link = new MidiLink();
 let voices = [];
@@ -2105,6 +2108,7 @@ link.onMessage = (bytes) => {
   handleIncomingVoiceChange(bytes);
   handleIncomingNoteOn(bytes);
   handleDataFilerIncoming(bytes);
+  notifyMidiWaiters(bytes);
 };
 
 // MIDI Clock generator for "Rec-Arm Insert" and the transport Play button -
@@ -3617,6 +3621,14 @@ function hideProgress() {
   progressDialog.close();
 }
 
+// For work with no known total (e.g. a Data Filer Pull, where the device never
+// says up front how much it's about to send): an animated bar that just
+// shows activity, plus free-form status text in place of "N of M".
+function updateProgressIndeterminate(statusText) {
+  progressDialogBar.removeAttribute('value');
+  progressDialogStatus.textContent = statusText;
+}
+
 // Sends a Message Window confirmation, but only when the "Messaging"
 // toggle in the connect bar is checked - purely a nice-to-have display on
 // the QY70/QY100's own screen, so it's easy to opt out of entirely rather
@@ -3633,6 +3645,24 @@ function sendMessageWindow(text) {
     // Cosmetic only - see comment above.
   }
 }
+
+// Continuous Send Rate: how far apart a dragged knob's live sends are spaced
+// (see setContinuousSendMs in knob.js). Remembered per browser as a
+// convenience only. Storage may be unavailable, so it falls back to the
+// markup's default either way.
+// Renamed from 'qyKnobSendRateMs' when the default moved to 120ms, so a
+// value saved during earlier testing (60ms) doesn't keep overriding it.
+const KNOB_SEND_RATE_KEY = 'qyContinuousSendRateMs';
+const knobSendRateSelect = el('knob-send-rate');
+try {
+  const saved = localStorage.getItem(KNOB_SEND_RATE_KEY);
+  if (saved && [...knobSendRateSelect.options].some((o) => o.value === saved)) knobSendRateSelect.value = saved;
+} catch { /* storage unavailable, keep the default */ }
+setContinuousSendMs(Number(knobSendRateSelect.value));
+knobSendRateSelect.addEventListener('change', () => {
+  setContinuousSendMs(Number(knobSendRateSelect.value));
+  try { localStorage.setItem(KNOB_SEND_RATE_KEY, knobSendRateSelect.value); } catch { /* see above */ }
+});
 
 // Bypasses sendMessageWindow's own checked-state guard: toggling messaging
 // off should still show that one last "Messaging Off" confirmation before
@@ -5237,33 +5267,233 @@ const dataFilerPullNumberLabel = el('data-filer-pull-number-label');
 const dataFilerPullNumber = el('data-filer-pull-number');
 const dataFilerPullStatus = el('data-filer-pull-status');
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// ---- Waiting for replies ----
+//
+// Device conversations (detection, bulk mode check, memory list) send a
+// request and wait for one matching reply; link.onMessage offers every
+// incoming message to whoever is waiting.
+const midiWaiters = new Set();
+
+function waitForMidi(predicate, timeoutMs) {
+  return new Promise((resolve) => {
+    const waiter = {
+      predicate,
+      resolve: (bytes) => {
+        clearTimeout(waiter.timer);
+        midiWaiters.delete(waiter);
+        resolve(bytes);
+      },
+    };
+    waiter.timer = setTimeout(() => waiter.resolve(null), timeoutMs);
+    midiWaiters.add(waiter);
+  });
+}
+
+// When the device last sent anything (clock/active sensing aside).
+let lastQyIncomingAt = 0;
+
+function notifyMidiWaiters(bytes) {
+  if (bytes[0] !== 0xf8 && bytes[0] !== 0xfe) lastQyIncomingAt = performance.now();
+  for (const waiter of [...midiWaiters]) {
+    if (waiter.predicate(bytes)) waiter.resolve(bytes);
+  }
+}
+
+// A QY drops a command that arrives while it's still finishing its own
+// last reply (seen on a real QY100 with a list request sent 1ms, and a
+// bulk mode OFF sent 3.5ms, after its previous reply). Every command to it
+// goes through here and is held back until 80ms after it last spoke.
+const QY_REPLY_GAP_MS = 80;
+
+const qyIo = {
+  send: async (bytes) => {
+    const wait = lastQyIncomingAt + QY_REPLY_GAP_MS - performance.now();
+    if (wait > 0) await sleep(wait);
+    link.send(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
+  },
+  waitFor: waitForMidi,
+  sleep,
+};
+
+// ---- Which device is connected ----
+//
+// Detected once per MIDI In/Out pair (see detectQyModel) and reused, so
+// nothing needs to ask "QY70 or QY100?". Without a MIDI In there's no way
+// to hear the device, so only then does the user get asked.
+const dataFilerDeviceEl = el('data-filer-device');
+let detectedDevice = null; // { model, how, identity, portKey }
+
+const currentPortKey = () => `${inputSelect.value}|${outputSelect.value}`;
+
+function renderDetectedDevice() {
+  if (!outputSelect.value) dataFilerDeviceEl.textContent = 'No MIDI Out selected';
+  else if (!inputSelect.value) dataFilerDeviceEl.textContent = 'Select a MIDI In to detect it';
+  else if (!detectedDevice || detectedDevice.portKey !== currentPortKey()) dataFilerDeviceEl.textContent = 'Not checked yet';
+  else if (!detectedDevice.model) dataFilerDeviceEl.textContent = 'No QY70/QY100 answered';
+  else dataFilerDeviceEl.textContent = detectedDevice.model;
+  el('data-filer-echo-hint').hidden = !(detectedDevice && detectedDevice.portKey === currentPortKey() && detectedDevice.echo);
+}
+
+async function detectDevice() {
+  if (!outputSelect.value || !inputSelect.value) {
+    detectedDevice = null;
+    renderDetectedDevice();
+    return null;
+  }
+  dataFilerDeviceEl.textContent = 'Checking...';
+  // Our own Identity Request coming straight back means something is
+  // echoing MIDI In to MIDI Out - usually the QY's ECHO BACK setting, which
+  // qy100-toolkit found must be Off to avoid a feedback loop.
+  const echo = waitForMidi((m) => m.length === 6 && m[0] === 0xf0 && m[1] === 0x7e && m[3] === 0x06 && m[4] === 0x01, 1500);
+  try {
+    const result = await detectQyModel(qyIo);
+    detectedDevice = { ...result, echo: !!(await echo), portKey: currentPortKey() };
+  } catch (err) {
+    detectedDevice = { model: null, portKey: currentPortKey() };
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+  renderDetectedDevice();
+  return detectedDevice.model;
+}
+
+const manualModelChoice = { value: 'QY100' };
+
+// The model to talk to: the detected one, detecting now if needed, or (only
+// when nothing can be heard back) asking once.
+async function resolveDeviceModel() {
+  if (detectedDevice && detectedDevice.portKey === currentPortKey() && detectedDevice.model) return detectedDevice.model;
+  const model = await detectDevice();
+  if (model) return model;
+  const picked = await showSaveAsDialog({
+    title: 'Which device is this?',
+    targetLabelText: 'Device',
+    populateTarget: (select) => { select.innerHTML = '<option value="QY100">QY100</option><option value="QY70">QY70</option>'; },
+    defaultTarget: manualModelChoice.value,
+    message: inputSelect.value
+      ? 'The device did not answer, so it could not be identified automatically. Check that MIDI In is connected to its MIDI OUT and that it is on a play screen (press EXIT).'
+      : 'Select a MIDI In connected to the device\'s MIDI OUT to have it identified automatically.',
+  });
+  if (picked) manualModelChoice.value = picked;
+  return picked;
+}
+
+el('data-filer-detect-btn').addEventListener('click', detectDevice);
+inputSelect.addEventListener('change', renderDetectedDevice);
+outputSelect.addEventListener('change', renderDetectedDevice);
+
+const BULK_MODE_REFUSED_MESSAGE = 'The device did not accept bulk mode, so it cannot transfer data right now. Stop playback and press EXIT on the QY until it is back on a play screen, then try again.';
+
+// Device sessions run one at a time: a push keeps working (list refresh,
+// bulk mode exit) for a moment after its progress bar closes, and a second
+// operation started in that window would interleave its own bulk mode
+// ON/OFF with the first one's. Each call waits for the previous to finish.
+let deviceSessionQueue = Promise.resolve();
+
+function withBulkMode(model, fn) {
+  const run = deviceSessionQueue.then(() => runBulkModeSession(model, fn));
+  deviceSessionQueue = run.catch(() => {});
+  return run;
+}
+
+// Runs fn with bulk mode on and confirmed (FUN_0040dae0's check). When the
+// device is known to answer (it was detected rather than picked by hand)
+// and doesn't confirm, fn is skipped and the user told why.
+async function runBulkModeSession(model, fn) {
+  // qy100-toolkit: while the sequencer is playing, the QY100 ignores dump
+  // requests and writes silently (a 47-block write during playback was
+  // discarded with no error). So every session stops it first.
+  try {
+    if (clockRunning) stopClock();
+    else await qyIo.send([0xfc]);
+    await sleep(100);
+  } catch { /* no output selected: the send below reports it */ }
+  const canVerify = !!(detectedDevice && detectedDevice.model === model && inputSelect.value);
+  if (canVerify) {
+    const ok = await enterBulkMode(qyIo, model);
+    if (!ok) {
+      await exitBulkMode(qyIo, model, { verify: false });
+      await showAlert('Device not ready', BULK_MODE_REFUSED_MESSAGE);
+      return { refused: true };
+    }
+  } else {
+    await qyIo.send(buildQyBulkModeOn(model));
+    await sleep(100);
+  }
+  try {
+    return { result: await fn() };
+  } finally {
+    try { await exitBulkMode(qyIo, model, { verify: canVerify }); } catch { /* best effort */ }
+  }
+}
+
+// ---- Entries ----
+
 // Splits a buffer that may hold multiple back-to-back SysEx messages (the
 // normal .syx file shape - F0..F7 F0..F7 ...) into individual complete
 // messages, dropping any stray bytes outside an F0..F7 pair.
-function splitSysexMessages(bytes) {
-  const messages = [];
-  let start = -1;
-  for (let i = 0; i < bytes.length; i++) {
-    if (bytes[i] === 0xf0) {
-      start = i;
-    } else if (bytes[i] === 0xf7 && start !== -1) {
-      messages.push(bytes.slice(start, i + 1));
-      start = -1;
-    }
+const splitSysexMessages = splitSysex;
+
+function concatSysexMessages(messages) {
+  const totalBytes = messages.reduce((sum, m) => sum + m.length, 0);
+  const combined = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const m of messages) {
+    combined.set(m, offset);
+    offset += m.length;
   }
-  return messages;
+  return combined;
 }
 
+const newEntryId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+// items: every song/pattern the data holds (see listDumpItems), which is
+// what lets Push ask for a target slot and enables Export MIDI on its row.
 function dataFilerAddEntry(name, bytes) {
-  const entry = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name,
-    bytes,
-    messageCount: splitSysexMessages(bytes).length,
-  };
+  const messages = splitSysexMessages(bytes);
+  const entry = { id: newEntryId(), name, bytes, messageCount: messages.length, items: listDumpItems(messages) };
   dataFilerEntries.push(entry);
   renderDataFilerList();
   return entry;
+}
+
+// A loaded MIDI file stays a plain .mid entry in the list; it's only
+// converted into a QY Song Bulk Dump once Push/Save knows the target song.
+// Converting once here just rejects a malformed file up front and gets its
+// stats for the row.
+function dataFilerAddMidiEntry(name, source) {
+  const summary = convertMidiToQySong(source); // throws on a malformed file, before it's listed
+  const entry = { id: newEntryId(), name, midi: { source, summary } };
+  dataFilerEntries.push(entry);
+  renderDataFilerList();
+  return entry;
+}
+
+function describeItems(items) {
+  const nums = (kind) => items.filter((i) => i.kind === kind).map((i) => i.number);
+  const describe = (word, list) => {
+    const numbered = list.filter((n) => typeof n === 'number');
+    return `${word}${list.length === 1 ? '' : 's'}${numbered.length ? ` ${numbered.join(', ')}` : ''}`;
+  };
+  const songs = nums(QY_KIND_SONG);
+  const patterns = nums(QY_KIND_PATTERN);
+  const parts = [];
+  if (songs.length) parts.push(describe('Song', songs));
+  if (patterns.length) parts.push(describe('Pattern', patterns));
+  const models = [...new Set(items.map((i) => i.model))];
+  if (models.length === 1) parts.push(models[0]);
+  return parts.join(' | ');
+}
+
+function makeRowButton(text, title, onClick, className) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = text;
+  b.title = title;
+  if (className) b.className = className;
+  b.addEventListener('click', onClick);
+  return b;
 }
 
 function renderDataFilerList() {
@@ -5271,7 +5501,7 @@ function renderDataFilerList() {
   if (dataFilerEntries.length === 0) {
     const li = document.createElement('li');
     li.className = 'data-filer-empty';
-    li.textContent = 'No files loaded yet - use Load .syx File(s) or Pull From Device below.';
+    li.textContent = 'No files loaded yet. Use Load File(s) for .syx, .blk or MIDI files, or Pull From Device below.';
     dataFilerListEl.appendChild(li);
     return;
   }
@@ -5286,60 +5516,74 @@ function renderDataFilerList() {
 
     const meta = document.createElement('span');
     meta.className = 'data-filer-meta';
-    meta.textContent = `${entry.bytes.length}B, ${entry.messageCount} msg${entry.messageCount === 1 ? '' : 's'}`;
+    if (entry.midi) {
+      const s = entry.midi.summary;
+      meta.textContent = `MIDI: ${s.usedTracks} track${s.usedTracks === 1 ? '' : 's'}, ${s.noteCount} notes, ${s.tempo} BPM`;
+    } else {
+      const size = `${entry.bytes.length}B, ${entry.messageCount} msg${entry.messageCount === 1 ? '' : 's'}`;
+      meta.textContent = entry.items.length ? `${size} | ${describeItems(entry.items)}` : size;
+    }
 
-    const pushBtn = document.createElement('button');
-    pushBtn.type = 'button';
-    pushBtn.textContent = 'Push';
-    pushBtn.title = "Send this file's SysEx messages to the device, one at a time";
-    pushBtn.addEventListener('click', () => dataFilerPush(entry));
-
-    const renameBtn = document.createElement('button');
-    renameBtn.type = 'button';
-    renameBtn.textContent = 'Rename';
-    renameBtn.title = 'Rename this entry (does not touch any copy already saved to disk)';
-    renameBtn.addEventListener('click', async () => {
-      const newName = await showGraphicsSaveDialog(entry.name, 'Rename File', 'Rename');
-      if (newName === null) return;
-      entry.name = newName;
-      renderDataFilerList();
-    });
-
-    const saveBtn = document.createElement('button');
-    saveBtn.type = 'button';
-    saveBtn.textContent = 'Save';
-    saveBtn.title = 'Download this file to your computer';
-    saveBtn.addEventListener('click', () => dataFilerSave(entry));
-
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn-warning';
-    removeBtn.textContent = 'Remove';
-    removeBtn.title = 'Removes it from this list only - any copy already saved to disk is untouched';
-    removeBtn.addEventListener('click', () => {
-      dataFilerEntries = dataFilerEntries.filter((e) => e.id !== entry.id);
-      renderDataFilerList();
-    });
-
-    li.append(name, meta, pushBtn, renameBtn, saveBtn, removeBtn);
+    const buttons = [
+      makeRowButton('Push', entry.midi
+        ? 'Convert this MIDI file and write it to a song on the connected QY (asks which song)'
+        : entry.items.length === 1
+          ? `Write this ${entry.items[0].kind === QY_KIND_PATTERN ? 'pattern' : 'song'} to the connected QY (asks which slot)`
+          : "Send this file's SysEx messages to the device, one at a time", () => dataFilerPush(entry)),
+    ];
+    if (!entry.midi && entry.items.some((i) => i.kind === QY_KIND_SONG)) {
+      buttons.push(makeRowButton('Export MIDI', 'Save a song from this file as a Standard MIDI File', () => dataFilerExportMidi(entry)));
+    }
+    buttons.push(
+      makeRowButton('Rename', 'Rename this entry (does not touch any copy already saved to disk)', async () => {
+        const newName = await showGraphicsSaveDialog(entry.name, 'Rename File', 'Rename');
+        if (newName === null) return;
+        entry.name = newName;
+        renderDataFilerList();
+      }),
+      makeRowButton('Save', entry.midi ? 'Download this MIDI file converted to a QY song .syx' : 'Download this file to your computer', () => dataFilerSave(entry)),
+      makeRowButton('Remove', 'Removes it from this list only - any copy already saved to disk is untouched', () => {
+        dataFilerEntries = dataFilerEntries.filter((e) => e.id !== entry.id);
+        renderDataFilerList();
+      }, 'btn-warning'),
+    );
+    li.append(name, meta, ...buttons);
     dataFilerListEl.appendChild(li);
   });
 }
 
+const MIDI_FILE_EXTENSIONS = /\.(mid|midi|smf|kar|rmi)$/i;
+
 async function dataFilerLoadFiles(files) {
   let loaded = 0;
+  const problems = [];
   for (const file of files) {
     try {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      dataFilerAddEntry(file.name, bytes);
+      const raw = new Uint8Array(await file.arrayBuffer());
+      // Detected by content, not just the extension: a .mid/.smf file is
+      // only treated as MIDI if it really starts with MThd (or is RIFF-wrapped).
+      const midi = unwrapMidiFile(raw);
+      if (midi && isStandardMidiFile(midi)) {
+        dataFilerAddMidiEntry(file.name, midi);
+      } else if (MIDI_FILE_EXTENSIONS.test(file.name)) {
+        problems.push(`${file.name} is not a valid MIDI file`);
+        continue;
+      } else if (isDataFilerBulkFile(file.name, raw)) {
+        // An original QY Data Filer .blk backup: its messages become a
+        // normal .syx entry.
+        const messages = extractBulkFileMessages(raw);
+        if (!messages.length) { problems.push(`${file.name} holds no bulk data`); continue; }
+        dataFilerAddEntry(file.name.replace(/\.blk$/i, '.syx'), concatSysexMessages(messages));
+      } else {
+        dataFilerAddEntry(file.name, raw);
+      }
       loaded++;
     } catch (err) {
-      // Skip an unreadable file, keep going with the rest.
+      problems.push(`${file.name}: ${err.message}`);
     }
   }
-  statusEl.textContent = loaded
-    ? `Loaded ${loaded} of ${files.length} file${files.length === 1 ? '' : 's'}.`
-    : 'Error: could not read the selected file(s).';
+  const summary = loaded ? `Loaded ${loaded} of ${files.length} file${files.length === 1 ? '' : 's'}.` : 'Error: no files could be loaded.';
+  statusEl.textContent = problems.length ? `${summary} Skipped: ${problems.join('; ')}.` : summary;
 }
 
 el('data-filer-load-btn').addEventListener('click', () => dataFilerFileInput.click());
@@ -5349,6 +5593,78 @@ dataFilerFileInput.addEventListener('change', async () => {
   if (files.length) await dataFilerLoadFiles(files);
 });
 
+// ---- Slot picker dialog ----
+//
+// One dialog for every "which slot?" question: sending a MIDI file as a
+// song, sending one song/pattern from a file, and saving a converted MIDI
+// file. It can also show a device picker (Save, where no device is involved).
+const slotDialog = el('slot-dialog');
+const slotTarget = el('slot-dialog-target');
+const slotModel = el('slot-dialog-model');
+const lastSlotChoice = { song: 1, pattern: 1, model: 'QY100' };
+
+const slotOptions = (kind) => {
+  const count = kind === QY_KIND_PATTERN ? 64 : 20;
+  const label = kind === QY_KIND_PATTERN ? 'Pattern' : 'Song';
+  return Array.from({ length: count }, (_, i) => `<option value="${i + 1}">${label} ${i + 1}</option>`).join('');
+};
+
+// options: { title, okLabel, item? (the song/pattern being written; a
+// song if omitted), showModel?: bool, model?, describe(targetNumber, model,
+// item) -> hint text }. Resolves { source, number, model } or null.
+function showSlotDialog({ title, okLabel, item = null, showModel = false, model = null, describe }) {
+  return new Promise((resolve) => {
+    el('slot-dialog-title').textContent = title;
+    el('slot-dialog-ok').textContent = okLabel;
+    el('slot-dialog-model-row').hidden = !showModel;
+    slotModel.value = model || lastSlotChoice.model;
+    const source = () => item || { kind: QY_KIND_SONG };
+    const fillTargets = () => {
+      const kind = source().kind;
+      slotTarget.innerHTML = slotOptions(kind);
+      const src = source();
+      const preferred = typeof src.number === 'number' ? src.number : kind === QY_KIND_PATTERN ? lastSlotChoice.pattern : lastSlotChoice.song;
+      slotTarget.value = String(preferred);
+      el('slot-dialog-target-label').textContent = kind === QY_KIND_PATTERN ? 'Pattern #' : 'Song #';
+    };
+    const refresh = () => {
+      el('slot-dialog-message').textContent = describe(Number(slotTarget.value), showModel ? slotModel.value : model, source());
+    };
+    fillTargets();
+    refresh();
+    const onOk = () => settle({ source: source(), number: Number(slotTarget.value), model: showModel ? slotModel.value : model });
+    const onCancel = () => settle(null);
+    const onBackdropClick = (evt) => { if (evt.target === slotDialog) settle(null); };
+    function settle(result) {
+      el('slot-dialog-ok').removeEventListener('click', onOk);
+      el('slot-dialog-cancel').removeEventListener('click', onCancel);
+      slotDialog.removeEventListener('cancel', onCancel);
+      slotDialog.removeEventListener('click', onBackdropClick);
+      slotTarget.removeEventListener('change', refresh);
+      slotModel.removeEventListener('change', refresh);
+      slotDialog.close();
+      if (result) {
+        if (result.source.kind === QY_KIND_PATTERN) lastSlotChoice.pattern = result.number;
+        else lastSlotChoice.song = result.number;
+        if (showModel) lastSlotChoice.model = result.model;
+      }
+      resolve(result);
+    }
+    el('slot-dialog-ok').addEventListener('click', onOk);
+    el('slot-dialog-cancel').addEventListener('click', onCancel);
+    slotDialog.addEventListener('cancel', onCancel);
+    slotDialog.addEventListener('click', onBackdropClick);
+    slotTarget.addEventListener('change', refresh);
+    slotModel.addEventListener('change', refresh);
+    slotDialog.showModal();
+  });
+}
+
+const slotName = (kind, n) => `${kind === QY_KIND_PATTERN ? 'Pattern' : 'Song'} ${n}`;
+const REPLACE_HINT = 'Stop playback and leave the device on its play screen first.';
+
+// ---- Push / Save / Export ----
+
 // 130ms between packets - matches the Data List's own "packets ... will be
 // divided...and transmitted at an appropriate timing interval (120msec or
 // longer)" guidance for anything split across multiple SysEx messages, so
@@ -5356,16 +5672,168 @@ dataFilerFileInput.addEventListener('change', async () => {
 // would when sending one.
 const DATA_FILER_PUSH_GAP_MS = 130;
 
-async function dataFilerPush(entry) {
-  const messages = splitSysexMessages(entry.bytes);
-  if (!messages.length) {
-    statusEl.textContent = `Error: "${entry.name}" doesn't contain a valid SysEx message (no F0..F7 found).`;
-    return;
-  }
+async function sendWithProgress(title, messages) {
+  showProgress(title, 'Writes this data to the QY70/QY100. Avoid touching the device until it finishes.');
   try {
     for (let i = 0; i < messages.length; i++) {
       link.send(messages[i]);
-      if (i < messages.length - 1) await new Promise((resolve) => setTimeout(resolve, DATA_FILER_PUSH_GAP_MS));
+      updateProgress(i + 1, messages.length);
+      if (i < messages.length - 1) await sleep(DATA_FILER_PUSH_GAP_MS);
+    }
+  } finally {
+    hideProgress();
+  }
+}
+
+// Erases each song/pattern slot about to be written, so the new data
+// replaces the old instead of both briefly competing for memory (which can
+// end in a "memory full" error on the device). Slots are { kind, number }
+// with kind QY_KIND_SONG or QY_KIND_PATTERN (a pattern is a user style on
+// the QY100); "current slot" (7E) data has no known slot, so it's skipped.
+async function clearSlotsBeforeWrite(model, slots) {
+  for (const { kind, number } of slots) {
+    if (typeof number !== 'number') continue;
+    await qyIo.send(buildClearCommand(model, kind === QY_KIND_PATTERN ? 'style' : 'song', number));
+    await sleep(300);
+  }
+}
+
+// After a write, re-reads the device's song/style list (still inside the
+// same bulk mode session) so Device Memory shows what's there now. Only
+// when the device can be heard; a failed read just leaves the list as it was.
+async function refreshMemoryAfterWrite(model) {
+  if (!canHearDevice(model)) return null;
+  memoryStatusEl.textContent = 'Updating the song and style list...';
+  try {
+    await sleep(300);
+    deviceMemory = { model, ...(await readMemoryList(qyIo, model)) };
+    renderDeviceMemory();
+    return deviceMemory;
+  } catch {
+    if (deviceMemory) renderDeviceMemory();
+    else memoryStatusEl.textContent = '';
+    return null;
+  }
+}
+
+const canHearDevice = (model) => !!(detectedDevice && detectedDevice.model === model && inputSelect.value);
+
+const slotSize = (memory, { kind, number }) => ((kind === QY_KIND_PATTERN ? memory.styles : memory.songs)[number - 1]?.size ?? 0);
+
+// qy100-toolkit: memory use can be estimated at 128 bytes per data block
+// against the QY100's 128 KB of sequence memory (its predictions matched
+// the device's own memory bar). The QY70's capacity in these units isn't
+// measured, so the check below only runs on a QY100.
+// Only song (kind 1) and pattern (kind 2) blocks occupy sequence memory.
+const estimateTenths = (messages) => Math.ceil((messages.filter((m) => isQyDataBlock(m) && ((m[6] & 0x0f) === 1 || (m[6] & 0x0f) === 2)).length * 128 * 1000) / (128 * 1024));
+
+// The one write path every Push uses, run inside a bulk mode session:
+// check it will fit (QY100), clear the target slots, send, then read the
+// memory list back and confirm every target slot now holds data -
+// qy100-toolkit's rule is that only a read-back proves a write landed.
+// Returns { noRoom: { needed, available } } | { verified, missing }.
+async function writeToSlots(model, title, messages, slots) {
+  const numbered = slots.filter((sl) => typeof sl.number === 'number');
+  if (model === 'QY100' && canHearDevice(model)) {
+    const before = await readMemoryList(qyIo, model).catch(() => null);
+    if (before) {
+      const needed = estimateTenths(messages);
+      const available = before.freeTenths + numbered.reduce((sum, sl) => sum + slotSize(before, sl), 0);
+      if (needed > available) return { noRoom: { needed, available } };
+    }
+  }
+  await clearSlotsBeforeWrite(model, numbered);
+  await sendWithProgress(title, messages);
+  const after = await refreshMemoryAfterWrite(model);
+  return { verified: !!after, missing: after ? numbered.filter((sl) => slotSize(after, sl) === 0) : [] };
+}
+
+// Turns writeToSlots' outcome into a message. Returns true if it landed.
+async function reportWrite(result, model, what) {
+  if (result.noRoom) {
+    await showAlert('Not enough memory', `${what} needs about ${formatTenths(result.noRoom.needed)} of the ${model}'s memory, but only about ${formatTenths(result.noRoom.available)} is available even after replacing the target. Clear something in Device Memory below, then try again.`);
+    statusEl.textContent = '';
+    return false;
+  }
+  if (result.missing.length) {
+    const slotsText = result.missing.map((sl) => slotName(sl.kind, sl.number)).join(', ');
+    await showAlert('Not stored on the device', `The ${model} reports ${slotsText} as empty after the transfer, so it didn't keep the data. It may have been playing or on a screen that blocks transfers; stop it, press EXIT, and push again.`);
+    statusEl.textContent = '';
+    return false;
+  }
+  statusEl.textContent = `${what} written to the ${model}${result.verified ? ' and confirmed by reading its memory back' : ''}.`;
+  return true;
+}
+
+// Bulk mode ON/OFF messages are dropped from a message list when it's sent
+// inside withBulkMode, which already brackets the transfer itself.
+const isBulkModeSwitch = (m) => m.length === 9 && m[0] === 0xf0 && m[1] === 0x43 && m[2] === 0x10 && m[3] === MODEL_ID_QY && (m[4] & 0x0f) === 0 && m[5] === 0 && m[6] === 0;
+
+async function dataFilerPush(entry) {
+  try {
+    if (entry.midi) {
+      const model = await resolveDeviceModel();
+      if (!model) return;
+      const choice = await showSlotDialog({
+        title: `Send "${entry.name}" as a song`,
+        okLabel: 'Send',
+        model,
+        describe: (n, m) => `Replaces Song ${n} on the ${m}. ${REPLACE_HINT}`,
+      });
+      if (!choice) return;
+      const messages = convertMidiToQySong(entry.midi.source, { model, songNumber: choice.number }).messages.filter((m) => !isBulkModeSwitch(m));
+      const r = await withBulkMode(model, () => writeToSlots(model, `Sending ${entry.name}`, messages, [{ kind: QY_KIND_SONG, number: choice.number }]));
+      if (!r.refused) await reportWrite(r.result, model, `"${entry.name}" (Song ${choice.number})`);
+      return;
+    }
+    const messages = splitSysexMessages(entry.bytes);
+    if (!messages.length) {
+      statusEl.textContent = `Error: "${entry.name}" doesn't contain a valid SysEx message (no F0..F7 found).`;
+      return;
+    }
+    // A file holding exactly one song or pattern (a pull, a single-song
+    // file) goes to whichever slot the user picks, readdressed for the
+    // connected model.
+    if (entry.items.length === 1) {
+      const item = entry.items[0];
+      const model = await resolveDeviceModel();
+      if (!model) return;
+      const choice = await showSlotDialog({
+        title: `Push "${entry.name}"`,
+        okLabel: 'Send',
+        item,
+        model,
+        describe: (n, m, src) => `Replaces ${slotName(src.kind, n)} on the ${m}${src.model !== m ? ` (converted from ${src.model} data)` : ''}. ${REPLACE_HINT}`,
+      });
+      if (!choice) return;
+      const out = buildItemTransfer(messages, item, model, choice.number).filter((m) => !isBulkModeSwitch(m));
+      const r = await withBulkMode(model, () => writeToSlots(model, `Pushing ${entry.name}`, out, [{ kind: item.kind, number: choice.number }]));
+      if (!r.refused) await reportWrite(r.result, model, `"${entry.name}" (${slotName(item.kind, choice.number)})`);
+      return;
+    }
+    // Files holding several songs/patterns (an All Data backup) go back to
+    // each item's own slot, readdressed for the connected model - sending
+    // another model's blocks unchanged would be ignored by the device, and
+    // after the clear-before-write that would erase those slots and write
+    // nothing. Any other SysEx (voice/parameter dumps etc.) is sent as-is.
+    if (entry.items.length) {
+      const model = await resolveDeviceModel();
+      if (!model) return;
+      const fromModels = [...new Set(entry.items.map((i) => i.model))].filter((m) => m !== model);
+      const ok = await showConfirm(
+        'Replace songs/patterns',
+        `This replaces ${describeItems(entry.items).replace(/ \| QY(70|100)$/, '').replace(' | ', ' and ')} on the ${model}${fromModels.length ? ` (converted from ${fromModels.join('/')} data)` : ''}. ${REPLACE_HINT}`,
+        'Send',
+      );
+      if (!ok) return;
+      const out = messages
+        .filter((m) => !isBulkModeSwitch(m))
+        .map((m) => (isQyDataBlock(m) ? retargetBlock(m, model, m[7]) : m));
+      const r = await withBulkMode(model, () => writeToSlots(model, `Pushing ${entry.name}`, out, entry.items));
+      if (!r.refused) await reportWrite(r.result, model, `"${entry.name}"`);
+      return;
+    } else {
+      await sendWithProgress(`Pushing ${entry.name}`, messages);
     }
     statusEl.textContent = `Pushed "${entry.name}" (${messages.length} message${messages.length === 1 ? '' : 's'}).`;
   } catch (err) {
@@ -5375,44 +5843,182 @@ async function dataFilerPush(entry) {
 
 async function dataFilerSave(entry) {
   try {
+    if (entry.midi) {
+      const model = detectedDevice?.portKey === currentPortKey() ? detectedDevice.model : null;
+      const choice = await showSlotDialog({
+        title: `Save "${entry.name}" as a QY song`,
+        okLabel: 'Save',
+        showModel: true,
+        model: model || lastSlotChoice.model,
+        describe: (n, m) => `Saves a .syx that writes Song ${n} on a ${m} when pushed.`,
+      });
+      if (!choice) return;
+      const bytes = concatSysexMessages(convertMidiToQySong(entry.midi.source, { model: choice.model, songNumber: choice.number }).messages);
+      const base = entry.name.replace(MIDI_FILE_EXTENSIONS, '');
+      await writeBinaryFile(`${base}_Song${choice.number}_${choice.model}.syx`, bytes, 'SysEx file', '.syx', 'application/octet-stream');
+      return;
+    }
     await writeBinaryFile(entry.name, entry.bytes, 'SysEx file', '.syx', 'application/octet-stream');
   } catch (err) {
     if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
   }
 }
 
+const midiExportDialog = el('midi-export-dialog');
+
+// Asks which song (if the file has several) and whether to add the XG
+// voice data header. Resolves { item, xgHeader } or null.
+function showMidiExportDialog(entry, songs) {
+  return new Promise((resolve) => {
+    el('midi-export-title').textContent = `Export MIDI from "${entry.name}"`;
+    el('midi-export-song-row').hidden = songs.length < 2;
+    el('midi-export-song').innerHTML = songs.map((s, k) => `<option value="${k}">${itemLabel(s)}</option>`).join('');
+    const onOk = () => settle({ item: songs[Number(el('midi-export-song').value)], xgHeader: el('midi-export-xg').checked });
+    const onCancel = () => settle(null);
+    const onBackdropClick = (evt) => { if (evt.target === midiExportDialog) settle(null); };
+    function settle(result) {
+      el('midi-export-ok').removeEventListener('click', onOk);
+      el('midi-export-cancel').removeEventListener('click', onCancel);
+      midiExportDialog.removeEventListener('cancel', onCancel);
+      midiExportDialog.removeEventListener('click', onBackdropClick);
+      midiExportDialog.close();
+      resolve(result);
+    }
+    el('midi-export-ok').addEventListener('click', onOk);
+    el('midi-export-cancel').addEventListener('click', onCancel);
+    midiExportDialog.addEventListener('cancel', onCancel);
+    midiExportDialog.addEventListener('click', onBackdropClick);
+    midiExportDialog.showModal();
+  });
+}
+
+async function dataFilerExportMidi(entry) {
+  try {
+    const songs = entry.items.filter((i) => i.kind === QY_KIND_SONG);
+    const choice = await showMidiExportDialog(entry, songs);
+    if (!choice) return;
+    const { midi, name, incompleteTracks } = exportSongToMidi(splitSysexMessages(entry.bytes), choice.item, { xgHeader: choice.xgHeader });
+    const base = (name || entry.name.replace(/\.syx$/i, '')).replace(/[\\/:*?"<>|]/g, '_');
+    const number = typeof choice.item.number === 'number' ? `_Song${choice.item.number}` : '';
+    await writeBinaryFile(`${base}${number}.mid`, midi, 'MIDI file', '.mid', 'audio/midi');
+    statusEl.textContent = incompleteTracks.length
+      ? `Exported, but track${incompleteTracks.length === 1 ? '' : 's'} ${incompleteTracks.join(', ')} contained data this exporter doesn't recognize and ${incompleteTracks.length === 1 ? 'was' : 'were'} cut short.`
+      : `Exported ${itemLabel(choice.item)} as a MIDI file.`;
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+}
+
+// ---- Device memory: song / user style list, clear ----
+
+const memoryListsEl = el('qy-memory-lists');
+const memoryStatusEl = el('qy-memory-status');
+let deviceMemory = null; // { model, songs, styles, freeTenths }
+
+function renderMemoryList(listEl, entries, kind) {
+  listEl.innerHTML = '';
+  for (const e of entries) {
+    const li = document.createElement('li');
+    li.className = `qy-memory-item${e.size ? '' : ' empty'}`;
+    const num = document.createElement('span');
+    num.className = 'qy-memory-num';
+    num.textContent = String(e.number).padStart(2, '0');
+    const nm = document.createElement('span');
+    nm.className = 'qy-memory-name';
+    nm.textContent = e.size ? (e.name || '(no name)') : '(empty)';
+    const size = document.createElement('span');
+    size.className = 'qy-memory-size';
+    size.textContent = e.size ? formatTenths(e.size) : '';
+    li.append(num, nm, size);
+    if (e.size) {
+      // A user style slot is the same numbered slot a Pattern pull reads.
+      const pullType = kind === 'song' ? 'song' : 'pattern';
+      li.append(makeRowButton('Pull', `Pull ${kind === 'song' ? 'Song' : 'Pattern'} ${e.number} into the file list above`, () => {
+        dataFilerPullType.value = pullType;
+        updateDataFilerPullNumberVisibility();
+        dataFilerPullNumber.value = String(e.number);
+        el('data-filer-pull-btn').click();
+      }));
+      li.append(makeRowButton('Clear', `Erase this ${kind === 'song' ? 'song' : 'style'} from the device`, () => clearMemorySlots(kind, [e]), 'btn-warning'));
+    }
+    listEl.appendChild(li);
+  }
+}
+
+function renderDeviceMemory() {
+  if (!deviceMemory) { memoryListsEl.hidden = true; return; }
+  const styleWord = deviceMemory.model === 'QY70' ? 'Patterns' : 'User Styles';
+  el('qy-style-heading').textContent = styleWord;
+  el('qy-clear-all-styles').textContent = `Clear All ${styleWord}`;
+  renderMemoryList(el('qy-song-list'), deviceMemory.songs, 'song');
+  renderMemoryList(el('qy-style-list'), deviceMemory.styles, 'style');
+  memoryStatusEl.textContent = `${deviceMemory.model} free memory: ${formatTenths(deviceMemory.freeTenths)}`;
+  memoryListsEl.hidden = false;
+}
+
+async function readDeviceMemory() {
+  const model = await resolveDeviceModel();
+  if (!model) return;
+  memoryStatusEl.textContent = 'Reading the song and style list...';
+  try {
+    const r = await withBulkMode(model, () => readMemoryList(qyIo, model));
+    if (r.refused) { memoryStatusEl.textContent = ''; return; }
+    deviceMemory = { model, ...r.result };
+    renderDeviceMemory();
+  } catch (err) {
+    memoryStatusEl.textContent = '';
+    await showAlert('List not received', `${err.message} Check that MIDI In is connected to the device's MIDI OUT and that it is on a play screen (press EXIT).`);
+  }
+}
+
+async function clearMemorySlots(kind, entries) {
+  if (!deviceMemory || !entries.length) return;
+  const { model } = deviceMemory;
+  const what = kind === 'song' ? 'Song' : model === 'QY70' ? 'Pattern' : 'User Style';
+  const names = entries.length === 1 ? `${what} ${entries[0].number}${entries[0].name ? ` "${entries[0].name}"` : ''}` : `all ${entries.length} ${what.toLowerCase()}s`;
+  const ok = await showConfirm('Clear from device', `This permanently erases ${names} from the ${model}. It cannot be undone.`, 'Clear');
+  if (!ok) return;
+  memoryStatusEl.textContent = `Clearing ${names}...`;
+  try {
+    const r = await withBulkMode(model, async () => {
+      for (const e of entries) {
+        await qyIo.send(buildClearCommand(model, kind, e.number));
+        await sleep(300);
+      }
+      return readMemoryList(qyIo, model);
+    });
+    if (r.refused) { memoryStatusEl.textContent = ''; return; }
+    deviceMemory = { model, ...r.result };
+    renderDeviceMemory();
+    statusEl.textContent = `Cleared ${names} on the ${model}.`;
+  } catch (err) {
+    memoryStatusEl.textContent = '';
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+}
+
+el('qy-memory-read-btn').addEventListener('click', readDeviceMemory);
+el('qy-clear-all-songs').addEventListener('click', () => clearMemorySlots('song', (deviceMemory?.songs || []).filter((e) => e.size)));
+el('qy-clear-all-styles').addEventListener('click', () => clearMemorySlots('style', (deviceMemory?.styles || []).filter((e) => e.size)));
+
+// ---- Pull ----
+
 // Sends ONE Bulk Dump Request (Data List Table 1-9), then records every
 // matching SysEx message that comes back until the capture goes quiet
-// (the device is done responding) or a hard deadline elapses (it's not
-// responding at all) - not a fixed message count, since the Data List
-// documents long dumps as being split into multiple messages without
-// saying how many to expect, and a single request already returns every
-// block of a multi-track Song/Pattern (no per-track looping needed - an
-// earlier version of this guessed otherwise and was wrong, see
-// dataFilerPull's own comment below). 1.5s quiet / 20s hard ceiling
-// matches the values doffu0000/qy100-toolkit uses against real hardware
+// (the device is done responding) - not a fixed message count, since the
+// Data List documents long dumps as being split into multiple messages
+// without saying how many to expect, and a single request already
+// returns every block of a multi-track Song/Pattern. The 1.5s quiet
+// window matches doffu0000/qy100-toolkit's value against real hardware
 // (qy100-syx/qy100syx/transfer.py's request()/collect(), MIT licensed:
-// https://github.com/doffu0000/qy100-toolkit) - their own ceiling is
-// 120s, kept shorter here since this blocks an interactive web UI rather
-// than a CLI script.
+// https://github.com/doffu0000/qy100-toolkit).
+//
+// There is deliberately NO overall time limit. Earlier hard ceilings
+// (20s per Song/Pattern, then 120s for All Data) each turned out to be
+// shorter than a real transfer: MIDI only moves ~3KB/s, a 131KB QY70
+// song needs about a minute, and a cutoff doesn't fail loudly, it just
+// saves the first part. A pull runs for as long as data keeps arriving.
 const DATA_FILER_PULL_QUIET_MS = 1500;
-const DATA_FILER_PULL_TIMEOUT_MS = 20000;
-
-// "All Data" streams Setup + Song/Pattern Info blocks FIRST and only THEN
-// the actual per-song/per-pattern SEQ data (the bulk of the transfer, one
-// block per track) - so a too-short hard ceiling doesn't truncate the
-// dump evenly, it lops off ALL songs and ALL patterns wholesale while
-// still "succeeding" with a handful of small Info blocks captured, which
-// is exactly the "much smaller than the Push that produced it, entire
-// U01-U64/01-20 ranges missing" symptom this constant exists to fix. A
-// real "All Data" dump (76KB captured from this exact hardware) already
-// takes ~25s just to clock out at MIDI's fixed 31.25kbaud (~3125 B/s),
-// before any inter-block pauses the device inserts while it reads each
-// pattern/song out of flash - comfortably past the 20s ceiling above,
-// which was sized for a single Song/Pattern response, not this. 120s
-// matches doffu0000/qy100-toolkit's own default ceiling for `dump all`
-// against this same hardware (qy100-syx/qy100syx/cli.py).
-const DATA_FILER_PULL_TIMEOUT_MS_ALL = 120000;
 
 let dataFilerCapture = null; // { messages: Uint8Array[], quietTimer, finish } while a Pull is in progress
 
@@ -5427,19 +6033,21 @@ function handleDataFilerIncoming(bytes) {
   // produced a bogus "16 messages, 128 bytes" pull (16 tracks x this
   // app's own 8-byte request, not real data) before this check existed.
   if (bytes[0] !== 0xf0 || bytes[1] !== 0x43 || bytes[2] !== 0x00 || bytes[3] !== MODEL_ID_QY) return;
+  // Memory list replies (kind 5) share this frame but are never pull data.
+  if ((bytes[6] & 0x0f) === 5) return;
   dataFilerCapture.messages.push(bytes);
   clearTimeout(dataFilerCapture.quietTimer);
   dataFilerCapture.quietTimer = setTimeout(dataFilerCapture.finish, dataFilerCapture.quietMs);
 }
 
-function dataFilerRunCapture(quietMs = DATA_FILER_PULL_QUIET_MS, timeoutMs = DATA_FILER_PULL_TIMEOUT_MS, onProgress = null) {
+function dataFilerRunCapture(quietMs = DATA_FILER_PULL_QUIET_MS, onProgress = null) {
   return new Promise((resolve) => {
     const capture = { messages: [], quietTimer: null, quietMs };
-    const deadlineTimer = setTimeout(() => capture.finish(), timeoutMs);
-    const progressTimer = onProgress ? setInterval(() => onProgress(capture.messages.length), 1000) : null;
+    const progressTimer = onProgress
+      ? setInterval(() => onProgress(capture.messages.length, capture.messages.reduce((sum, m) => sum + m.length, 0)), 250)
+      : null;
     capture.finish = () => {
       clearTimeout(capture.quietTimer);
-      clearTimeout(deadlineTimer);
       if (progressTimer) clearInterval(progressTimer);
       dataFilerCapture = null;
       resolve(capture.messages);
@@ -5447,17 +6055,6 @@ function dataFilerRunCapture(quietMs = DATA_FILER_PULL_QUIET_MS, timeoutMs = DAT
     capture.quietTimer = setTimeout(capture.finish, quietMs);
     dataFilerCapture = capture;
   });
-}
-
-function concatSysexMessages(messages) {
-  const totalBytes = messages.reduce((sum, m) => sum + m.length, 0);
-  const combined = new Uint8Array(totalBytes);
-  let offset = 0;
-  for (const m of messages) {
-    combined.set(m, offset);
-    offset += m.length;
-  }
-  return combined;
 }
 
 function dataFilerPullTypeLabel() {
@@ -5476,68 +6073,86 @@ function dataFilerPullAddress() {
   return QY_ALL_DATA_ADDRESS;
 }
 
+// Escape would otherwise close the progress dialog mid-pull while the
+// capture carries on unseen, so keep it open until the pull finishes.
+// Chrome doesn't always honor preventDefault on a dialog's cancel event
+// (it's only cancelable after a fresh user activation), so a close that
+// slips through during a capture just reopens the dialog.
+progressDialog.addEventListener('cancel', (evt) => {
+  if (dataFilerCapture) evt.preventDefault();
+});
+progressDialog.addEventListener('close', () => {
+  if (dataFilerCapture) progressDialog.showModal();
+});
+
 el('data-filer-pull-btn').addEventListener('click', async () => {
   if (dataFilerCapture) return;
   const label = dataFilerPullTypeLabel();
-  dataFilerPullStatus.textContent = `Requesting ${label}...`;
-
   const type = dataFilerPullType.value;
-  let messages;
+  const model = await resolveDeviceModel();
+  if (!model) return;
+  dataFilerPullStatus.textContent = `Requesting ${label} from the ${model}...`;
+
+  let messages = [];
+  const pullStartedAt = performance.now();
+  // Bulk mode has to bracket the request, not just writes - confirmed
+  // hardware behavior per qy100-toolkit's cmd_dump (see the comment on
+  // buildQyBulkModeOn in sysex.js): without it the QY100 either ignores
+  // the request outright (Setup) or answers with fewer blocks than it
+  // actually has (Song/Pattern). withBulkMode guarantees OFF still gets
+  // sent even if the capture throws.
+  let r;
   try {
-    // Bulk mode has to bracket the request, not just writes - confirmed
-    // hardware behavior per qy100-toolkit's cmd_dump (see the comment on
-    // buildQyBulkModeOn in sysex.js): without it the QY100 either ignores
-    // the request outright (Setup) or answers with fewer blocks than it
-    // actually has (Song/Pattern). finally guarantees OFF still gets
-    // sent even if the request/capture above throws or times out, so a
-    // failed pull doesn't leave the device stuck in bulk mode.
-    const timeoutMs = type === 'all' ? DATA_FILER_PULL_TIMEOUT_MS_ALL : DATA_FILER_PULL_TIMEOUT_MS;
-    link.send(buildQyBulkModeOn());
-    link.send(buildQyBulkDumpRequest(dataFilerPullAddress()));
-    messages = await dataFilerRunCapture(DATA_FILER_PULL_QUIET_MS, timeoutMs, (count) => {
-      dataFilerPullStatus.textContent = `Requesting ${label}... ${count} message${count === 1 ? '' : 's'} received so far.`;
+    r = await withBulkMode(model, async () => {
+      showProgress(`Pulling ${label}`, `Waiting for the ${model} to send its data. Avoid touching the device until it finishes.`);
+      updateProgressIndeterminate('Waiting for the device to respond...');
+      try {
+        await qyIo.send(buildQyBulkDumpRequest(qyAddressForModel(dataFilerPullAddress(), model)));
+        messages = await dataFilerRunCapture(DATA_FILER_PULL_QUIET_MS, (count, bytes) => {
+          const seconds = Math.round((performance.now() - pullStartedAt) / 1000);
+          const summary = `${count} message${count === 1 ? '' : 's'} (${(bytes / 1024).toFixed(1)} KB) received, ${seconds}s elapsed`;
+          dataFilerPullStatus.textContent = `Requesting ${label}... ${summary}.`;
+          updateProgressIndeterminate(count ? summary : `Waiting for the device to respond... ${seconds}s`);
+        });
+      } finally {
+        hideProgress();
+      }
     });
   } catch (err) {
     dataFilerPullStatus.textContent = `Error: ${err.message}`;
     return;
-  } finally {
-    try { link.send(buildQyBulkModeOff()); } catch (err) { /* best effort - nothing more to do if this fails too */ }
   }
+  if (r.refused) { dataFilerPullStatus.textContent = ''; return; }
 
   if (!messages.length) {
     dataFilerPullStatus.textContent = `No response from the device for ${label} - check MIDI In is connected and try again.`;
+    // The progress dialog has already closed by now, so say so up front
+    // instead of leaving the only sign of a failed pull in the small
+    // status line below the Pull button.
+    await showAlert('No data received', `The ${model} didn't send any data for ${label}. Check that MIDI In is selected and connected to the device's MIDI OUT, then try again.`);
     return;
   }
   // The bulk mode ON/OFF sent above are requests to the DEVICE, not data
-  // from it, so they were never part of `messages` - but per
-  // qy100-toolkit's cmd_send (see buildQyBulkModeOn's comment in
-  // sysex.js), pushing raw data blocks back WITHOUT that same bracket is
-  // exactly what a plain Push does (it just relays whatever's in the
-  // file), and the device won't accept bare blocks sent outside bulk
-  // mode. Baking the ON/OFF into the saved file itself - not just
-  // sending them ephemerally during the pull - is what makes a pulled
-  // file self-contained and actually push-able later, the same way a
-  // dump captured by another tool with its own framing already is.
+  // from it, so they were never part of `messages` - but pushing raw data
+  // blocks back WITHOUT that same bracket is exactly what a plain Push of
+  // another tool's file does, and the device won't accept bare blocks
+  // outside bulk mode. Baking the ON/OFF into the saved file itself is
+  // what makes a pulled file self-contained and push-able later.
   //
   // qyRewriteAddressForWrite similarly fixes up each response message's
-  // own echoed address before saving (see its comment in sysex.js) - a
-  // Song/Pattern block otherwise comes back addressed to the literal
-  // slot number it was requested with, which is meaningless for a write
-  // and gets silently rejected. This ONLY applies to a single targeted
-  // Song/Pattern pull, where "current slot" is the right write target
-  // because the user is expected to navigate to one on the device before
-  // pushing back. An "All Data" pull has to keep each block's own real
-  // slot number - it's the only thing that tells 20 different songs and
-  // 64 different patterns apart - so rewriting every one of them to the
-  // same "current slot" sentinel would collapse all of them onto
-  // whichever single slot happens to be selected when later pushed
-  // (confirmed by diffing a real "All Data" pull against a known-good
-  // reference dump: every Song/Pattern block's address had collapsed to
-  // slot 0x7E instead of keeping its own number).
+  // own echoed address before saving (see its comment in sysex.js): a
+  // single targeted Song/Pattern pull is saved as "current slot" (7E) so
+  // a plain Push lands wherever the device is. An "All Data" pull has to
+  // keep each block's own real slot number - it's the only thing that
+  // tells 20 different songs and 64 different patterns apart. (Push asks
+  // for a target slot for a single song/pattern file, so either works.)
   const messagesForWrite = type === 'all' ? messages : messages.map(qyRewriteAddressForWrite);
-  const combined = concatSysexMessages([buildQyBulkModeOn(), ...messagesForWrite, buildQyBulkModeOff()]);
-  const entry = dataFilerAddEntry(`${label}.syx`, combined);
-  dataFilerPullStatus.textContent = `Pulled ${label}: ${messages.length} message${messages.length === 1 ? '' : 's'}, ${combined.length} bytes - added as "${entry.name}".`;
+  // Name the file after the model that actually answered (per the dump's
+  // own address P flag), e.g. "Pattern 1_QY100.syx" / "All Data_QY70.syx".
+  const dumpModel = qyModelFromDump(messages) || model;
+  const combined = concatSysexMessages([buildQyBulkModeOn(dumpModel), ...messagesForWrite, buildQyBulkModeOff(dumpModel)]);
+  const entry = dataFilerAddEntry(`${label}_${dumpModel}.syx`, combined);
+  dataFilerPullStatus.textContent = `Pulled ${label} from the ${dumpModel}: ${messages.length} message${messages.length === 1 ? '' : 's'}, ${combined.length} bytes - added as "${entry.name}".`;
 });
 
 function updateDataFilerPullNumberVisibility() {

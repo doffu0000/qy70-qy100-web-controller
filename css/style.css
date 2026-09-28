@@ -178,6 +178,32 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
   border: 2px solid var(--qy100);
   border-radius: 10px;
   padding: 0.5rem 0.75rem;
+  /* With Continuous Send Rate added, a squeezed box used to crush Send
+     GM/XG System On into 2 to 4 line stacks. Keeping every label on one
+     line and letting whole items wrap to a second row reads far better. */
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+}
+
+.messaging-box button:not(.info-icon),
+.messaging-box .label-row {
+  white-space: nowrap;
+}
+
+/* The GM/XG buttons and the two settings (Messaging, Continuous Send Rate)
+   each stay together as a unit, so a narrow box wraps into two clean rows
+   instead of stranding one field on its own line. No divider before the
+   settings group: when wrapped it would just be a stray line at the start
+   of the second row; the group gap separates them well enough. */
+.messaging-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.messaging-settings > .connect-field:first-child {
+  border-left: none;
+  padding-left: 0;
 }
 
 #connect-bar .label-row {
@@ -1838,6 +1864,7 @@ section {
 
 .data-filer-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem;
@@ -1865,6 +1892,94 @@ section {
 .data-filer-item button {
   font-size: 0.75rem;
   padding: 0.35rem 0.6rem;
+}
+
+
+#data-filer-device-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.5rem 0;
+}
+
+#qy-memory-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+#qy-memory-lists:not([hidden]) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.qy-memory-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.qy-memory-col-head h4 {
+  margin: 0;
+}
+
+.qy-memory-col-head button,
+.qy-memory-item button {
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.qy-memory-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 20rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.qy-memory-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.qy-memory-item:last-child {
+  border-bottom: none;
+}
+
+.qy-memory-item.empty {
+  color: var(--muted);
+}
+
+.qy-memory-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.qy-memory-name {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qy-memory-size {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
 }
 
 #data-filer-pull-controls {
@@ -2068,6 +2183,22 @@ section {
   margin: 0 0 0.9rem;
 }
 
+/* The rule above sets display, which would otherwise beat the UA [hidden]
+   rule for dialog rows that are shown only sometimes (slot dialog's Item
+   and Device rows, the MIDI export Song row). */
+.app-dialog label[hidden] {
+  display: none;
+}
+
+.app-dialog label.checkbox-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
 .app-dialog input[type="text"],
 .app-dialog select {
   width: 100%;
@@ -2259,6 +2390,19 @@ section {
      drop to its own line instead of pushing past the right edge. */
   .messaging-box {
     flex-wrap: wrap;
+  }
+
+  /* A Data Filer row wraps its controls onto extra lines here; giving the
+     file name its own full line keeps it readable instead of squeezing it
+     down to a few characters beside the stats. */
+  .data-filer-name {
+    flex-basis: 100%;
+  }
+
+  /* Phone layout stacks every item on its own, exactly as before the
+     grouping above existed. The groups only matter for desktop wrapping. */
+  .messaging-group {
+    display: contents;
   }
 
   /* A left border reads as a vertical divider in the desktop row layout -

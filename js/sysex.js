@@ -225,8 +225,8 @@ export const QY_BULK_MODE_ADDRESS = [0x10, 0x00, 0x00];
 // to be selected on the device when the file is later pushed back.
 export function qyRewriteAddressForWrite(message) {
   if (message.length < 12 || message[0] !== 0xf0 || message[2] !== 0x00 || message[3] !== MODEL_ID_QY) return message;
-  const addrHigh = message[6];
-  if (addrHigh !== 0x11 && addrHigh !== 0x12) return message;
+  const addrHigh = message[6] & ~0x10; // same for QY70 (P=0) and QY100 (P=1) blocks
+  if (addrHigh !== 0x01 && addrHigh !== 0x02) return message;
   const rewritten = Uint8Array.from(message);
   rewritten[7] = 0x7e;
   const body = Array.from(rewritten.slice(4, -2)); // byteCount(2) + address(3) + data - excludes checksum/F7
@@ -242,12 +242,23 @@ export function qyRewriteAddressForWrite(message) {
 // fewer blocks than it has." This app initially pulled Song/Pattern data
 // without ever sending this, which produced exactly that symptom (see
 // dataFilerPull* in app.js) until traced back to its absence here.
-export function buildQyBulkModeOn() {
-  return buildQyParameterChange(QY_BULK_MODE_ADDRESS, 1);
+export function buildQyBulkModeOn(model = 'QY100') {
+  return buildQyParameterChange(qyAddressForModel(QY_BULK_MODE_ADDRESS, model), 1);
 }
 
-export function buildQyBulkModeOff() {
-  return buildQyParameterChange(QY_BULK_MODE_ADDRESS, 0);
+export function buildQyBulkModeOff(model = 'QY100') {
+  return buildQyParameterChange(qyAddressForModel(QY_BULK_MODE_ADDRESS, model), 0);
+}
+
+// Every QY address in this file is written QY100-style (P=1). A QY70 uses
+// the identical layout with the P bit cleared, bulk mode switch included
+// (00 00 00 instead of 10 00 00), as confirmed by comparing paired QY70 and
+// QY100 .syx exports of the same songs, which differ only in that bit. A
+// QY70 silently ignores QY100-addressed requests, which is why Data Filer
+// Pull needs this to reach one at all.
+export function qyAddressForModel(address, model) {
+  const [ah, am, al] = addr3(address);
+  return model === 'QY70' ? [ah & ~0x10, am, al] : [ah, am, al];
 }
 
 // Table 1-9's address High byte bakes in a "P" flag the doc documents as
@@ -270,6 +281,26 @@ export function qyPatternAddress(patternNumber, track = 0) { // patternNumber: 1
 }
 
 export const QY_ALL_DATA_ADDRESS = [0x14, 0x00, 0x00];
+
+// Which model sent a Bulk Dump, read from that same Table 1-9 "P" flag in
+// each data block's address High byte (0x11..0x15 = QY100, 0x01..0x05 =
+// QY70). Only the Sequencer Parameter blocks carry it, so anything else
+// (e.g. the 0x10 bulk mode address) is skipped. Returns 'QY100', 'QY70',
+// or null when no block is identifiable or blocks disagree, so a caller
+// never labels data with a guess.
+export function qyModelFromDump(messages) {
+  let model = null;
+  for (const m of messages) {
+    if (m.length < 9 || m[0] !== 0xf0 || m[2] !== 0x00 || m[3] !== MODEL_ID_QY) continue;
+    const addrHigh = m[6];
+    const kind = addrHigh & 0x0f;
+    if (kind < 1 || kind > 5 || (addrHigh & 0x60)) continue;
+    const blockModel = addrHigh & 0x10 ? 'QY100' : 'QY70';
+    if (model && model !== blockModel) return null;
+    model = blockModel;
+  }
+  return model;
+}
 
 // cents: -1024.0 .. +1023.9921875 (7-bit nibble-packed as documented in Table 1-2)
 export function buildMidiMasterTuning(deviceNumber, mm, ll) {
