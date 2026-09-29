@@ -8,10 +8,12 @@ import { buildXgSystemOn, buildGmSystemOn, buildMessageWindow, buildMessageWindo
 import { encodeMonoBmp16x16, decodeMonoBmp } from './bmp.js';
 import { encodeAnimatedGif, decodeAnimatedGif } from './gif.js';
 import { loadVoices, filterVoices, categoriesFor, bankLabel, voiceDisplayName } from './voices.js';
-import { loadParameters, expandRows, sendParam, sendParamGroup } from './params.js';
+import { loadParameters, expandRows, sendParam, sendParamGroup, configureControllerSend, isControllerSendEnabled } from './params.js';
+import { controllerFor, controllerLabel } from './controllers.js';
 import { createKnob, createToggle, createMultiToggle, setContinuousSendMs } from './knob.js';
 import { isStandardMidiFile, unwrapMidiFile, convertMidiToQySong } from './smf.js';
-import { splitSysex, listDumpItems, itemLabel, buildItemTransfer, exportSongToMidi, isDataFilerBulkFile, extractBulkFileMessages, isQyDataBlock, retargetBlock, QY_KIND_SONG, QY_KIND_PATTERN } from './qysong.js';
+import { splitSysex, listDumpItems, itemLabel, buildItemTransfer, exportSongToMidi, isDataFilerBulkFile, extractBulkFileMessages, isQyDataBlock, retargetBlock, blockKind, blockModel, QY_KIND_SONG, QY_KIND_PATTERN } from './qysong.js';
+import { buildQ1a, parseQ1a, buildBlk, orderForRestore, buildClearAllCommand, isQ1aFile } from './qyfiles.js';
 import { detectQyModel, enterBulkMode, exitBulkMode, readMemoryList, buildClearCommand, formatTenths } from './qydevice.js';
 
 const link = new MidiLink();
@@ -2506,10 +2508,14 @@ function applyVoiceToPart(part, voice) {
     ['Bank Select LSB', voice.bankLsb],
     ['Program Number', voice.program - 1], // voices.json's Program # is 1-128; wire value is 0-127
   ];
-  for (const [name, value] of fields) {
+  // Record all three first: with Send as CC/NRPN on, each send is a full
+  // Bank Select + Program Change built from the store, so sending just the
+  // last one avoids briefly selecting a half-updated voice.
+  for (const [name, value] of fields) store[name] = value;
+  const toSend = isControllerSendEnabled() ? fields.slice(-1) : fields;
+  for (const [name, value] of toSend) {
     const row = section.params.find((r) => r.name === name);
     if (!row) continue;
-    store[row.name] = value;
     try {
       sendParam(link, 0, section, { part }, row, value);
     } catch (err) {
@@ -3664,6 +3670,42 @@ knobSendRateSelect.addEventListener('change', () => {
   try { localStorage.setItem(KNOB_SEND_RATE_KEY, knobSendRateSelect.value); } catch { /* see above */ }
 });
 
+// Send as CC/NRPN (see controllers.js and configureControllerSend in
+// params.js). On by default and remembered per browser like the send rate.
+// The key was renamed when the default flipped to on, so an "off" saved
+// while it defaulted off doesn't keep overriding it.
+// A part's controller channel is its Rcv Channel; a drum setup's is the
+// channel its 3n address is indexed by. Anything that doesn't resolve to
+// channels 1-16 stays SysEx.
+const CONTROLLER_SEND_KEY = 'qyControllerSendV2';
+const controllerSendCheckbox = el('controller-send-enabled');
+controllerSendCheckbox.checked = true;
+try { if (localStorage.getItem(CONTROLLER_SEND_KEY) === '0') controllerSendCheckbox.checked = false; } catch { /* see above */ }
+configureControllerSend({
+  enabled: controllerSendCheckbox.checked,
+  resolveChannel: (section, context) => {
+    if (section === parameters?.multiPart) {
+      const stored = paramState.multiPart[String(context.part)]?.['Rcv Channel'];
+      return stored ?? context.part;
+    }
+    if (section === parameters?.drumSetup && typeof context.drumHigh === 'number') return context.drumHigh - 0x30;
+    return null;
+  },
+  resolveBankProgram: (context) => {
+    const store = paramState.multiPart[String(context.part)] ?? {};
+    return {
+      msb: store['Bank Select MSB'] ?? 0,
+      lsb: store['Bank Select LSB'] ?? 0,
+      program: store['Program Number'] ?? 0,
+    };
+  },
+});
+controllerSendCheckbox.addEventListener('change', () => {
+  configureControllerSend({ enabled: controllerSendCheckbox.checked });
+  try { localStorage.setItem(CONTROLLER_SEND_KEY, controllerSendCheckbox.checked ? '1' : '0'); } catch { /* see above */ }
+  if (parameters) renderParamPanel();
+});
+
 // Bypasses sendMessageWindow's own checked-state guard: toggling messaging
 // off should still show that one last "Messaging Off" confirmation before
 // it goes silent, rather than being silently skipped by the same guard it's
@@ -4592,6 +4634,15 @@ function renderParamPanel() {
     div.innerHTML = `${infoIcon}<span class="param-name">${baseName}</span>${desc}`;
     const descEl = div.querySelector('.param-desc');
     const nameEl = div.querySelector('.param-name');
+    // Send as CC/NRPN: mark rows that will go out as a channel message.
+    const controllerDesc = isControllerSendEnabled() && controllerFor(section, firstRow);
+    if (controllerDesc) {
+      const badge = document.createElement('span');
+      badge.className = 'cc-badge';
+      badge.textContent = controllerDesc.type === 'bankProgram' ? 'PC' : controllerDesc.type.toUpperCase();
+      badge.title = `Sent as ${controllerLabel(controllerDesc)}`;
+      nameEl.appendChild(badge);
+    }
 
     const isEffectTypeRow = effectTypeParam && baseName === effectTypeParam.paramName;
     // Its select is a full effect-name picker rather than a short readout,
@@ -5950,6 +6001,7 @@ function renderDeviceMemory() {
   const styleWord = deviceMemory.model === 'QY70' ? 'Patterns' : 'User Styles';
   el('qy-style-heading').textContent = styleWord;
   el('qy-clear-all-styles').textContent = `Clear All ${styleWord}`;
+  el('qy-backup-save-q1a').hidden = deviceMemory.model === 'QY70'; // the QY70 has no .Q1A format
   renderMemoryList(el('qy-song-list'), deviceMemory.songs, 'song');
   renderMemoryList(el('qy-style-list'), deviceMemory.styles, 'style');
   memoryStatusEl.textContent = `${deviceMemory.model} free memory: ${formatTenths(deviceMemory.freeTenths)}`;
@@ -6000,6 +6052,194 @@ async function clearMemorySlots(kind, entries) {
 el('qy-memory-read-btn').addEventListener('click', readDeviceMemory);
 el('qy-clear-all-songs').addEventListener('click', () => clearMemorySlots('song', (deviceMemory?.songs || []).filter((e) => e.size)));
 el('qy-clear-all-styles').addEventListener('click', () => clearMemorySlots('style', (deviceMemory?.styles || []).filter((e) => e.size)));
+
+// ---- Whole-device backup: save to / load from .BLK or .Q1A (qyfiles.js) ----
+
+const backupStatusEl = el('qy-backup-status');
+const backupFileInput = el('qy-backup-file-input');
+const MAX_TENTHS = 1000;
+
+const countKinds = (blocks) => {
+  const items = listDumpItems(blocks).filter((i) => typeof i.number === 'number');
+  return {
+    items,
+    songs: items.filter((i) => i.kind === QY_KIND_SONG).length,
+    patterns: items.filter((i) => i.kind === QY_KIND_PATTERN).length,
+  };
+};
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const styleWordFor = (model) => (model === 'QY70' ? 'pattern' : 'user style');
+
+// One bulk mode session: read the memory list (to check the dump against
+// it), then pull All Data until the device goes quiet.
+async function pullWholeDevice(model) {
+  return withBulkMode(model, async () => {
+    const list = canHearDevice(model) ? await readMemoryList(qyIo, model).catch(() => null) : null;
+    const startedAt = performance.now();
+    showProgress(`Backing up the ${model}`, `Reading the ${model}'s entire memory. This can take a minute or two; avoid touching the device until it finishes.`);
+    updateProgressIndeterminate('Waiting for the device to respond...');
+    try {
+      await qyIo.send(buildQyBulkDumpRequest(qyAddressForModel(QY_ALL_DATA_ADDRESS, model)));
+      const messages = await dataFilerRunCapture(DATA_FILER_PULL_QUIET_MS, (count, bytes) => {
+        const seconds = Math.round((performance.now() - startedAt) / 1000);
+        updateProgressIndeterminate(count ? `${count} blocks (${(bytes / 1024).toFixed(1)} KB) received, ${seconds}s elapsed` : `Waiting for the device to respond... ${seconds}s`);
+      });
+      return { messages, list };
+    } finally {
+      hideProgress();
+    }
+  });
+}
+
+async function saveDeviceBackup(format) {
+  const model = await resolveDeviceModel();
+  if (!model) return;
+  if (format === 'q1a' && model === 'QY70') {
+    await showAlert('Not available on the QY70', '.Q1A is the QY100\'s SmartMedia backup format; the QY70 has no equivalent. Use Save Device as .BLK instead.');
+    return;
+  }
+  backupStatusEl.textContent = `Backing up the ${model}...`;
+  let r;
+  try {
+    r = await pullWholeDevice(model);
+  } catch (err) {
+    backupStatusEl.textContent = `Error: ${err.message}`;
+    return;
+  }
+  if (r.refused) { backupStatusEl.textContent = ''; return; }
+  const { messages, list } = r.result;
+  const blocks = messages.filter(isQyDataBlock);
+  if (!blocks.length) {
+    backupStatusEl.textContent = '';
+    await showAlert('No data received', `The ${model} didn't send any data. Check that MIDI In is selected and connected to the device's MIDI OUT, that it is on a play screen (press EXIT), then try again.`);
+    return;
+  }
+  const { items, songs, patterns } = countKinds(blocks);
+  // A pull that ends early drops whole songs/patterns silently, so compare
+  // against the memory list read at the start of the same session.
+  if (list) {
+    deviceMemory = { model, ...list };
+    renderDeviceMemory();
+    const have = new Set(items.map((i) => `${i.kind}:${i.number}`));
+    const missing = [
+      ...list.songs.filter((e) => e.size && !have.has(`${QY_KIND_SONG}:${e.number}`)).map((e) => `Song ${e.number}`),
+      ...list.styles.filter((e) => e.size && !have.has(`${QY_KIND_PATTERN}:${e.number}`)).map((e) => `${model === 'QY70' ? 'Pattern' : 'User Style'} ${e.number}`),
+    ];
+    if (missing.length) {
+      const ok = await showConfirm('Backup incomplete', `The dump is missing ${missing.join(', ')}, which the ${model} reports as holding data. Save the incomplete backup anyway? (Pulling again usually fixes this.)`, 'Save Anyway');
+      if (!ok) { backupStatusEl.textContent = ''; return; }
+    }
+  }
+  let bytes;
+  try {
+    bytes = format === 'q1a' ? buildQ1a(blocks) : buildBlk(blocks);
+  } catch (err) {
+    backupStatusEl.textContent = '';
+    await showAlert('Could not build the backup', err.message);
+    return;
+  }
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  // .Q1A names are kept to 8.3 so the QY100 can read them off a SmartMedia card.
+  // .BLK names end in the model, like the app's other pulled files.
+  const filename = format === 'q1a'
+    ? `QY${pad(d.getFullYear() % 100)}${pad(d.getMonth() + 1)}${pad(d.getDate())}.Q1A`
+    : `Backup ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${model}.BLK`;
+  const summary = `${plural(songs, 'song')} and ${plural(patterns, styleWordFor(model))}`;
+  backupStatusEl.textContent = `Received ${summary}.`;
+  // Chrome only opens a save dialog within a few seconds of a click, and the
+  // pull takes far longer, so the save needs a click of its own.
+  const save = await showConfirm('Backup ready', `Received the ${model}'s memory (${summary}). Choose where to save ${filename}.`, 'Save');
+  if (!save) { backupStatusEl.textContent = 'Save cancelled.'; return; }
+  try {
+    await writeBinaryFile(filename, bytes, format === 'q1a' ? 'QY100 SmartMedia backup' : 'Data Filer bulk file', format === 'q1a' ? '.q1a' : '.blk', 'application/octet-stream');
+    backupStatusEl.textContent = `Saved the ${model}'s memory (${summary}) as ${filename}.`;
+  } catch (err) {
+    backupStatusEl.textContent = err.name === 'AbortError' ? 'Save cancelled.' : `Error: ${err.message}`;
+  }
+}
+
+async function loadDeviceBackup(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let blocks;
+  try {
+    if (isQ1aFile(file.name, bytes)) blocks = parseQ1a(bytes, 'QY100');
+    else if (isDataFilerBulkFile(file.name, bytes)) blocks = extractBulkFileMessages(bytes).filter(isQyDataBlock);
+    else throw new Error('Choose a .BLK or .Q1A backup file.');
+  } catch (err) {
+    await showAlert('Cannot read this file', err.message);
+    return;
+  }
+  const { items, songs, patterns } = countKinds(blocks);
+  if (!items.length) {
+    await showAlert('Nothing to load', `"${file.name}" doesn't contain any songs or patterns.`);
+    return;
+  }
+  const model = await resolveDeviceModel();
+  if (!model) return;
+  // Another model's setup/effect blocks aren't known to mean the same thing,
+  // so a cross-model load carries the songs and patterns only.
+  const crossModel = blocks.some((m) => blockModel(m) !== model);
+  let out = orderForRestore(blocks);
+  if (crossModel) out = out.filter((m) => blockKind(m) === QY_KIND_SONG || blockKind(m) === QY_KIND_PATTERN);
+  out = out.map((m) => retargetBlock(m, model, m[7]));
+  if (model === 'QY100' && estimateTenths(out) > MAX_TENTHS) {
+    await showAlert('Too large', `"${file.name}" needs about ${formatTenths(estimateTenths(out))} of the QY100's memory, more than it has.`);
+    return;
+  }
+  const summary = `${plural(songs, 'song')} and ${plural(patterns, styleWordFor(model))}`;
+  const erased = model === 'QY70' ? 'every song and pattern' : 'every song, user style and the effect data';
+  const ok = await showConfirm(
+    'Replace entire device memory',
+    `This erases ${erased} on the ${model} and replaces it with the ${summary} in "${file.name}"${crossModel ? ` (converted from ${blockModel(blocks[0])} data; songs and patterns only)` : ''}. Anything not in the backup is lost. This cannot be undone.`,
+    'Erase and Load',
+  );
+  if (!ok) return;
+  backupStatusEl.textContent = `Loading "${file.name}" onto the ${model}...`;
+  let r;
+  try {
+    r = await withBulkMode(model, async () => {
+      await qyIo.send(buildClearAllCommand(model));
+      await sleep(1000);
+      await sendWithProgress(`Loading ${file.name}`, out);
+      return refreshMemoryAfterWrite(model);
+    });
+  } catch (err) {
+    backupStatusEl.textContent = `Error: ${err.message}`;
+    return;
+  }
+  if (r.refused) { backupStatusEl.textContent = ''; return; }
+  const after = r.result;
+  if (!after) {
+    backupStatusEl.textContent = `Sent the ${summary} from "${file.name}" to the ${model} (not confirmed: the device can't be heard, so its memory wasn't read back).`;
+    return;
+  }
+  const expected = new Set(items.map((i) => `${i.kind}:${i.number}`));
+  const missing = items.filter((i) => slotSize(after, i) === 0).map((i) => slotName(i.kind, i.number));
+  const leftover = [
+    ...after.songs.filter((e) => e.size && !expected.has(`${QY_KIND_SONG}:${e.number}`)).map((e) => slotName(QY_KIND_SONG, e.number)),
+    ...after.styles.filter((e) => e.size && !expected.has(`${QY_KIND_PATTERN}:${e.number}`)).map((e) => slotName(QY_KIND_PATTERN, e.number)),
+  ];
+  if (missing.length || leftover.length) {
+    backupStatusEl.textContent = '';
+    await showAlert('Load incomplete', [
+      missing.length ? `The ${model} reports ${missing.join(', ')} as empty after the transfer.` : '',
+      leftover.length ? `${leftover.join(', ')} still hold${leftover.length === 1 ? 's' : ''} older data that the clear didn't remove.` : '',
+      'Stop playback, press EXIT so it is on a play screen, and load again.',
+    ].filter(Boolean).join(' '));
+    return;
+  }
+  backupStatusEl.textContent = `Loaded "${file.name}" (${summary}) onto the ${model} and confirmed by reading its memory back.`;
+}
+
+el('qy-backup-save-blk').addEventListener('click', () => saveDeviceBackup('blk'));
+el('qy-backup-save-q1a').addEventListener('click', () => saveDeviceBackup('q1a'));
+el('qy-backup-load').addEventListener('click', () => backupFileInput.click());
+backupFileInput.addEventListener('change', async () => {
+  const file = backupFileInput.files[0];
+  backupFileInput.value = '';
+  if (file) await loadDeviceBackup(file);
+});
 
 // ---- Pull ----
 

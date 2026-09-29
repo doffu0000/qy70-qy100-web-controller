@@ -10,6 +10,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QY70 / QY100 Web Console</title>
+<meta name="robots" content="noindex, indexifembedded">
 <meta property="og:title" content="QY70 / QY100 Web Console">
 <meta property="og:description" content="Control your Yamaha QY70/QY100 live from your browser - customize voices and drum kits, edit every parameter, and save/load your own presets.">
 <meta property="og:image" content="https://qy100.doffu.net/wp-content/uploads/2026/08/qy100-console-og-image.png">
@@ -139,6 +140,15 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
             <option value="300">300 ms</option>
             <option value="500">500 ms</option>
           </select>
+        </div>
+        <div class="connect-field connect-divider">
+          <span class="label-row">Send as CC/NRPN
+            <button type="button" class="label-info-icon" data-tooltip="Sends every Multi Part and Drum Setup parameter that has a controller form (Volume = CC 7, Filter Cutoff = CC 74, EG Decay = NRPN 01 64, drum Level = NRPN 1A + note, voice = Bank Select + Program Change, and so on) as that channel message instead of SysEx. Controllers are shorter, can be recorded onto a song track, and don't need XG System On. They go to the part's Rcv Channel, so every part listening on that channel changes. Parameters with no controller form, parts on channel 17-32 or Off, and values a controller can't express (Pan Random, negative Pitch Bend range) still go out as SysEx. Rows sent this way show a CC badge.">i</button>
+          </span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="controller-send-enabled" checked>
+            <span class="toggle-track"></span>
+          </label>
         </div>
         </div>
       </div>
@@ -323,6 +333,16 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
       <div id="qy-memory-controls">
         <button type="button" id="qy-memory-read-btn" class="btn-warning">Read Memory</button>
         <span id="qy-memory-status" class="hint"></span>
+      </div>
+      <div id="qy-backup-controls">
+        <button type="button" id="qy-backup-save-blk">Save Device as .BLK</button>
+        <button type="button" id="qy-backup-save-q1a">Save Device as .Q1A</button>
+        <button type="button" class="info-icon" data-tooltip="Backs up the device's entire memory (every song, user style/pattern, the effect data and setup) to one file. .BLK is the format of Yamaha's PC Data Filer and works for both the QY70 and QY100. .Q1A is the QY100's own SmartMedia backup format: copy it to a SmartMedia card to load it on the QY100 itself. The QY70 has no .Q1A format.">i</button>
+        <span class="qy-backup-divider" aria-hidden="true"></span>
+        <button type="button" id="qy-backup-load" class="btn-warning">Load Backup to Device</button>
+        <button type="button" class="info-icon" data-tooltip="Replaces the device's entire memory with a .BLK or .Q1A backup. Everything on it now is erased first, including slots the backup leaves empty. Loading another model's backup (QY100 onto QY70 or the reverse) transfers the songs and patterns only.">i</button>
+        <input type="file" id="qy-backup-file-input" accept=".blk,.q1a" hidden>
+        <span id="qy-backup-status" class="hint"></span>
       </div>
       <div id="qy-memory-lists" hidden>
         <div class="qy-memory-col">

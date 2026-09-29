@@ -257,7 +257,7 @@ function encodeTimeSignatureTrack(sigs) {
 }
 
 // 128 bytes -> 147 seven-bit values, packed as one MSB-first bit stream.
-function packQyBlock(block) {
+export function packQyBlock(block) {
   const out = [];
   let acc = 0;
   let bits = 0;

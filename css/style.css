@@ -743,6 +743,18 @@ section {
   font-size: 0.85rem;
   line-height: 1.15;
 }
+.param-row .cc-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 0.65rem;
+  line-height: 1.4;
+  color: var(--muted);
+  vertical-align: 1px;
+  cursor: help;
+}
 .param-row .param-desc {
   flex: 1;
   min-width: 0;
@@ -1903,12 +1915,20 @@ section {
   margin: 0.5rem 0;
 }
 
-#qy-memory-controls {
+#qy-memory-controls,
+#qy-backup-controls {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin: 0.5rem 0;
+}
+
+.qy-backup-divider {
+  align-self: stretch;
+  width: 1px;
+  min-height: 1.75rem;
+  background: var(--border);
 }
 
 #qy-memory-lists:not([hidden]) {
