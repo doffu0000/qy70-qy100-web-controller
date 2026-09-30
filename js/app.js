@@ -154,28 +154,9 @@ const kitFileInput = el('kit-file-input');
 const voiceListEl = el('voice-list');
 const logOutput = el('log-output');
 
-// iPadOS 13+ reports navigator.platform as 'MacIntel', same as a real Mac -
-// maxTouchPoints is what actually distinguishes the two.
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
-
-// Web MIDI is Chromium-only (no Safari, historically no Firefox) - flag it
-// up front instead of only surfacing an error once someone clicks Connect.
-// iOS gets its own message: every iOS browser (Safari, Chrome, Firefox) is
-// required by Apple to use WebKit, which has never implemented Web MIDI, so
-// "open this in Chrome" - correct advice on desktop or Android - is actively
-// wrong there.
+// Without Web MIDI there's nothing to connect to. The banner explaining why
+// (and which browsers to use instead, iOS included) is install.js's job.
 if (!navigator.requestMIDIAccess) {
-  if (isIOS()) {
-    el('no-midi-banner').innerHTML =
-      "iOS doesn't support Web MIDI in any browser - Safari, Chrome, and " +
-      "Firefox for iOS all use Apple's WebKit engine under the hood, which " +
-      "hasn't implemented it. Open this page on a desktop browser, or on " +
-      '<strong>Chrome</strong>/<strong>Edge</strong> on Android, instead.';
-  }
-  el('no-midi-banner').hidden = false;
   connectBtn.disabled = true;
 }
 

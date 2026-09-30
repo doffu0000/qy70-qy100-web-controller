@@ -9,17 +9,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QY70 / QY100 Web Console</title>
-<meta name="robots" content="noindex, indexifembedded">
-<meta property="og:title" content="QY70 / QY100 Web Console">
-<meta property="og:description" content="Control your Yamaha QY70/QY100 live from your browser - customize voices and drum kits, edit every parameter, and save/load your own presets.">
-<meta property="og:image" content="https://qy100.doffu.net/wp-content/uploads/2026/08/qy100-console-og-image.png">
-<meta property="og:url" content="https://qy100.doffu.net/wp-content/uploads/qy70-qy100-web-console/index.html">
+<title>Yamaha QY70 / QY100 Web Console: Free Online Editor &amp; Data Filer</title>
+<meta name="description" content="Free browser editor for the Yamaha QY70 and QY100. Edit voices, effects and drum kits live over Web MIDI, and back up songs and styles (.BLK/.Q1A).">
+<link rel="canonical" href="https://qy100.doffu.net/yamaha-qy70-qy100-web-console/">
+<link rel="icon" href="icons/icon-192.png">
+<meta property="og:title" content="Yamaha QY70 / QY100 Web Console">
+<meta property="og:description" content="Free browser-based editor for the Yamaha QY70 and QY100: live voice, effect and drum kit editing, song and style backup/restore, and MIDI file import.">
+<meta property="og:image" content="https://qy100.doffu.net/wp-content/uploads/2025/10/100-2-1-scaled-e1787804388155.jpg">
+<meta property="og:url" content="https://qy100.doffu.net/yamaha-qy70-qy100-web-console/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Yamaha QY70 / QY100 Web Console","url":"https://qy100.doffu.net/yamaha-qy70-qy100-web-console/","applicationCategory":"MultimediaApplication","operatingSystem":"Chrome, Edge or Opera with Web MIDI","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free browser-based editor and data filer for the Yamaha QY70 and QY100 sequencers."}
+</script>
+<meta name="theme-color" content="#475260">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="./css/fonts.css">
 <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -32,13 +37,12 @@
       </a>
       <h1>QY70 / QY100 Web Console</h1>
     </div>
-    <button type="button" id="join-btn">Support Future Projects</button>
+    <div id="header-actions">
+      <button type="button" id="install-app-btn">Install App</button>
+      <button type="button" id="join-btn">Support Future Projects</button>
+    </div>
   </div>
-  <p class="hint required" id="no-midi-banner" hidden>
-    This browser doesn't support Web MIDI, so this app can't reach your
-    device. Open this page in <strong>Chrome</strong> or <strong>Edge</strong>
-    instead.
-  </p>
+  <p class="hint required" id="browser-banner" hidden></p>
   <div id="connect-bar">
     <div class="connect-left-column">
     <div class="connect-row connect-row-1-left">
@@ -770,6 +774,12 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
   </div>
 </dialog>
 
+<dialog id="install-dialog" class="app-dialog">
+  <h3 class="app-dialog-title" id="install-dialog-title"></h3>
+  <div id="install-dialog-body"></div>
+  <div class="app-dialog-actions" id="install-dialog-actions"></div>
+</dialog>
+
 <dialog id="support-dialog" class="app-dialog wide-dialog">
   <h3 class="app-dialog-title">Support Future Projects</h3>
   <div class="dialog-body">
@@ -859,5 +869,6 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
 <div id="global-tooltip" role="tooltip"></div>
 
 <script type="module" src="./js/app.js"></script>
+<script type="module" src="./js/install.js"></script>
 </body>
 </html>

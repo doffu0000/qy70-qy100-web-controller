@@ -103,6 +103,107 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* Same shape and font as #join-btn, outlined so the two header buttons
+   read as a pair rather than two competing calls to action. */
+#install-app-btn {
+  flex-shrink: 0;
+  padding: 9px 19px;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--accent);
+  font-family: "Sora", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+#install-app-btn:hover {
+  background: var(--accent);
+  color: #ffffff;
+  opacity: 1;
+}
+
+/* Running as the installed app: there's nothing left to install, and only
+   Explorer supporters can install it, so no support pitch either. */
+@media (display-mode: standalone), (display-mode: minimal-ui), (display-mode: fullscreen), (display-mode: window-controls-overlay) {
+  #install-app-btn, #join-btn { display: none; }
+}
+
+/* #join-btn sets its own display, which would otherwise beat [hidden]. */
+#header-actions [hidden] {
+  display: none;
+}
+
+/* Non-Chromium browsers only (install.js): which browsers to use instead. */
+#browser-banner a {
+  color: inherit;
+  font-weight: 600;
+}
+
+#browser-banner .browser-banner-button {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 5px;
+  background: var(--accent);
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+#install-dialog-body {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 1.1rem;
+}
+
+#install-dialog-body p {
+  margin: 0 0 0.65rem;
+}
+
+#install-dialog-body ul {
+  margin: 0 0 0.65rem;
+  padding-left: 1.2rem;
+}
+
+#install-dialog-body .install-dialog-verify {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+#install-dialog-body .install-dialog-verify a {
+  color: inherit;
+}
+
+/* Patreon dialogs get the rainbow frame qy100.doffu.net uses for its
+   console card and its Patreon pop-up. */
+#install-dialog.patreon-dialog {
+  border: 4px solid transparent;
+  border-radius: 18px;
+  background:
+    linear-gradient(var(--bg), var(--bg)) padding-box,
+    conic-gradient(from 0deg, #ff5733, #ffc300, #33ff57, #33a1ff, #8a33ff, #ff33a8, #ff5733) border-box;
+}
+
+/* A link that opens a page (Patreon) but looks like the dialog's buttons. */
+.app-dialog-actions a.dialog-link-button {
+  display: inline-block;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.app-dialog-actions a.dialog-link-button.btn-warning {
+  background: var(--qy100);
+  border-color: var(--qy100);
 }
 
 /* A 2-column flex layout (not a shared-row grid): the left row (Find
