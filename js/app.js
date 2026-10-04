@@ -4,11 +4,11 @@
 // Support future development: <https://www.patreon.com/doffu>
 
 import { MidiLink } from './midi.js';
-import { buildXgSystemOn, buildGmSystemOn, buildMessageWindow, buildMessageWindowLine, buildSectionControl, SECTION, buildSongSelect, buildBitmapWindow, buildQyBulkDumpRequest, buildQyBulkModeOn, buildQyBulkModeOff, qyAddressForModel, qyRewriteAddressForWrite, qyModelFromDump, MODEL_ID_QY, qySongAddress, qyPatternAddress, QY_ALL_DATA_ADDRESS } from './sysex.js';
+import { buildXgSystemOn, buildGmSystemOn, buildParameterChange, buildMessageWindow, buildMessageWindowLine, buildSectionControl, SECTION, buildSongSelect, buildBitmapWindow, buildQyBulkDumpRequest, buildQyBulkModeOn, buildQyBulkModeOff, qyAddressForModel, qyRewriteAddressForWrite, qyModelFromDump, MODEL_ID_QY, qySongAddress, qyPatternAddress, QY_ALL_DATA_ADDRESS } from './sysex.js';
 import { encodeMonoBmp16x16, decodeMonoBmp } from './bmp.js';
 import { encodeAnimatedGif, decodeAnimatedGif } from './gif.js';
 import { loadVoices, filterVoices, categoriesFor, bankLabel, voiceDisplayName } from './voices.js';
-import { loadParameters, expandRows, sendParam, sendParamGroup, configureControllerSend, isControllerSendEnabled } from './params.js';
+import { loadParameters, expandRows, sendParam, sendParamGroup, configureControllerSend, isControllerSendEnabled, nibbleUnpack } from './params.js';
 import { controllerFor, controllerLabel } from './controllers.js';
 import { createKnob, createToggle, createMultiToggle, setContinuousSendMs } from './knob.js';
 import { isStandardMidiFile, unwrapMidiFile, convertMidiToQySong } from './smf.js';
@@ -34,7 +34,9 @@ let selectedVoiceLabel = null;
 // Kit/SFX Kit voice (not a preset) - Save Kit needs its bank/program to
 // embed in the .qykit file so Load Kit can select the right kit voice.
 let selectedVoiceObj = null;
-const expandedVoices = new Set();
+// Voices whose preset list the user has collapsed - every voice with
+// presets starts expanded.
+const collapsedVoices = new Set();
 
 // A live mirror of every parameter the user has touched this session, kept
 // independent of the DOM (only one section/part's knobs are ever actually
@@ -56,6 +58,9 @@ const paramState = {
 };
 function paramContextKey(sectionKey, context) {
   if (sectionKey === 'multiPart') return String(context.part);
+  // Channel-message sections (CCs, Pitch Bend, RPN/NRPN...) remember
+  // values per MIDI channel ('all' has its own memory too).
+  if ('channel' in context) return String(context.channel);
   if (sectionKey === 'drumSetup') return `${context.kitKey}:${context.note}`;
   return 'global';
 }
@@ -310,6 +315,50 @@ function parseRawSysexInput(text) {
 el('raw-sysex-send-btn').addEventListener('click', () => {
   try {
     link.send(parseRawSysexInput(el('raw-sysex-input').value));
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+// XG Address: a Parameter Change (or Parameter Request) to any address,
+// typed as hex. Data may be several bytes for multi-byte values.
+function parseHexBytes(text, { allowEmpty = false } = {}) {
+  const parts = text.trim().split(/[\s,.]+/).filter(Boolean);
+  if (!parts.length && !allowEmpty) throw new Error('Enter at least one hex byte.');
+  return parts.map((h) => {
+    if (!/^[0-9a-f]{1,2}$/i.test(h)) throw new Error(`"${h}" is not a hex byte.`);
+    const v = parseInt(h, 16);
+    if (v > 0x7f) throw new Error(`${h} is above 7F; SysEx data bytes must be 00 to 7F.`);
+    return v;
+  });
+}
+function xgAddressBytes() {
+  return ['xg-addr-high', 'xg-addr-mid', 'xg-addr-low'].map((id) => {
+    const [v] = parseHexBytes(el(id).value || el(id).placeholder);
+    return v;
+  });
+}
+const hex2 = (b) => b.toString(16).toUpperCase().padStart(2, '0');
+function refreshXgAddressPreview() {
+  try {
+    const bytes = buildParameterChange(0, xgAddressBytes(), parseHexBytes(el('xg-addr-data').value || el('xg-addr-data').placeholder));
+    el('xg-addr-preview').textContent = `Sends: ${[...bytes].map(hex2).join(' ')}`;
+  } catch (err) {
+    el('xg-addr-preview').textContent = err.message;
+  }
+}
+for (const id of ['xg-addr-high', 'xg-addr-mid', 'xg-addr-low', 'xg-addr-data']) el(id).addEventListener('input', refreshXgAddressPreview);
+refreshXgAddressPreview();
+el('xg-addr-send-btn').addEventListener('click', () => {
+  try {
+    link.send(buildParameterChange(0, xgAddressBytes(), parseHexBytes(el('xg-addr-data').value || el('xg-addr-data').placeholder)));
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+el('xg-addr-request-btn').addEventListener('click', () => {
+  try {
+    link.send(new Uint8Array([0xf0, 0x43, 0x30, 0x4c, ...xgAddressBytes(), 0xf7]));
   } catch (err) {
     statusEl.textContent = `Error: ${err.message}`;
   }
@@ -2392,6 +2441,11 @@ function showGlobalTooltip(target) {
   const text = target.dataset.tooltip;
   if (!text) return;
   globalTooltipTarget = target;
+  // A modal <dialog> sits in the browser's top layer, above anything in
+  // the page no matter its z-index, so an icon inside one (e.g. showConfirm's
+  // checkbox info) needs the tooltip moved into that dialog to be seen.
+  const host = target.closest('dialog[open]') || document.body;
+  if (globalTooltip.parentElement !== host) host.appendChild(globalTooltip);
   globalTooltip.textContent = text;
   globalTooltip.classList.add('visible');
   positionGlobalTooltip(target);
@@ -2473,6 +2527,105 @@ function presetsFor(v) {
     p.voice.bankLsb === v.bankLsb && p.voice.program === v.program);
 }
 
+// ---- Apply to Highlighted Part ----
+// "Highlighted Part" in Apply to asks the QY which track is highlighted
+// (detectHighlightedChannel) and then sends the voice/preset to that part
+// as ordinary part-addressed SysEx. If the QY can't answer, nothing is sent:
+// the user is told which QY MIDI setting to change instead.
+const HIGHLIGHTED_PART = 'highlighted';
+const isHighlightedTarget = () => voicePartSelect.value === HIGHLIGHTED_PART;
+const applyTargetLabel = () => (isHighlightedTarget() ? 'the highlighted part on the QY70/QY100' : partLabel(Number(voicePartSelect.value)));
+
+// Shown (and nothing sent) when the QY can't say which track is highlighted.
+const HIGHLIGHT_DETECT_FAILURES = {
+  noInput: 'Select your QY\'s port under MIDI In at the top of the page. Highlighted Part needs to hear back from the QY to find out which track is highlighted.',
+  thru: 'In the QY\'s UTILITY > MIDI settings, ECHO BACK is set to Thru. Set it to RecMontr to use Highlighted Part.',
+  noReply: 'In the QY\'s UTILITY > MIDI settings, either ECHO BACK or PATT OUT CH is turned Off. Set ECHO BACK to RecMontr and PATT OUT CH to 1~8 or 9~16 to use Highlighted Part.',
+};
+
+// Asks the QY which track is highlighted. With Utility Echo Back on
+// RecMontr the QY re-sends whatever reaches MIDI IN out of MIDI OUT on the
+// highlighted track's channel (confirmed on the user's QY100, stopped, in
+// both Song and Pattern mode), so a harmless RPN null sent on channel 15
+// and then 16 comes back on that one channel. Every echo within a short
+// window is collected per probe, and the highlighted channel is the one
+// both probes came back on: an echo on the probe's own channel alone (Echo
+// Back on Thru, or an interface that loops messages back) says nothing.
+// Resolves to the 0-based channel, or { failure } with a reason key.
+const HIGHLIGHT_PROBE_CHANNELS = [14, 15];
+const HIGHLIGHT_PROBE_WINDOW_MS = 250;
+function collectMidi(predicate, windowMs) {
+  return new Promise((resolve) => {
+    const got = [];
+    // Never "matches", so notifyMidiWaiters keeps feeding it until the
+    // window closes.
+    const waiter = { predicate: (b) => { if (predicate(b)) got.push(b); return false; }, resolve: () => {} };
+    midiWaiters.add(waiter);
+    setTimeout(() => { midiWaiters.delete(waiter); resolve(got); }, windowMs);
+  });
+}
+// The raw probe: the channels each of the two RPN nulls came back on.
+// Throws if nothing can be sent (no MIDI Out).
+async function probeEchoChannels() {
+  const isProbeEcho = (b) => b.length === 3 && (b[0] & 0xf0) === 0xb0 && b[1] === 0x65 && b[2] === 0x7f;
+  const echoSets = [];
+  for (const ch of HIGHLIGHT_PROBE_CHANNELS) {
+    const collecting = collectMidi(isProbeEcho, HIGHLIGHT_PROBE_WINDOW_MS);
+    link.send(new Uint8Array([0xb0 | ch, 0x65, 0x7f]));
+    link.send(new Uint8Array([0xb0 | ch, 0x64, 0x7f]));
+    echoSets.push(new Set((await collecting).map((b) => b[0] & 0x0f)));
+  }
+  return echoSets;
+}
+
+// Reads a probe result: the highlighted channel, or { failure }.
+function interpretEcho([first, second]) {
+  const common = [...first].filter((c) => second.has(c));
+  if (common.length === 1) return common[0];
+  if (!first.size && !second.size) return { failure: 'noReply' };
+  return { failure: first.has(HIGHLIGHT_PROBE_CHANNELS[0]) && second.has(HIGHLIGHT_PROBE_CHANNELS[1]) ? 'thru' : 'noReply' };
+}
+
+async function detectHighlightedChannel() {
+  if (!link.input) return { failure: 'noInput' };
+  try {
+    return interpretEcho(await probeEchoChannels());
+  } catch {
+    return { failure: 'noReply' };
+  }
+}
+
+// What "Highlighted Part" resolves to for one push: a real part number once
+// the QY says which track is highlighted (the user picks Song or Pattern
+// mode, since the echo channel is the same for Track 3 and Pattern track 3),
+// or null if it can't tell (the user is told why) or the user cancels.
+// The Song/Pattern answer is remembered for next time.
+const HIGHLIGHT_MODE_KEY = 'qyHighlightedPartMode';
+async function resolveHighlightedTarget(name, { pull = false, intoLabel = '' } = {}) {
+  const detected = await detectHighlightedChannel();
+  if (typeof detected === 'number') {
+    const songPart = detected;
+    const patternPart = 16 + (detected % 8);
+    let lastMode = 'song';
+    try { lastMode = localStorage.getItem(HIGHLIGHT_MODE_KEY) || 'song'; } catch { /* keep Song */ }
+    const target = await showSaveAsDialog({
+      title: pull ? 'Pull the highlighted track' : `Apply ${name} to the highlighted track`,
+      targetLabelText: 'The QY is in',
+      populateTarget: (selectEl) => {
+        selectEl.innerHTML = `<option value="${songPart}">Song Mode</option>`
+          + `<option value="${patternPart}">Pattern Mode</option>`;
+      },
+      defaultTarget: String(lastMode === 'pattern' ? patternPart : songPart),
+      message: `The QY70/QY100 reports the highlighted track is on MIDI channel ${detected + 1}: ${partLabel(songPart)} in Song Mode, ${partLabel(patternPart)} in Pattern Mode. ${pull ? `Pick the mode it's in and that part's settings are read from the QY into ${intoLabel} in the console.` : "Pick the mode it's in and the full voice is sent to that part."}`,
+    });
+    if (target === null) return null;
+    try { localStorage.setItem(HIGHLIGHT_MODE_KEY, Number(target) === patternPart ? 'pattern' : 'song'); } catch { /* not remembered */ }
+    return Number(target);
+  }
+  await showAlert('Highlighted Part Unavailable', `${HIGHLIGHT_DETECT_FAILURES[detected.failure]} Or pick a part number in Apply to instead.`);
+  return null;
+}
+
 // Picking a voice or preset only ever targets the one part selected in the
 // Voice Browser's own Part picker - it used to blast to every part (or ride
 // the connect bar's Channel for 1-16 and leave 17-32 unreachable), which
@@ -2480,7 +2633,9 @@ function presetsFor(v) {
 // device. Voice selection goes through Multi Part's own Bank Select/Program
 // Number XG Parameter Change rows (part-addressed) rather than plain MIDI
 // Bank Select/Program Change (channel-addressed), so it works identically
-// for all 32 parts, not just the 16 that map to a live channel.
+// for all 32 parts, not just the 16 that map to a live channel. It stays
+// SysEx even with Send as CC/NRPN on (forceSysex): a Program Change goes to
+// the track highlighted on the QY, not the part picked here.
 function applyVoiceToPart(part, voice) {
   const section = parameters.multiPart;
   const store = getParamStore('multiPart', String(part));
@@ -2489,16 +2644,12 @@ function applyVoiceToPart(part, voice) {
     ['Bank Select LSB', voice.bankLsb],
     ['Program Number', voice.program - 1], // voices.json's Program # is 1-128; wire value is 0-127
   ];
-  // Record all three first: with Send as CC/NRPN on, each send is a full
-  // Bank Select + Program Change built from the store, so sending just the
-  // last one avoids briefly selecting a half-updated voice.
   for (const [name, value] of fields) store[name] = value;
-  const toSend = isControllerSendEnabled() ? fields.slice(-1) : fields;
-  for (const [name, value] of toSend) {
+  for (const [name, value] of fields) {
     const row = section.params.find((r) => r.name === name);
     if (!row) continue;
     try {
-      sendParam(link, 0, section, { part }, row, value);
+      sendParam(link, 0, section, { part, forceSysex: true }, row, value);
     } catch (err) {
       statusEl.textContent = `Error: ${err.message}`;
     }
@@ -2536,6 +2687,9 @@ function resetPartToDefaults(part) {
   const store = getParamStore('multiPart', String(part));
   const context = { part };
   for (const row of expandRows(section.params)) {
+    // External XG rows set up another tone generator, not this part's
+    // voice, so a voice/preset pick leaves them as they are.
+    if (isExternalRow(row)) continue;
     const value = resolveDefault(row, context);
     if (typeof value !== 'number') continue;
     // Record before sending (and keep going even if a send fails) so one
@@ -2543,7 +2697,7 @@ function resetPartToDefaults(part) {
     // holding a stale value for the parts it never reached.
     store[row.name] = value;
     try {
-      sendParam(link, 0, section, { part }, row, value);
+      sendParam(link, 0, section, { part, forceSysex: true }, row, value);
     } catch (err) {
       statusEl.textContent = `Error: ${err.message}`;
     }
@@ -2572,7 +2726,7 @@ function applyPreset(preset, part) {
     if (row) {
       store[row.name] = p.value;
       try {
-        sendParam(link, 0, section, { part }, row, p.value);
+        sendParam(link, 0, section, { part, forceSysex: true }, row, p.value);
       } catch (err) {
         statusEl.textContent = `Error: ${err.message}`;
       }
@@ -2581,7 +2735,7 @@ function applyPreset(preset, part) {
   refreshIfViewingPart(part);
 }
 
-// A preset built from a full 32-part .qyvoice snapshot (see promptDsSlotChannel's
+// A preset built from a full 24-part .qyvoice snapshot (see promptDsSlotChannel's
 // sibling saveVoiceBtn handler) has its own per-part voice baked into each
 // part's own Bank Select/Program Number - unlike a curated single-part
 // preset, there's no single shared base voice to apply first, so this just
@@ -2589,11 +2743,12 @@ function applyPreset(preset, part) {
 // applyUserVoiceParamsToPart, which already handles a full row object).
 // Ignores "Apply to" Part entirely, same reasoning as loading a full User
 // Voice. Yields between parts and reports progress since this is a lot of
-// data (up to 32 x ~48 messages).
-async function applyPresetAllParts(preset, onProgress) {
-  const partKeys = Object.keys(preset.parts);
+// data (up to 24 x ~100 messages).
+async function applyPresetAllParts(preset, onProgress, options) {
+  // Older 32-part files: parts 25-32 don't exist on the QY, so skip them.
+  const partKeys = Object.keys(preset.parts).filter((k) => Number(k) < QY_PART_COUNT);
   for (let i = 0; i < partKeys.length; i++) {
-    applyUserVoiceParamsToPart(Number(partKeys[i]), preset.parts[partKeys[i]]);
+    applyUserVoiceParamsToPart(Number(partKeys[i]), preset.parts[partKeys[i]], options);
     onProgress?.(i + 1, partKeys.length);
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
@@ -2609,6 +2764,10 @@ async function applyPresetAllParts(preset, onProgress) {
 // leaves that part's own Rcv Channel alone (which follows the part number
 // by default) instead of carrying over whatever channel the source part
 // happened to be listening on.
+// External XG rows (see EXTERNAL_XG_NOTE) are always captured, but they're
+// settings for another tone generator rather than this part's voice, so
+// applying only sends them when the user ticks "Load External XG
+// Parameters" in the Apply confirmation (see confirmApplyVoice).
 const VOICE_SNAPSHOT_EXCLUDE = new Set(['Rcv Channel']);
 
 function snapshotPartVoice(part) {
@@ -2627,29 +2786,31 @@ function snapshotPartVoice(part) {
 // Unlike applyPreset, there's no "reset touched params first" step needed -
 // a snapshot already has a value for every row, so it fully overwrites the
 // part on its own.
-function applyUserVoiceParamsToPart(part, params) {
+function applyUserVoiceParamsToPart(part, params, { includeExternal = false } = {}) {
   const section = parameters.multiPart;
   const store = getParamStore('multiPart', String(part));
   for (const row of expandRows(section.params)) {
     if (VOICE_SNAPSHOT_EXCLUDE.has(row.name) || !(row.name in params)) continue;
+    if (isExternalRow(row) && !includeExternal) continue;
     const value = params[row.name];
     store[row.name] = value;
     try {
-      sendParam(link, 0, section, { part }, row, value);
+      sendParam(link, 0, section, { part, forceSysex: true }, row, value);
     } catch (err) {
       statusEl.textContent = `Error: ${err.message}`;
     }
   }
 }
 
-// Applies every one of a saved User Voice's 32 Parts - a lot more data than
+// Applies every one of a saved User Voice's 24 Parts - a lot more data than
 // a single part, so this yields back to the event loop between parts
 // (keeping the tab responsive and letting a progress popup actually
 // repaint) and reports progress.
-async function applyUserVoiceAllParts(parts, onProgress) {
-  const partKeys = Object.keys(parts);
+async function applyUserVoiceAllParts(parts, onProgress, options) {
+  // Older 32-part files: parts 25-32 don't exist on the QY, so skip them.
+  const partKeys = Object.keys(parts).filter((k) => Number(k) < QY_PART_COUNT);
   for (let i = 0; i < partKeys.length; i++) {
-    applyUserVoiceParamsToPart(Number(partKeys[i]), parts[partKeys[i]]);
+    applyUserVoiceParamsToPart(Number(partKeys[i]), parts[partKeys[i]], options);
     onProgress?.(i + 1, partKeys.length);
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
@@ -2784,11 +2945,11 @@ function renderUserVoiceList() {
     li.querySelector('.push-voice-btn').addEventListener('click', async (evt) => {
       evt.stopPropagation();
       if (entry.parts) {
-        const ok = await showConfirm('Are you sure?', confirmApplyMessage(entry.name, 'all 32 Multi Part parts'), 'Apply', { html: true });
+        const { ok, includeExternal } = await confirmApplyVoice(entry.name, 'all 24 Multi Part parts', Object.values(entry.parts));
         if (!ok) return;
-        showProgress(`Loading ${entry.name}`, 'This applies all 32 Multi Part parts - avoid touching the QY70/QY100 until it finishes.');
+        showProgress(`Loading ${entry.name}`, 'This applies all 24 Multi Part parts - avoid touching the QY70/QY100 until it finishes.');
         try {
-          await applyUserVoiceAllParts(entry.parts, updateProgress);
+          await applyUserVoiceAllParts(entry.parts, updateProgress, { includeExternal });
         } catch (err) {
           statusEl.textContent = `Error: ${err.message}`;
         } finally {
@@ -2803,13 +2964,21 @@ function renderUserVoiceList() {
         // Legacy single-part .qyvoice files (saved before Save Voice
         // started capturing all 32 parts at once) still apply to whichever
         // Part is picked in "Apply to" above.
-        const part = Number(voicePartSelect.value);
-        const ok = await showConfirm('Are you sure?', confirmApplyMessage(entry.name, partLabel(part)), 'Apply', { html: true });
+        let part;
+        let ok;
+        let includeExternal = false;
+        if (isHighlightedTarget()) {
+          part = await resolveHighlightedTarget(entry.name);
+          ok = part !== null;
+        } else {
+          part = Number(voicePartSelect.value);
+          ({ ok, includeExternal } = await confirmApplyVoice(entry.name, partLabel(part), [entry.params]));
+        }
         if (!ok) return;
         showProgress(`Applying ${entry.name}`, 'Sends every Multi Part parameter for this voice to the device - avoid touching the QY70/QY100 until it finishes.');
         try {
           await new Promise((resolve) => setTimeout(resolve, 0));
-          applyUserVoiceParamsToPart(part, entry.params);
+          applyUserVoiceParamsToPart(part, entry.params, { includeExternal });
           updateProgress(1, 1);
           await new Promise((resolve) => setTimeout(resolve, 0));
         } catch (err) {
@@ -2926,18 +3095,18 @@ function renderVoiceList() {
     if (v.qy100Only) li.classList.add('qy100-only');
     const badge = v.qy100Only ? '<span class="qy100-badge" title="QY100 only - not present on QY70">QY100</span>' : '';
     const searchMatchesPreset = search && voicePresets.some((p) => p.name.toLowerCase().includes(search));
-    const expanded = expandedVoices.has(key) || searchMatchesPreset;
+    const expanded = !collapsedVoices.has(key) || searchMatchesPreset;
     const toggle = voicePresets.length
       ? `<button type="button" class="preset-toggle" title="${voicePresets.length} preset${voicePresets.length > 1 ? 's' : ''}">${expanded ? '▾' : '▸'}</button>`
       : '<span class="preset-toggle-spacer"></span>';
-    li.innerHTML = `${toggle}<span>${escapeHtml(voiceDisplayName(v))}${badge}</span>` +
+    li.innerHTML = `${toggle}<span class="voice-name">${escapeHtml(voiceDisplayName(v))}${badge}</span>` +
       `<span class="voice-meta">${escapeHtml(bankLabel(v.bank))} P${v.program} B${v.bankLsb}</span>` +
       `<button type="button" class="push-voice-btn">Push</button>`;
     if (voicePresets.length) {
       li.querySelector('.preset-toggle').addEventListener('click', (evt) => {
         evt.stopPropagation();
-        if (expandedVoices.has(key)) expandedVoices.delete(key);
-        else expandedVoices.add(key);
+        if (collapsedVoices.has(key)) collapsedVoices.delete(key);
+        else collapsedVoices.add(key);
         renderVoiceList();
       });
     }
@@ -2961,7 +3130,7 @@ function renderVoiceList() {
       const name = voiceDisplayName(v);
       let part;
       if (v.bank === 'drum' || v.bank === 'sfxkit') {
-        const ok = await showConfirm('Are you sure?', confirmApplyMessage(name, partLabel(Number(voicePartSelect.value))), 'Apply', { html: true });
+        const ok = await showConfirm('Are you sure?', confirmApplyMessage(name, applyTargetLabel()), 'Apply', { html: true });
         if (!ok) return;
         const ch = await promptDsSlotChannel('Which Drum Setup slot are you selecting this kit for?', {
           allowOtherTrack: true,
@@ -2972,7 +3141,8 @@ function renderVoiceList() {
         if (ch === 'other') {
           // Falls through to the regular Part-addressed apply below, same as
           // any non-drum voice.
-          part = Number(voicePartSelect.value);
+          part = isHighlightedTarget() ? await resolveHighlightedTarget(name) : Number(voicePartSelect.value);
+          if (part === null) return;
         } else {
           sendVoiceSelectToChannel(ch, v);
           selectedVoiceKey = key;
@@ -2990,6 +3160,9 @@ function renderVoiceList() {
           await showAlert('Kit selected', `${name} has been selected for Ds${ch + 1} (Channel ${ch + 1}). Navigate to Ds${ch + 1} on your device to hear it.`);
           return;
         }
+      } else if (isHighlightedTarget()) {
+        part = await resolveHighlightedTarget(name);
+        if (part === null) return;
       } else {
         part = Number(voicePartSelect.value);
         const ok = await showConfirm('Are you sure?', confirmApplyMessage(name, partLabel(part)), 'Apply', { html: true });
@@ -3044,7 +3217,7 @@ function renderVoiceList() {
           if (preset.notes) {
             const kitIndex = drumKits.findIndex((k) => k.bankMsb === v.bankMsb && k.program === v.program);
             if (kitIndex === -1) { statusEl.textContent = 'Error: this kit voice isn\'t in the current voice list.'; return; }
-            const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, partLabel(Number(voicePartSelect.value))), 'Apply', { html: true });
+            const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, applyTargetLabel()), 'Apply', { html: true });
             if (!ok) return;
             const kitKey = `${v.bankMsb}:${v.program}`;
             loadKitParamsIntoStore(kitKey, preset.notes);
@@ -3076,11 +3249,11 @@ function renderVoiceList() {
             await showAlert('Kit loaded', `Ds${ch + 1}'s parameters have been set to ${preset.name}. Navigate to Ds${ch + 1} on any track on your device to hear it.`);
             return;
           } else if (preset.parts) {
-            const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, 'all 32 Multi Part parts'), 'Apply', { html: true });
+            const { ok, includeExternal } = await confirmApplyVoice(preset.name, 'all 24 Multi Part parts', Object.values(preset.parts));
             if (!ok) return;
-            showProgress(`Applying ${preset.name}`, 'This applies all 32 Multi Part parts - avoid touching the QY70/QY100 until it finishes.');
+            showProgress(`Applying ${preset.name}`, 'This applies all 24 Multi Part parts - avoid touching the QY70/QY100 until it finishes.');
             try {
-              await applyPresetAllParts(preset, updateProgress);
+              await applyPresetAllParts(preset, updateProgress, { includeExternal });
             } catch (err) {
               statusEl.textContent = `Error: ${err.message}`;
             } finally {
@@ -3088,9 +3261,15 @@ function renderVoiceList() {
             }
             renderParamPanel();
           } else {
-            const part = Number(voicePartSelect.value);
-            const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, partLabel(part)), 'Apply', { html: true });
-            if (!ok) return;
+            let part;
+            if (isHighlightedTarget()) {
+              part = await resolveHighlightedTarget(preset.name);
+              if (part === null) return;
+            } else {
+              part = Number(voicePartSelect.value);
+              const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, partLabel(part)), 'Apply', { html: true });
+              if (!ok) return;
+            }
             showProgress(`Applying ${preset.name}`, 'Sends every Multi Part parameter for this preset to the device - avoid touching the QY70/QY100 until it finishes.');
             try {
               await new Promise((resolve) => setTimeout(resolve, 0));
@@ -3115,37 +3294,6 @@ function renderVoiceList() {
   updateSaveButtonsState();
 }
 
-// Parts 25-32 (the "Hidden" group in populatePartSelect, 0-indexed 24-31)
-// have no real bearing on Drum Setup's Ds1/Ds2/Ds3 slots or any live channel
-// (see promptDsSlotChannel/README.md) - a Drum Kit/SFX Kit/User Kit picked
-// for one of them can't ever be selected for a Ds slot or a channel that
-// matters, so those banks are removed from the dropdown entirely there
-// rather than letting the click end up going nowhere useful. "User Voice"
-// is never removed, so it doubles as the stable insertion point these are
-// restored relative to.
-const KIT_ONLY_BANKS = ['drum', 'sfxkit', 'userKit'];
-const kitOnlyBankOptions = Object.fromEntries(
-  KIT_ONLY_BANKS.map((bank) => [bank, bankSelect.querySelector(`option[value="${bank}"]`)]));
-const userVoiceOption = bankSelect.querySelector('option[value="userVoice"]');
-function isHiddenPart(part) {
-  return part >= 24 && part <= 31;
-}
-function updateBankSelectAvailability() {
-  const hidden = isHiddenPart(Number(voicePartSelect.value));
-  if (hidden) {
-    if (KIT_ONLY_BANKS.includes(bankSelect.value)) {
-      bankSelect.value = 'normal';
-      bankSelect.dispatchEvent(new Event('change'));
-    }
-    for (const bank of KIT_ONLY_BANKS) kitOnlyBankOptions[bank].remove();
-  } else {
-    if (!kitOnlyBankOptions.drum.isConnected) bankSelect.insertBefore(kitOnlyBankOptions.drum, userVoiceOption);
-    if (!kitOnlyBankOptions.sfxkit.isConnected) bankSelect.insertBefore(kitOnlyBankOptions.sfxkit, userVoiceOption);
-    if (!kitOnlyBankOptions.userKit.isConnected) bankSelect.appendChild(kitOnlyBankOptions.userKit);
-  }
-}
-voicePartSelect.addEventListener('change', updateBankSelectAvailability);
-
 // Switching banks shows a whole different list, so whatever was selected
 // before almost never still applies (Save Voice/Kit would otherwise stay
 // enabled from a stale selection nothing in the new list is highlighting).
@@ -3163,18 +3311,18 @@ categorySelect.addEventListener('change', () => {
 });
 searchBox.addEventListener('input', renderVoiceList);
 
-// No "which Part" prompt - captures every one of the 32 Multi Part parts in
+// No "which Part" prompt - captures every one of the 24 Multi Part parts in
 // one file, so this is a full Multi Part snapshot rather than a single
 // instrument sound.
 // Same Song Mode/Pattern Mode/Hidden groups as "Apply to" above, plus an
-// "All 32 Parts" choice up front - lets Save Voice capture either a single
+// "All 24 Parts" choice up front - lets Save Voice capture either a single
 // edited Part (giving Load Voice/Push its own Part picker again, same as a
 // legacy single-part preset) or a full multitimbral snapshot.
 function populateSaveVoiceTargetSelect(selectEl) {
   populatePartSelect(selectEl);
   const allOption = document.createElement('option');
   allOption.value = 'all';
-  allOption.textContent = 'All 32 Parts';
+  allOption.textContent = 'All 24 Parts';
   selectEl.insertBefore(allOption, selectEl.firstChild);
 }
 
@@ -3184,18 +3332,18 @@ saveVoiceBtn.addEventListener('click', async () => {
     title: 'Select Part to Save',
     targetLabelText: 'Part',
     populateTarget: populateSaveVoiceTargetSelect,
-    defaultTarget: voicePartSelect.value,
+    defaultTarget: isHighlightedTarget() ? 'all' : voicePartSelect.value,
   });
   if (target === null) return;
   let voiceFile;
   let savedDesc;
   if (target === 'all') {
     const parts = {};
-    for (let part = 0; part < 32; part++) {
+    for (let part = 0; part < QY_PART_COUNT; part++) {
       parts[part] = snapshotPartVoice(part);
     }
     voiceFile = { format: 'qyvoice', version: 2, savedAt: new Date().toISOString(), name, parts };
-    savedDesc = 'all 32 Parts';
+    savedDesc = 'all 24 Parts';
   } else {
     const part = Number(target);
     voiceFile = { format: 'qyvoice', version: 1, savedAt: new Date().toISOString(), name, params: snapshotPartVoice(part) };
@@ -3243,7 +3391,7 @@ async function loadVoiceFile(text, filename, { silent = false } = {}) {
     if (!overwrite) return false;
     userVoices.splice(existingIndex, 1);
   }
-  // data.parts is the current (all-32-parts) format; data.params is the
+  // data.parts is the current (all-parts) format; data.params is the
   // older single-part format, kept loadable for files saved before Save
   // Voice started capturing everything at once.
   userVoices.push(data.parts
@@ -3423,17 +3571,31 @@ const confirmDialogCancel = el('confirm-dialog-cancel');
 // message is plain text by default; pass html: true to instead set it via
 // innerHTML (e.g. for <strong> emphasis) - callers doing that must escape
 // any dynamic text themselves (see escapeHtml) since it's not double-escaped.
-function showConfirm(title, message, okLabel = 'Send', { html = false } = {}) {
+// checkbox ({ label, info, checked }) adds a tick box (with an info icon
+// when info is given) under the message; the result is then { ok, checked }
+// instead of a plain boolean.
+function showConfirm(title, message, okLabel = 'Send', { html = false, checkbox } = {}) {
   return new Promise((resolve) => {
     el('confirm-dialog-title').textContent = title;
     if (html) el('confirm-dialog-message').innerHTML = message;
     else el('confirm-dialog-message').textContent = message;
+    const checkboxRow = el('confirm-dialog-checkbox-row');
+    const checkboxInput = el('confirm-dialog-checkbox');
+    const checkboxInfo = el('confirm-dialog-checkbox-info');
+    checkboxRow.hidden = !checkbox;
+    if (checkbox) {
+      el('confirm-dialog-checkbox-text').textContent = checkbox.label;
+      checkboxInput.checked = !!checkbox.checked;
+      checkboxInfo.hidden = !checkbox.info;
+      checkboxInfo.dataset.tooltip = checkbox.info || '';
+    }
     confirmDialogCancel.hidden = false;
     confirmDialogOk.textContent = okLabel;
     const onOk = () => settle(true);
     const onCancel = () => settle(false);
     const onBackdropClick = (evt) => { if (evt.target === confirmDialog) settle(false); };
-    function settle(result) {
+    function settle(ok) {
+      const result = checkbox ? { ok, checked: checkboxInput.checked } : ok;
       confirmDialogOk.removeEventListener('click', onOk);
       confirmDialogCancel.removeEventListener('click', onCancel);
       confirmDialog.removeEventListener('cancel', onCancel);
@@ -3455,6 +3617,25 @@ function showConfirm(title, message, okLabel = 'Send', { html = false } = {}) {
 // it's escaped same as anywhere else it's shown as HTML. target is omitted
 // for the kit flows, where it isn't decided yet (Ds1/Ds2/Ds3/Dr/Sfx is asked
 // in a separate prompt right after this one).
+// Applying a saved voice/preset: asks whether to also load its External XG
+// Parameters, but only when it actually holds some (files saved before
+// they existed, and the curated presets, don't). paramSets is the list of
+// per-part param objects being applied. Resolves { ok, includeExternal }.
+const EXTERNAL_XG_LOAD_INFO = 'Sends the External XG Parameters saved with this voice (velocity limits, receive switches, scale tuning, poly aftertouch and assignable controller settings). '
+  + 'Tick it when the same external XG tone generator, such as an MU2000, is connected and you want its setup restored. '
+  + 'Leave it unticked to keep that module\'s current setup, or when no external module is connected, since the QY70 and QY100 ignore these settings anyway.';
+async function confirmApplyVoice(name, target, paramSets) {
+  const externalNames = new Set(parameters.multiPart.params.filter(isExternalRow).map((r) => r.name));
+  const hasExternal = paramSets.some((params) => params && Object.keys(params).some((k) => externalNames.has(k)));
+  const message = confirmApplyMessage(name, target);
+  if (!hasExternal) return { ok: await showConfirm('Are you sure?', message, 'Apply', { html: true }), includeExternal: false };
+  const result = await showConfirm('Are you sure?', message, 'Apply', {
+    html: true,
+    checkbox: { label: 'Load External XG Parameters', info: EXTERNAL_XG_LOAD_INFO, checked: false },
+  });
+  return { ok: result.ok, includeExternal: result.ok && result.checked };
+}
+
 function confirmApplyMessage(name, target) {
   const boldName = `<strong>${escapeHtml(name)}</strong>`;
   return target ? `Apply ${boldName} to <strong>${escapeHtml(target)}</strong>?` : `Apply ${boldName}?`;
@@ -3477,6 +3658,7 @@ function showAlert(title, message) {
   return new Promise((resolve) => {
     el('confirm-dialog-title').textContent = title;
     el('confirm-dialog-message').textContent = message;
+    el('confirm-dialog-checkbox-row').hidden = true;
     confirmDialogCancel.hidden = true;
     confirmDialogOk.textContent = 'OK';
     const onOk = () => settle();
@@ -3637,19 +3819,33 @@ function sendMessageWindow(text) {
 // (see setContinuousSendMs in knob.js). Remembered per browser as a
 // convenience only. Storage may be unavailable, so it falls back to the
 // markup's default either way.
-// Renamed from 'qyKnobSendRateMs' when the default moved to 120ms, so a
-// value saved during earlier testing (60ms) doesn't keep overriding it.
-const KNOB_SEND_RATE_KEY = 'qyContinuousSendRateMs';
-const knobSendRateSelect = el('knob-send-rate');
-try {
-  const saved = localStorage.getItem(KNOB_SEND_RATE_KEY);
-  if (saved && [...knobSendRateSelect.options].some((o) => o.value === saved)) knobSendRateSelect.value = saved;
-} catch { /* storage unavailable, keep the default */ }
-setContinuousSendMs(Number(knobSendRateSelect.value));
-knobSendRateSelect.addEventListener('change', () => {
-  setContinuousSendMs(Number(knobSendRateSelect.value));
-  try { localStorage.setItem(KNOB_SEND_RATE_KEY, knobSendRateSelect.value); } catch { /* see above */ }
-});
+// Renamed each time the default changes so an old saved rate doesn't keep
+// overriding it: 'qyKnobSendRateMs' (60ms testing) -> 'qyContinuousSendRateMs'
+// (120ms default) -> this one (1ms default, index.html).
+const KNOB_SEND_RATE_KEY = 'qyContinuousSendRateMsV2';
+// A 1-300 ms slider with an exact-value box beside it, kept in sync.
+const SEND_RATE_MIN = 1;
+const SEND_RATE_MAX = 300;
+const knobSendRateSlider = el('knob-send-rate');
+const knobSendRateInput = el('knob-send-rate-ms');
+const clampSendRate = (v) => Math.min(SEND_RATE_MAX, Math.max(SEND_RATE_MIN, Math.round(Number(v)) || SEND_RATE_MIN));
+function applySendRate(ms, { save = false } = {}) {
+  const v = clampSendRate(ms);
+  knobSendRateSlider.value = String(v);
+  knobSendRateInput.value = String(v);
+  setContinuousSendMs(v);
+  if (save) {
+    try { localStorage.setItem(KNOB_SEND_RATE_KEY, String(v)); } catch { /* storage unavailable, this session only */ }
+  }
+}
+let savedSendRate = null;
+try { savedSendRate = localStorage.getItem(KNOB_SEND_RATE_KEY); } catch { /* keep the default */ }
+applySendRate(savedSendRate ?? knobSendRateSlider.value);
+knobSendRateSlider.addEventListener('input', () => applySendRate(knobSendRateSlider.value));
+knobSendRateSlider.addEventListener('change', () => applySendRate(knobSendRateSlider.value, { save: true }));
+// The box applies on Enter/leaving it (change), so typing "12" doesn't
+// briefly apply 1 ms on the way.
+knobSendRateInput.addEventListener('change', () => applySendRate(knobSendRateInput.value, { save: true }));
 
 // Send as CC/NRPN (see controllers.js and configureControllerSend in
 // params.js). On by default and remembered per browser like the send rate.
@@ -3798,9 +3994,17 @@ const partSelect = el('part-select');
 const drumkitSelect = el('drumkit-select');
 const noteSelect = el('note-select');
 const drumSetupHint = el('drum-setup-hint');
+const channelSectionHint = el('channel-section-hint');
+const sectionNoteEl = el('section-note');
+const pinnedControlsEl = el('pinned-controls');
 const pushDrumParamsBtn = el('push-drum-params-btn');
 const pushParamsBtn = el('push-params-btn');
 const pushAllPartsBtn = el('push-all-parts-btn');
+const pullParamsBtn = el('pull-params-btn');
+const pullAllPartsBtn = el('pull-all-parts-btn');
+const pullHighlightedBtn = el('pull-highlighted-btn');
+const pullKitBtn = el('pull-kit-btn');
+const pullInfoIcon = el('pull-info');
 const paramListEl = el('param-list');
 let currentSectionResetFns = [];
 
@@ -3881,6 +4085,10 @@ function noteName(n) {
 // Mode's 16 general-purpose parts, so labeling them helps identify which
 // pattern track "Apply to" is targeting.
 const PATTERN_MODE_PART_LABELS = ['D1', 'D2', 'PC', 'BA', 'C1', 'C2', 'C3', 'C4'];
+// The QY70/QY100 have 24 XG parts: 1-16 for Song tracks, 17-24 for Pattern
+// tracks. Parts 25-32 exist in the XG spec but were confirmed on a real
+// QY100 to neither answer nor sound, so the console leaves them out.
+const QY_PART_COUNT = 24;
 
 // Matches the "Part N - D1" style labeling populatePartSelect gives Pattern
 // Mode's options, for reuse in confirmation dialog wording.
@@ -3895,8 +4103,7 @@ function populatePartSelect(selectEl) {
       `<option value="${from + i}">Part ${from + i + 1}${labels ? ` - ${labels[i]}` : ''}</option>`).join('')}</optgroup>`;
   selectEl.innerHTML =
     group('Song Mode', 0, 15) +
-    group('Pattern Mode', 16, 23, PATTERN_MODE_PART_LABELS) +
-    group('Hidden', 24, 31);
+    group('Pattern Mode', 16, 23, PATTERN_MODE_PART_LABELS);
 }
 
 let drumKits = [];
@@ -3972,7 +4179,23 @@ function handleIncomingNoteOn(bytes) {
   renderParamPanel();
 }
 
+// A channel section's context: which channel to send on, and a lookup of
+// the other rows' current values on that channel (Poly Aftertouch's note,
+// the custom RPN/NRPN builder), falling back to each row's default.
+function channelContext(sectionKey, channel) {
+  return {
+    channel,
+    lookup: (name) => {
+      const stored = getParamStore(sectionKey, String(channel))[name];
+      if (stored !== undefined) return stored;
+      const row = parameters[sectionKey].params.find((r) => r.name === name);
+      return row?.default ?? row?.dataMin ?? 0;
+    },
+  };
+}
+
 function currentContext(sectionKey) {
+  if (parameters[sectionKey]?.kind === 'channel') return channelContext(sectionKey, currentChannel());
   if (sectionKey === 'multiPart') {
     return { part: Number(partSelect.value || 0) };
   }
@@ -4007,11 +4230,41 @@ function resolveDefault(row, context) {
 // of a rotary knob (Reset stays the same for both).
 const TOGGLE_PARAMS = new Set(['VariMode', 'Mono/Poly Mode', 'Portamento Switch', 'Key Assign', 'Rcv Note Off', 'Rcv Note On']);
 
+// Every parameter carries a support tag saying who responds to it:
+//   qy   - the QY70/QY100 itself (the default when a row has no "tag")
+//   xg   - standard XG the QY70/QY100 ignore (its Data Lists mark the
+//          address Not Used), for external XG gear like an MU2000
+//   midi - no fixed meaning, depends on the receiving device
+// Tags aren't shown as badges any more (badges say how a row is sent); xg
+// rows are marked by living in the External XG sections, and a midi row's
+// send badge tooltip says the QY ignores it.
+const PARAM_TAGS = {
+  qy: { badge: 'QY', title: 'The QY70/QY100 responds to this.' },
+  xg: { badge: 'XG', title: 'Standard XG parameter the QY70/QY100 ignore. It takes effect on external XG gear such as an MU100, MU1000 or MU2000.' },
+  midi: { badge: 'MIDI', title: 'No fixed meaning. What it does depends on the device receiving it.' },
+};
+const paramTag = (row) => row.tag ?? 'qy';
+const isExternalRow = (row) => paramTag(row) !== 'qy';
+
+// Multi Part's external rows (tag xg) are shown in their own collapsible
+// "External XG Parameters" section (see renderParamPanel). Their on/off
+// Receive Switches get a toggle via isToggleRow below.
+const EXTERNAL_XG_NOTE = 'These Multi Part parameters are part of the XG standard, but the QY70 and QY100 ignore them (their Data Lists mark these addresses as Not Used). '
+  + 'They take effect on an external XG tone generator such as an MU100, MU1000 or MU2000 that receives this console\'s output, '
+  + 'or record them into a QY song with Punch Insert or Rec-Arm Insert so the song sends them out the QY\'s MIDI OUT on playback. '
+  + 'Picking a voice or preset leaves them unchanged. Save Voice always stores them, and applying a saved voice asks whether to load them. '
+  + 'Push, Push All Parts and Reset All include them.';
+const EXTERNAL_XG_OPEN_KEY = 'qyExternalXgOpen';
+let externalXgOpen = false;
+try { externalXgOpen = localStorage.getItem(EXTERNAL_XG_OPEN_KEY) === '1'; } catch { /* storage unavailable, start collapsed */ }
+const isToggleRow = (row, baseName) => TOGGLE_PARAMS.has(baseName) || (isExternalRow(row) && row.dataMin === 0 && row.dataMax === 1);
+
 // These knobs pick an identity (which voice, which bank) rather than a
 // smooth quality - continuously transmitting while dragging through them
 // would just rapid-fire voice changes, not a useful live tweak. Effect Type
 // rows are excluded separately via isEffectTypeRow for the same reason.
-const NON_CONTINUOUS_PARAMS = new Set(['Bank Select', 'Program Number']);
+const NON_CONTINUOUS_PARAMS = new Set(['Bank Select', 'Program Number', 'Program Change',
+  'Insertion 1 Type', 'Insertion 2 Type', 'Insertion 3 Type', 'Insertion 4 Type']);
 
 // Params that pick between named modes (3+ discrete states) get a
 // segmented switch instead of a rotary knob; the array index is the wire
@@ -4019,6 +4272,8 @@ const NON_CONTINUOUS_PARAMS = new Set(['Bank Select', 'Program Number']);
 const MULTI_TOGGLE_PARAMS = {
   'Same Note Number Key On Assign': { labels: ['Single', 'Multi', 'Inst (Drum)'] },
   'Part Mode': { labels: ['Normal', 'Drum Thru', 'Drum 1', 'Drum 2'] },
+  'Custom Parameter Type': { labels: ['NRPN', 'RPN'] },
+  'EQ Type': { labels: ['Flat', 'Jazz', 'Pops', 'Rock', 'Classic'] },
 };
 
 // A few params have a raw-hex/wire-value description that's more useful
@@ -4095,7 +4350,49 @@ const DYNAMIC_PARAM_DESC = {
   'Rcv Note On': (value) => (Math.round(value) === 1 ? 'On' : 'Off'),
   'Rcv Note Off': (value) => (Math.round(value) === 1 ? 'On' : 'Off'),
   'Rcv Note On': (value) => (Math.round(value) === 1 ? 'On' : 'Off'),
+
+  // External XG (Multi Part rows the QY70/QY100 ignore)
+  'PAT Pitch Control': semitoneDesc,
+  'AC1 Pitch Control': semitoneDesc,
+  'AC2 Pitch Control': semitoneDesc,
+  'AC1 Controller Number': (value) => `CC ${Math.round(value)}`,
+  'AC2 Controller Number': (value) => `CC ${Math.round(value)}`,
+
+  // MIDI channel messages
+  'Pitch Bend': (value) => {
+    const v = Math.round(value) - 8192;
+    return v === 0 ? 'Center' : `${v > 0 ? '+' : ''}${v}`;
+  },
+  'Poly Aftertouch Note': (value) => noteName(Math.round(value)),
+  'Drum NRPN Note': (value) => noteName(Math.round(value)),
+  'Pitch Bend Sensitivity': (value) => `${Math.round(value)} semitones`,
+  'Fine Tune': (value) => {
+    const cents = Number(((Math.round(value) - 8192) * 100 / 8192).toFixed(1));
+    return `${cents > 0 ? '+' : ''}${cents} cent`;
+  },
+  'Coarse Tune': semitoneDesc,
+  'CC 122 Local Control': (value) => (Math.round(value) === 1 ? 'On' : 'Off'),
+  'Custom Parameter Type': (value) => (Math.round(value) === 1 ? 'RPN' : 'NRPN'),
+  'EQ Type': (value) => MULTI_TOGGLE_PARAMS['EQ Type'].labels[Math.round(value)],
+  'EQ Shape 1': (value) => (Math.round(value) === 1 ? 'Peaking' : 'Shelving'),
+  'EQ Shape 5': (value) => (Math.round(value) === 1 ? 'Peaking' : 'Shelving'),
 };
+for (let band = 1; band <= 5; band++) DYNAMIC_PARAM_DESC[`EQ Gain ${band}`] = (value) => `${Math.round(value) - 64 > 0 ? '+' : ''}${Math.round(value) - 64} dB`;
+for (let n = 1; n <= 4; n++) {
+  DYNAMIC_PARAM_DESC[`Insertion ${n} Part`] = (value) => {
+    const v = Math.round(value);
+    if (v === 127) return 'Off';
+    if (v === 64 || v === 65) return `A/D ${v - 63}`;
+    return v < 64 ? `Part ${v + 1}` : '';
+  };
+  for (const c of ['MW', 'Bend', 'CAT', 'AC1', 'AC2']) DYNAMIC_PARAM_DESC[`Insertion ${n} ${c} Control Depth`] = rel64Desc;
+}
+for (const note of ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']) {
+  DYNAMIC_PARAM_DESC[`Scale Tuning ${note}`] = (value) => {
+    const cents = Math.round(value) - 64;
+    return `${cents > 0 ? '+' : ''}${cents} cent`;
+  };
+}
 // Others just don't need their static description shown at all.
 const SUPPRESSED_PARAM_DESC = new Set([
   'Master Volume', 'Reverb Type (MSB)', 'Chorus Type (MSB)', 'Variation Type (MSB)',
@@ -4199,6 +4496,85 @@ for (const [suffix, text] of Object.entries(AT_MOD_CONTROL_INFO)) {
   PARAM_INFO[`MW ${suffix}`] = `Modulation Wheel: ${text[0].toLowerCase()}${text.slice(1)}`;
   PARAM_INFO[`Bend ${suffix}`] = `Pitch Bend Wheel: ${text[0].toLowerCase()}${text.slice(1)}`;
   PARAM_INFO[`Ch's AT ${suffix}`] = `Channel Aftertouch (pressing harder after a note is already held): ${text[0].toLowerCase()}${text.slice(1)}`;
+  PARAM_INFO[`PAT ${suffix}`] = `Polyphonic Aftertouch (pressure on each held key separately): ${text[0].toLowerCase()}${text.slice(1)}`;
+  PARAM_INFO[`AC1 ${suffix}`] = `Assignable Controller 1 (the CC set by AC1 Controller Number): ${text[0].toLowerCase()}${text.slice(1)}`;
+  PARAM_INFO[`AC2 ${suffix}`] = `Assignable Controller 2 (the CC set by AC2 Controller Number): ${text[0].toLowerCase()}${text.slice(1)}`;
+}
+Object.assign(PARAM_INFO, {
+  'Velocity Limit Low': 'The softest note velocity this part responds to; softer notes are ignored. Put two parts on the same Rcv Channel with different velocity ranges for velocity switching, or overlapping ranges for a velocity layer.',
+  'Velocity Limit High': 'The hardest note velocity this part responds to; harder notes are ignored. Put two parts on the same Rcv Channel with different velocity ranges for velocity switching, or overlapping ranges for a velocity layer.',
+  'AC1 Controller Number': 'Which Control Change number this part treats as Assignable Controller 1 (default CC 16). The AC1 rows below set what it controls.',
+  'AC2 Controller Number': 'Which Control Change number this part treats as Assignable Controller 2 (default CC 17). The AC2 rows below set what it controls.',
+});
+for (const note of ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']) {
+  PARAM_INFO[`Scale Tuning ${note}`] = `Retunes every ${note} on this part by up to 64 cents up or down, for alternative tunings and scales (the same offset applies in every octave).`;
+}
+const RCV_SWITCH_INFO = {
+  'Rcv Pitch Bend': 'Pitch Bend messages', 'Rcv Ch AfterTouch': 'Channel Aftertouch messages',
+  'Rcv Program Change': 'Program Change (voice select) messages', 'Rcv Control Change': 'all Control Change messages',
+  'Rcv Poly AfterTouch': 'Polyphonic Aftertouch messages', 'Rcv Note Message': 'Note On/Off messages (Off silences the part)',
+  'Rcv RPN': 'RPN messages (pitch bend range, fine/coarse tuning)', 'Rcv NRPN': 'NRPN messages (vibrato, filter, EG and drum edits)',
+  'Rcv Modulation': 'Modulation Wheel (CC 1)', 'Rcv Volume': 'Volume (CC 7)', 'Rcv Pan': 'Pan (CC 10)',
+  'Rcv Expression': 'Expression (CC 11)', 'Rcv Hold 1': 'Sustain pedal (CC 64)', 'Rcv Portamento': 'Portamento switch (CC 65)',
+  'Rcv Sostenuto': 'Sostenuto pedal (CC 66)', 'Rcv Soft Pedal': 'Soft pedal (CC 67)', 'Rcv Bank Select': 'Bank Select (CC 0/32)',
+};
+Object.assign(PARAM_INFO, {
+  'Pitch Bend': 'Bends the pitch of every note on the channel, by up to the part\'s Pitch Bend Sensitivity (2 semitones by default). Center (8192) is no bend.',
+  'Channel Aftertouch': 'Pressure applied to the whole channel, as if pressing harder on held keys. On the QY70/QY100 its effect is set by Multi Part\'s Ch\'s AT controls.',
+  'Poly Aftertouch Note': 'Which note the Poly Aftertouch Pressure below applies to. Nothing is sent when you change it.',
+  'Poly Aftertouch Pressure': 'Pressure for one held note only (the one picked above). The QY70/QY100 ignore it; XG modules use it through their PAT settings.',
+  'Program Change': 'Selects voice 1 to 128 (shown as 0 to 127) on this channel, from the bank set by CC 0 Bank Select MSB and CC 32 Bank Select LSB below (send those first; the bank only takes effect on the next Program Change). For named voices use the Voice Browser or Multi Part.',
+  'CC 120 All Sound Off': 'Silences everything on the channel immediately, including release tails and held notes.',
+  'CC 121 Reset All Controllers': 'Returns Modulation, Expression, Pitch Bend, Aftertouch, pedals and RPN/NRPN selection on the channel to their defaults.',
+  'CC 122 Local Control': 'Whether a keyboard instrument\'s own keys play its own sounds. The QY70/QY100 ignore it.',
+  'CC 123 All Notes Off': 'Releases every note on the channel, as if all keys were let go (pedal-held notes keep sounding).',
+  'CC 124 Omni Off': 'Tells a single-channel instrument to listen only to its own channel. On the QY70/QY100 it only acts as All Notes Off.',
+  'CC 125 Omni On': 'Tells a single-channel instrument to listen to all 16 channels. On the QY70/QY100 it only acts as All Notes Off.',
+  'CC 126 Mono On': 'Switches the channel to one note at a time (sent with M = 1). On the QY70/QY100 it acts as All Sound Off and sets Mono.',
+  'CC 127 Poly On': 'Switches the channel back to many notes at a time. On the QY70/QY100 it acts as All Sound Off and sets Poly.',
+  'Pitch Bend Sensitivity': 'How far a full Pitch Bend moves the pitch, 0 to 24 semitones (RPN 00 00).',
+  'Fine Tune': 'Fine tuning for the channel, up to 100 cents either way (RPN 00 01).',
+  'Coarse Tune': 'Transposes the channel up to 24 semitones either way (RPN 00 02).',
+  'Modulation Depth Range': 'How deep the Modulation Wheel\'s vibrato goes (RPN 00 05, a GM2 parameter). The QY70/QY100 ignore it.',
+  'RPN Reset (Null)': 'Deselects any RPN/NRPN (RPN 7F 7F) so later Data Entry messages change nothing.',
+  'Drum NRPN Note': 'Which drum note the Drum NRPN rows below edit. Nothing is sent when you change it. Drum NRPNs only work on a channel playing a drum kit.',
+  'Custom Parameter Type': 'Whether the custom parameter number below is an NRPN or an RPN.',
+  'Custom Parameter': 'The custom parameter number, MSB then LSB (for example 01 08 for XG Vibrato Rate). Nothing is sent until you change Data Entry.',
+  'Custom Data Entry': 'Selects the custom parameter above, then sends the MSB knob with Data Entry (CC 6) or the LSB knob with Data Entry LSB (CC 38), for parameters that use fine resolution.',
+  'EQ Type': 'A preset EQ curve. Flat leaves the sound unchanged; the per-band settings below edit the curve.',
+  'Drum Setup 1 Reset': 'Returns every Drum Setup 1 edit (pitch, level, pan, sends... per note) to the kit\'s defaults.',
+  'Drum Setup 2 Reset': 'Returns every Drum Setup 2 edit to the kit\'s defaults.',
+  'All Parameter Reset': 'Resets every XG parameter to its default, the same as XG System On.',
+});
+for (const [lsb, name] of [['08', 'Vibrato Rate'], ['09', 'Vibrato Depth'], ['0A', 'Vibrato Delay'], ['20', 'Filter Cutoff'], ['21', 'Filter Resonance'], ['63', 'EG Attack Time'], ['64', 'EG Decay Time'], ['66', 'EG Release Time']]) {
+  PARAM_INFO[`NRPN ${name}`] = `XG NRPN 01 ${lsb}: ${name} offset for the channel (64 = no change).`;
+}
+for (let band = 1; band <= 5; band++) {
+  PARAM_INFO[`EQ Gain ${band}`] = `Boost or cut for EQ band ${band}, -12 to +12 dB.`;
+  PARAM_INFO[`EQ Frequency ${band}`] = `Center or corner frequency of EQ band ${band}.`;
+  PARAM_INFO[`EQ Q ${band}`] = `Width of EQ band ${band}: low values affect a wide range, high values a narrow one.`;
+}
+for (const [msb, name] of [['14', 'Filter Cutoff'], ['15', 'Filter Resonance'], ['16', 'EG Attack Rate'], ['17', 'EG Decay Rate'], ['18', 'Pitch Coarse'], ['19', 'Pitch Fine'], ['1A', 'Level'], ['1C', 'Pan'], ['1D', 'Reverb Send'], ['1E', 'Chorus Send'], ['1F', 'Variation Send']]) {
+  PARAM_INFO[`Drum ${name}`] = `XG drum NRPN ${msb}: ${name} for the note picked in Drum NRPN Note, on a channel playing a drum kit. The same edit as Drum Setup's ${name}, sent as a channel message instead of SysEx.`;
+}
+for (let n = 1; n <= 4; n++) {
+  const where = n > 2 ? ' (MU1000/MU2000)' : '';
+  PARAM_INFO[`Insertion ${n} Type`] = `Which effect Insertion Effect ${n}${where} runs, as MSB/LSB numbers from your MU module's Effect Type List.`;
+  for (let i = 1; i <= 16; i++) {
+    PARAM_INFO[`Insertion ${n} Parameter ${i}`] = `Effect parameter ${i}. What it controls depends on the Insertion Type; see your MU module's Effect Parameter List.`;
+  }
+  for (let i = 1; i <= 10; i++) {
+    PARAM_INFO[`Insertion ${n} Parameter ${i} (2-byte)`] = `Parameter ${i} for effect types that need a two-byte value (MSB, LSB). Those types ignore the one-byte Parameter ${i} above, and other types ignore this one.`;
+  }
+  PARAM_INFO[`Insertion ${n} Part`] = 'Which part runs through this effect: Part 1 and up, A/D 1 or 2 (the audio inputs), or 127 for off.';
+  for (const [c, what] of [['MW', 'the Modulation Wheel'], ['Bend', 'the Pitch Bend wheel'], ['CAT', 'Channel Aftertouch'], ['AC1', 'Assignable Controller 1'], ['AC2', 'Assignable Controller 2']]) {
+    PARAM_INFO[`Insertion ${n} ${c} Control Depth`] = `How much ${what} changes this effect's controllable parameter (64 = none), for effect types that have one.`;
+  }
+}
+PARAM_INFO['EQ Shape 1'] = 'Whether the lowest band is a shelf (boosts/cuts everything below) or a peak.';
+PARAM_INFO['EQ Shape 5'] = 'Whether the highest band is a shelf (boosts/cuts everything above) or a peak.';
+for (const [name, what] of Object.entries(RCV_SWITCH_INFO)) {
+  PARAM_INFO[name] = `Whether this part responds to ${what}. Off makes it ignore them, e.g. to keep a part's voice or level fixed while a song sends changes.`;
 }
 
 // Sections with an effect-type picker: base param name -> key into effectTypes.json.
@@ -4451,6 +4827,206 @@ function mergeVisualPairs(groups) {
   return merged;
 }
 
+// ---- Sections, pins (My Controls), custom names ----
+
+// A section's rows as the panel shows them: split multi-byte values into
+// knobs, grouped back per addressable value, MSB/LSB pairs side by side.
+function sectionGroups(sectionKey) {
+  return mergeVisualPairs(groupRows(expandRows(parameters[sectionKey].params)));
+}
+
+// The name a row group is shown and found by ("Reverb Type", not
+// "Reverb Type (MSB)").
+function groupBaseName({ rows }) {
+  return rows.length > 1
+    ? rows[0].name.replace(/ \([^)]*\)$/, '').replace(/ (MSB|LSB)$/, '')
+    : rows[0].name;
+}
+
+// The parts of a context worth remembering in a pin: which part, which
+// drum kit + note, which channel. Drum Setup always follows the Channel
+// picked at the top, same as the Drum Setup view itself.
+function pinContextData(sectionKey, context) {
+  if (sectionKey === 'multiPart') return { part: context.part };
+  if (sectionKey === 'drumSetup') return { note: context.note, kitKey: context.kitKey };
+  if (parameters[sectionKey]?.kind === 'channel') return { channel: context.channel };
+  return {};
+}
+
+function makeContext(sectionKey, data) {
+  if (sectionKey === 'multiPart') return { part: data.part };
+  if (sectionKey === 'drumSetup') return { ...currentContext('drumSetup'), note: data.note, kitKey: data.kitKey };
+  if (parameters[sectionKey]?.kind === 'channel') return channelContext(sectionKey, data.channel);
+  return {};
+}
+
+function pinContextLabel(sectionKey, data) {
+  const label = parameters[sectionKey]?.label || sectionKey;
+  if (sectionKey === 'multiPart') return `${label}, ${partLabel(data.part)}`;
+  if (sectionKey === 'drumSetup') {
+    // Same "note + drum sound" label as the Drum Setup note picker.
+    const entry = drumNotes[data.note];
+    const kitId = String(data.kitKey || '').replace(':', '_');
+    const sound = entry && (entry[kitId] || entry[STANDARD_KIT_ID]);
+    return `${label}, ${noteName(data.note)}${sound ? ` ${sound}` : ''}`;
+  }
+  if (parameters[sectionKey]?.kind === 'channel') return `${label}, ${data.channel === 'all' ? 'All channels' : `Ch ${data.channel + 1}`}`;
+  return label;
+}
+
+function pinKeyFor(sectionKey, name, context) {
+  return `${sectionKey}|${name}|${JSON.stringify(pinContextData(sectionKey, context))}`;
+}
+
+// Pins and custom names are a per-browser convenience (also saved/loaded
+// as a .qyprofile file), so storage failures just mean they don't persist.
+const PINS_KEY = 'qyPinnedControls';
+const CUSTOM_NAMES_KEY = 'qyCustomParamNames';
+let pinnedControls = [];
+let customParamNames = {};
+try { pinnedControls = JSON.parse(localStorage.getItem(PINS_KEY) || '[]'); } catch { pinnedControls = []; }
+try { customParamNames = JSON.parse(localStorage.getItem(CUSTOM_NAMES_KEY) || '{}'); } catch { customParamNames = {}; }
+if (!Array.isArray(pinnedControls)) pinnedControls = [];
+if (!customParamNames || typeof customParamNames !== 'object') customParamNames = {};
+
+function savePinsAndNames() {
+  try {
+    localStorage.setItem(PINS_KEY, JSON.stringify(pinnedControls));
+    localStorage.setItem(CUSTOM_NAMES_KEY, JSON.stringify(customParamNames));
+  } catch { /* storage unavailable, keep them for this session only */ }
+}
+
+function isPinned(key) {
+  return pinnedControls.some((p) => p.key === key);
+}
+
+function togglePin(sectionKey, name, context) {
+  const key = pinKeyFor(sectionKey, name, context);
+  const i = pinnedControls.findIndex((p) => p.key === key);
+  if (i === -1) pinnedControls.push({ key, sectionKey, name, ctx: pinContextData(sectionKey, context) });
+  else pinnedControls.splice(i, 1);
+  savePinsAndNames();
+}
+
+function setCustomParamName(sectionKey, name, customName) {
+  const key = `${sectionKey}|${name}`;
+  if (customName) customParamNames[key] = customName;
+  else delete customParamNames[key];
+  savePinsAndNames();
+}
+
+// My Controls' rows: every pin resolved back to its section's row group,
+// with that pin's own context and stores. Pins whose row no longer exists
+// (renamed in a later version) are skipped rather than breaking the view.
+function pinnedItems() {
+  const items = [];
+  for (const pin of pinnedControls) {
+    const section = parameters[pin.sectionKey];
+    if (!section) continue;
+    const group = sectionGroups(pin.sectionKey).find((g) => groupBaseName(g) === pin.name);
+    if (!group) continue;
+    const context = makeContext(pin.sectionKey, pin.ctx || {});
+    items.push({
+      ...group,
+      section,
+      sectionKey: pin.sectionKey,
+      context,
+      stores: paramStoresForContext(pin.sectionKey, context),
+      ignoredStore: getIgnoredStore(pin.sectionKey, paramContextKey(pin.sectionKey, context)),
+      pin,
+    });
+  }
+  return items;
+}
+
+// A one-shot command row (All Sound Off, a reset...) gets a Send button
+// instead of a knob. It looks like the other widgets to the row code:
+// getValue is the fixed data byte, and setValue only sends when asked to.
+function createActionButton({ value, onChange }) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'action-send-btn';
+  btn.textContent = 'Send';
+  btn.addEventListener('click', () => onChange(value));
+  return {
+    element: btn,
+    getValue: () => value,
+    setValue: (_v, fire) => { if (fire) onChange(value); },
+  };
+}
+
+// Tooltip text for channel-message rows that have no hand-written entry in
+// PARAM_INFO (mostly the 120 CC rows), built from the message and its tag.
+// The send badge for a channel-message row (MIDI Controllers, Pitch Bend +
+// Aftertouch, RPN / NRPN), or null for store-only rows that send nothing
+// (note pickers, the custom parameter number).
+const CHANNEL_BADGES = {
+  cc: (m) => ['CC', `Control Change ${m.cc}`],
+  pc: () => ['PC', 'Program Change'],
+  pb: () => ['PB', 'Pitch Bend'],
+  cat: () => ['CAT', 'Channel Aftertouch'],
+  pat: () => ['PAT', 'Polyphonic Aftertouch'],
+  rpn: (m) => ['RPN', `RPN ${hex2(m.msb)} ${hex2(m.lsb)}`],
+  nrpn: (m) => ['NRPN', `NRPN ${hex2(m.msb)} ${m.noteFrom ? 'note' : hex2(m.lsb)}`],
+  rpnNull: () => ['RPN', 'RPN 7F 7F (null)'],
+  custom: () => ['RPN/NRPN', 'the RPN or NRPN set above'],
+};
+function channelSendBadge(row) {
+  // Rows that send nothing themselves but supply part of another row's
+  // message (a note picker, the custom parameter number) carry that
+  // message's badge, marked msg.partOf in parameters.json.
+  const partOf = row.msg?.type === 'none' && row.msg.partOf;
+  if (partOf) {
+    const [text] = CHANNEL_BADGES[partOf]({ msb: 0, lsb: 0 });
+    const usedBy = { pat: 'Poly Aftertouch Pressure', nrpn: 'the Drum rows below', custom: 'Custom Data Entry' }[partOf];
+    return { text, title: `Part of the ${text} message sent by ${usedBy}. Changing it sends nothing on its own.` };
+  }
+  const make = row.msg && CHANNEL_BADGES[row.msg.type];
+  if (!make) return null;
+  const [text, what] = make(row.msg);
+  const who = paramTag(row) === 'midi'
+    ? ' The QY70/QY100 ignore it; it\'s for your external gear.'
+    : '';
+  return { text, title: `Sent as ${what}.${who}` };
+}
+
+function channelMessageInfo(row) {
+  const m = row.msg;
+  if (!m || m.type !== 'cc' || row.action) return '';
+  const who = paramTag(row) === 'qy'
+    ? 'The QY70/QY100 responds to this controller.'
+    : 'The QY70/QY100 ignore this controller. What it does depends on the device receiving it, so give it your own name with the ✎ button once you know.';
+  return `Control Change ${m.cc} on the channel selected at the top of the page. ${who}`;
+}
+
+// How the QY70/QY100 route incoming channel messages (QY100 manual, The
+// Song Voice Mode note, p.133, and Echo Back, p.247), confirmed on the
+// user's QY100: a Program Change sent for Part 3 changed the highlighted
+// Part 2. Appended to every channel-message section's note.
+const QY_CHANNEL_ROUTING_NOTE = "On the QY, these play on the track highlighted on the device, whatever channel they're sent on. External gear gets them on the Channel picked at the top.";
+
+// Short explanation shown under the section picker for sections that need
+// one.
+const SECTION_NOTES = {
+  controllers: "Program Change plus every MIDI CC (0 to 127).",
+
+  channelVoice: 'Pitch Bend and Channel Aftertouch apply to the whole channel. Poly Aftertouch sends pressure for the note picked in Poly Aftertouch Note. The QY70/QY100 ignore Poly Aftertouch; XG modules like the MU2000 use it with their PAT settings (Multi Part, External XG).',
+  rpnNrpn: 'Registered and Non-Registered Parameter Numbers, sent as parameter select, Data Entry, then a null RPN so later Data Entry can\'t change them by accident. Drum NRPNs edit the note picked in Drum NRPN Note. Custom RPN / NRPN sends any number you set; it stays selected so Data Increment/Decrement (CC 96/97) keep working.',
+  multiEq: 'The MU series master EQ. The QY70/QY100 have no Multi EQ, so these only affect an external XG module such as an MU100, MU1000 or MU2000.',
+  insertion1: 'MU series Insertion Effect. What each Parameter does depends on the Type; see your MU module\'s Effect Parameter List. Part picks which part runs through the effect (127 = off). The QY70/QY100 have no Insertion effects.',
+  pinned: 'Your pinned controls from every section. Each remembers the part, channel or drum note it was pinned from.',
+};
+for (const key of ['controllers', 'channelVoice', 'rpnNrpn']) SECTION_NOTES[key] += ` ${QY_CHANNEL_ROUTING_NOTE}`;
+for (const n of [2, 3, 4]) SECTION_NOTES[`insertion${n}`] = `${SECTION_NOTES.insertion1} Insertion Effects 3 and 4 exist on the MU1000/MU2000.`;
+
+// A row's .param-name holds its text first, then badges and buttons - these
+// read/replace just the text so relabeling doesn't wipe the badges.
+const nameText = (el) => (el.firstChild && el.firstChild.nodeType === Node.TEXT_NODE ? el.firstChild.nodeValue : el.textContent);
+function setNameText(el, text) {
+  if (el.firstChild && el.firstChild.nodeType === Node.TEXT_NODE) el.firstChild.nodeValue = text;
+  else el.prepend(document.createTextNode(text));
+}
+
 // Every voice across every bank, grouped into <optgroup>s, for the Multi
 // Part voice picker below - built once and cached since `voices` never
 // changes after boot, unlike renderParamPanel which rebuilds its DOM on
@@ -4478,21 +5054,43 @@ function voicePickerOptions() {
 
 function renderParamPanel() {
   const sectionKey = sectionSelect.value;
+  // "My Controls" shows pinned rows from any section, each with its own
+  // section/context (see pinnedItems); every other view is one section.
+  const isPinnedView = sectionKey === 'pinned';
   const section = parameters[sectionKey];
   partSelect.hidden = sectionKey !== 'multiPart';
   drumkitSelect.hidden = sectionKey !== 'drumSetup';
   noteSelect.hidden = sectionKey !== 'drumSetup';
   drumSetupHint.hidden = sectionKey !== 'drumSetup';
+  channelSectionHint.hidden = section?.kind !== 'channel';
+  pinnedControlsEl.hidden = !isPinnedView;
+  sectionNoteEl.textContent = SECTION_NOTES[sectionKey] || '';
+  sectionNoteEl.hidden = !SECTION_NOTES[sectionKey];
   pushDrumParamsBtn.hidden = sectionKey !== 'drumSetup';
-  pushParamsBtn.hidden = sectionKey === 'drumSetup';
+  pushParamsBtn.hidden = sectionKey === 'drumSetup' || isPinnedView;
   pushAllPartsBtn.hidden = sectionKey !== 'multiPart';
+  // Pull reads XG settings back from the device, so it's for XG-address
+  // sections only (channel messages can't be read back).
+  const canPull = !!section && section.kind !== 'channel';
+  pullParamsBtn.hidden = !canPull;
+  pullInfoIcon.hidden = !canPull;
+  pullAllPartsBtn.hidden = sectionKey !== 'multiPart';
+  pullHighlightedBtn.hidden = sectionKey !== 'multiPart';
+  pullKitBtn.hidden = sectionKey !== 'drumSetup';
   renderFxPresetList(sectionKey);
 
-  const context = currentContext(sectionKey);
-  const stores = paramStoresForContext(sectionKey, context);
-  const ignoredStore = getIgnoredStore(sectionKey, paramContextKey(sectionKey, context));
-  const groups = mergeVisualPairs(groupRows(expandRows(section.params)));
+  const context = isPinnedView ? {} : currentContext(sectionKey);
+  const stores = isPinnedView ? [] : paramStoresForContext(sectionKey, context);
+  const ignoredStore = isPinnedView ? {} : getIgnoredStore(sectionKey, paramContextKey(sectionKey, context));
+  const items = isPinnedView
+    ? pinnedItems()
+    : sectionGroups(sectionKey).map((g) => ({ ...g, section, sectionKey, context, stores, ignoredStore }));
   paramListEl.innerHTML = '';
+  // Nothing to reset in an empty My Controls.
+  resetSectionBtn.hidden = isPinnedView && !items.length;
+  if (isPinnedView && !items.length) {
+    paramListEl.innerHTML = '<p class="hint param-list-empty">Nothing pinned yet. Click the ☆ next to any parameter, in any section, to pin it here.</p>';
+  }
   currentSectionResetFns = [];
   // Variation Part only means anything in Insertion mode; the two Sends
   // only mean anything in System mode - grey out whichever doesn't apply
@@ -4579,49 +5177,160 @@ function renderParamPanel() {
     currentEffectGroupKey = groupKey;
     for (const { el, num, fallback, descEl, knob, row, infoIcon } of paramNameEls) {
       const used = !!(group && group[num - 1]);
-      el.textContent = used ? group[num - 1] : fallback;
-      descEl.textContent = used ? computeEffectParamDesc(el.textContent, currentEffectGroupKey, knob.getValue()) : '';
+      setNameText(el, used ? group[num - 1] : fallback);
+      descEl.textContent = used ? computeEffectParamDesc(nameText(el), currentEffectGroupKey, knob.getValue()) : '';
       row.classList.toggle('unused-param', !used);
       if (infoIcon) {
         infoIcon.dataset.tooltip = used
-          ? (EFFECT_PARAM_INFO[el.textContent] || 'Meaning defined by the currently selected effect Type.')
+          ? (EFFECT_PARAM_INFO[nameText(el)] || 'Meaning defined by the currently selected effect Type.')
           : EFFECT_PARAM_UNUSED_INFO;
       }
     }
   }
 
-  for (const { rows, combineSend } of groups) {
+  // Multi Part's external XG rows (last in parameters.json) go into their
+  // own collapsible section, created when the first one comes up, with a
+  // subheading each time their group changes.
+  let externalBody = null;
+  let externalGroupName = null;
+  function externalContainer(row) {
+    if (!externalBody) {
+      const details = document.createElement('details');
+      details.className = 'external-xg';
+      details.open = externalXgOpen;
+      details.innerHTML = `<summary>External XG Parameters</summary><p class="external-xg-note">${escapeHtml(EXTERNAL_XG_NOTE)}</p>`;
+      details.addEventListener('toggle', () => {
+        externalXgOpen = details.open;
+        try { localStorage.setItem(EXTERNAL_XG_OPEN_KEY, details.open ? '1' : '0'); } catch { /* see EXTERNAL_XG_OPEN_KEY */ }
+      });
+      paramListEl.appendChild(details);
+      externalBody = details;
+    }
+    if (row.group !== externalGroupName) {
+      externalGroupName = row.group;
+      const heading = document.createElement('h4');
+      heading.className = 'external-xg-heading';
+      heading.textContent = externalGroupName;
+      externalBody.appendChild(heading);
+    }
+    return externalBody;
+  }
+  // Where a row goes: the External XG collapsible for Multi Part's xg rows,
+  // otherwise the main list, under a subheading whenever row.group changes.
+  let mainGroupName = null;
+  function containerFor(row, rowSectionKey) {
+    if (!isPinnedView && rowSectionKey === 'multiPart' && paramTag(row) === 'xg') return externalContainer(row);
+    if (!isPinnedView && row.group && row.group !== mainGroupName) {
+      mainGroupName = row.group;
+      const heading = document.createElement('h4');
+      heading.className = 'external-xg-heading param-group-heading';
+      heading.textContent = mainGroupName;
+      paramListEl.appendChild(heading);
+    }
+    return paramListEl;
+  }
+
+  // Each item carries its own section/context so My Controls can mix rows
+  // from different sections; these shadow the outer single-section ones.
+  for (const { rows, combineSend, section, sectionKey: rowSectionKey, context, stores, ignoredStore, pin } of items) {
     const firstRow = rows[0];
     const grouped = rows.length > 1;
-    const baseName = grouped
-      ? firstRow.name.replace(/ \([^)]*\)$/, '').replace(/ (MSB|LSB)$/, '')
-      : firstRow.name;
+    const baseName = groupBaseName({ rows });
 
     const paramNumMatch = effectTypeParam && baseName.match(/ Param(?:eter)? (\d+)$/);
 
     const div = document.createElement('div');
     div.className = 'param-row';
-    const dynamicDesc = DYNAMIC_PARAM_DESC[firstRow.name];
+    const dynamicDesc = DYNAMIC_PARAM_DESC[firstRow.name]
+      || (isExternalRow(firstRow) && isToggleRow(firstRow, baseName) ? (value) => (Math.round(value) === 1 ? 'On' : 'Off') : undefined);
     const showStaticDesc = !dynamicDesc && !SUPPRESSED_PARAM_DESC.has(firstRow.name) && firstRow.description;
     const desc = showStaticDesc ? `<span class="param-desc">${firstRow.description}</span>` : '<span class="param-desc"></span>';
-    const infoText = PARAM_INFO[baseName] || (!showStaticDesc && firstRow.description) || '';
+    const infoText = PARAM_INFO[baseName] || channelMessageInfo(firstRow) || (!showStaticDesc && firstRow.description) || '';
     // paramNumMatch rows always get an icon even with no infoText yet - its
     // tooltip is filled in live by refreshEffectParamNames() once the
     // selected effect Type says whether the slot is used and what it means.
     // Uses data-tooltip + CSS (see .info-icon rules) instead of the native
     // title attribute, which has a slow, browser-controlled hover delay.
     const infoIcon = (infoText || paramNumMatch)
-      ? `<button type="button" class="info-icon" data-tooltip="${infoText.replace(/"/g, '&quot;')}">i</button>` : '';
-    div.innerHTML = `${infoIcon}<span class="param-name">${baseName}</span>${desc}`;
+      ? `<button type="button" class="info-icon" data-tooltip="${infoText.replace(/"/g, '&quot;')}">i</button>`
+      // Holds the icon's space so names line up with rows that have one.
+      : '<span class="info-icon-spacer"></span>';
+    const customName = customParamNames[`${rowSectionKey}|${baseName}`];
+    div.innerHTML = `${infoIcon}<span class="param-name">${escapeHtml(customName || baseName)}</span>${desc}`;
+    div.dataset.paramKey = `${rowSectionKey}|${baseName}`;
     const descEl = div.querySelector('.param-desc');
     const nameEl = div.querySelector('.param-name');
-    // Send as CC/NRPN: mark rows that will go out as a channel message.
-    const controllerDesc = isControllerSendEnabled() && controllerFor(section, firstRow);
-    if (controllerDesc) {
+    // Pin star (and, in My Controls, which section/part/channel it's for),
+    // plus a rename button wherever a custom name makes sense.
+    const pinKey = pin ? pin.key : pinKeyFor(rowSectionKey, baseName, context);
+    const pinBtn = document.createElement('button');
+    pinBtn.type = 'button';
+    pinBtn.className = 'pin-btn';
+    const pinned = isPinned(pinKey);
+    pinBtn.textContent = pinned ? '★' : '☆';
+    pinBtn.classList.toggle('pinned', pinned);
+    pinBtn.title = pinned ? 'Unpin from My Controls' : 'Pin to My Controls';
+    pinBtn.addEventListener('click', () => {
+      togglePin(rowSectionKey, baseName, context);
+      if (isPinnedView) renderParamPanel();
+      else {
+        const now = isPinned(pinKey);
+        pinBtn.textContent = now ? '★' : '☆';
+        pinBtn.classList.toggle('pinned', now);
+        pinBtn.title = now ? 'Unpin from My Controls' : 'Pin to My Controls';
+      }
+    });
+    div.prepend(pinBtn);
+    // Second line inside the name block (added after the badges, below):
+    // the real name under a custom one, and where a pin came from. Kept
+    // inside .param-name so it wraps with the name at every width.
+    const nameSubLines = [];
+    if (customName) nameSubLines.push(baseName);
+    if (pin) nameSubLines.push(pinContextLabel(rowSectionKey, pin.ctx));
+    const paramNumMatchForRename = effectTypeParam && !pin && baseName.match(/ Param(?:eter)? (\d+)$/);
+    if (!paramNumMatchForRename && (pin || paramTag(firstRow) === 'midi')) {
+      const renameBtn = document.createElement('button');
+      renameBtn.type = 'button';
+      renameBtn.className = 'rename-btn';
+      renameBtn.textContent = '✎';
+      renameBtn.title = 'Give this parameter your own name (saved in your profile)';
+      renameBtn.addEventListener('click', async () => {
+        const name = await showGraphicsSaveDialog(customName || baseName, 'Rename Parameter', 'Rename');
+        if (name === null) return;
+        setCustomParamName(rowSectionKey, baseName, name === baseName ? '' : name);
+        renderParamPanel();
+      });
+      nameEl.append(renameBtn);
+    }
+    // How the row is sent: the channel message type (outlined CC/PC/PB/CAT/
+    // PAT/RPN/NRPN) in channel-message sections and for Multi Part / Drum
+    // Setup rows with a controller form while Send as CC/NRPN is on,
+    // otherwise teal XG on every row of an XG section (an XG Parameter
+    // Change). Whether the QY responds to a channel message is in the
+    // badge's tooltip.
+    const controllerDesc = controllerFor(section, firstRow);
+    const channelBadge = section.kind === 'channel' ? channelSendBadge(firstRow) : null;
+    if (channelBadge) {
+      const badge = document.createElement('span');
+      badge.className = 'cc-badge';
+      badge.textContent = channelBadge.text;
+      badge.title = channelBadge.title;
+      nameEl.appendChild(badge);
+    } else if (controllerDesc && isControllerSendEnabled()) {
       const badge = document.createElement('span');
       badge.className = 'cc-badge';
       badge.textContent = controllerDesc.type === 'bankProgram' ? 'PC' : controllerDesc.type.toUpperCase();
       badge.title = `Sent as ${controllerLabel(controllerDesc)}`;
+      nameEl.appendChild(badge);
+    } else if (section.kind !== 'channel') {
+      const badge = document.createElement('span');
+      badge.className = 'tag-badge tag-badge--xg';
+      badge.textContent = 'XG';
+      badge.title = controllerDesc
+        ? `Sent as XG SysEx. Turn on Send as CC/NRPN to send it as ${controllerLabel(controllerDesc)}.`
+        : isExternalRow(firstRow)
+          ? 'Sent as XG SysEx. The QY70/QY100 ignore this parameter; it\'s for external XG gear such as an MU2000.'
+          : 'Sent as XG SysEx (an XG Parameter Change).';
       nameEl.appendChild(badge);
     }
 
@@ -4670,7 +5379,7 @@ function renderParamPanel() {
             refreshEffectParamNames();
           }
           if (paramNumMatch) {
-            descEl.textContent = computeEffectParamDesc(nameEl.textContent, currentEffectGroupKey, value);
+            descEl.textContent = computeEffectParamDesc(nameText(nameEl), currentEffectGroupKey, value);
           }
           if (baseName === 'VariMode') updateVariModeDimming(value);
           if (baseName === 'Bank Select' || baseName === 'Program Number') refreshBankProgramVoiceName();
@@ -4721,7 +5430,9 @@ function renderParamPanel() {
       // hardware rather than a smooth range, so they get a switch instead
       // of a rotary knob.
       const multiToggle = MULTI_TOGGLE_PARAMS[baseName];
-      const knob = TOGGLE_PARAMS.has(baseName)
+      const knob = row.action
+        ? createActionButton({ value: row.value ?? 0, onChange: widgetOptions.onChange })
+        : isToggleRow(row, baseName)
         ? createToggle(widgetOptions)
         : multiToggle
           ? createMultiToggle({ ...widgetOptions, labels: multiToggle.labels, titles: multiToggle.titles })
@@ -4803,7 +5514,9 @@ function renderParamPanel() {
     const insertBtn = document.createElement('button');
     insertBtn.type = 'button';
     insertBtn.className = 'insert-btn';
-    insertBtn.textContent = 'Punch Insert';
+    // Two fixed lines in the narrow vertical column (see .insert-btn); the
+    // phone layout's nowrap collapses the line break to a space.
+    insertBtn.textContent = 'Punch\nInsert';
     let insertBtnSentTimeoutId = null;
     insertBtn.addEventListener('click', () => {
       sendRowNow();
@@ -4845,7 +5558,7 @@ function renderParamPanel() {
     const playInsertBtn = document.createElement('button');
     playInsertBtn.type = 'button';
     playInsertBtn.className = 'insert-btn play-insert-btn';
-    playInsertBtn.textContent = 'Rec-Arm Insert';
+    playInsertBtn.textContent = 'Rec-Arm\nInsert';
     let playInsertBtnSentTimeoutId = null;
     playInsertBtn.addEventListener('click', () => {
       try {
@@ -4894,7 +5607,20 @@ function renderParamPanel() {
     });
     div.appendChild(ignoreBtn);
 
-    paramListEl.appendChild(div);
+    if (nameSubLines.length) {
+      const sub = document.createElement('span');
+      sub.className = 'param-name-sub';
+      sub.textContent = nameSubLines.join(' · ');
+      nameEl.append(sub);
+    }
+
+    // Store-only rows (a note picker other rows read) never send anything
+    // themselves, so their send controls are hidden but keep their space.
+    if (rows.every((r) => r.msg?.type === 'none')) {
+      for (const elToHide of [insertWrap, playInsertWrap, ignoreBtn]) elToHide.style.visibility = 'hidden';
+    }
+
+    containerFor(firstRow, rowSectionKey).appendChild(div);
 
     if (baseName === 'Bank Select') { bankSelectKnobs = knobs; bankSelectDescEl = descEl; }
     if (baseName === 'Program Number') { programNumberKnob = knobs[0]; programNumberDescEl = descEl; }
@@ -5065,6 +5791,9 @@ function resendSectionContext(sectionKey, context, values) {
   const groups = groupRows(expandRows(section.params));
   for (const { rows, combineSend } of groups) {
     if (rows.some((r) => ignoredStore[r.name])) continue;
+    // Commands (All Sound Off, resets...) and store-only rows (a note
+    // picker) aren't settings to restore.
+    if (rows.some((r) => r.action || r.msg?.type === 'none')) continue;
     const grouped = rows.length > 1;
     const rowValues = rows.map((r) => values[r.name]);
     if (rowValues.every((v) => v === undefined)) continue;
@@ -5199,6 +5928,130 @@ patchFileInput.addEventListener('change', async () => {
 });
 
 sectionSelect.addEventListener('change', renderParamPanel);
+
+// Panic: All Sound Off + All Notes Off on every channel.
+el('panic-btn').addEventListener('click', () => {
+  try {
+    for (let ch = 0; ch < 16; ch++) {
+      link.send(new Uint8Array([0xb0 | ch, 120, 0]));
+      link.send(new Uint8Array([0xb0 | ch, 123, 0]));
+    }
+    statusEl.textContent = 'Panic sent: All Sound Off and All Notes Off on all 16 channels.';
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+
+// ---- Parameter search ----
+// Finds rows in every section by name, custom name, section name, or an
+// alias (the abbreviations the QY's own XG Exc event list shows).
+const SEARCH_ALIASES = {
+  'Velocity Limit Low': ['VelLmL'],
+  'Velocity Limit High': ['VelLmH'],
+};
+const paramSearchInput = el('param-search');
+const paramSearchResults = el('param-search-results');
+let searchIndex = null;
+function buildSearchIndex() {
+  const entries = [];
+  for (const [sectionKey, section] of Object.entries(parameters)) {
+    for (const group of sectionGroups(sectionKey)) {
+      const name = groupBaseName(group);
+      const custom = customParamNames[`${sectionKey}|${name}`];
+      const haystack = [name, custom, section.label, ...(SEARCH_ALIASES[name] || [])].filter(Boolean).join(' ').toLowerCase();
+      entries.push({ sectionKey, name, custom, sectionLabel: section.label, tag: paramTag(group.rows[0]), haystack });
+    }
+  }
+  return entries;
+}
+function runParamSearch() {
+  const terms = paramSearchInput.value.toLowerCase().split(/\s+/).filter(Boolean);
+  paramSearchResults.innerHTML = '';
+  if (!terms.length) { paramSearchResults.hidden = true; return; }
+  searchIndex = buildSearchIndex();
+  const matches = searchIndex.filter((e) => terms.every((t) => e.haystack.includes(t))).slice(0, 40);
+  if (!matches.length) {
+    paramSearchResults.innerHTML = '<li class="param-search-empty">No matching parameters</li>';
+  }
+  for (const m of matches) {
+    const li = document.createElement('li');
+    const badge = '';
+    li.innerHTML = `<button type="button"><span class="param-search-name">${escapeHtml(m.custom || m.name)}</span>${badge}<span class="param-search-section">${escapeHtml(m.sectionLabel)}</span></button>`;
+    li.querySelector('button').addEventListener('click', () => goToParam(m.sectionKey, m.name));
+    paramSearchResults.appendChild(li);
+  }
+  paramSearchResults.hidden = false;
+}
+// Switches to the row's section (keeping the current part/channel/note),
+// opens the External XG collapsible if that's where it lives, and flashes it.
+function goToParam(sectionKey, name) {
+  paramSearchResults.hidden = true;
+  paramSearchInput.value = '';
+  sectionSelect.value = sectionKey;
+  renderParamPanel();
+  const row = [...paramListEl.querySelectorAll('.param-row')].find((r) => r.dataset.paramKey === `${sectionKey}|${name}`);
+  if (!row) return;
+  const details = row.closest('details');
+  if (details && !details.open) details.open = true;
+  row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  row.classList.remove('search-flash');
+  void row.offsetWidth; // restart the animation if it's flashed before
+  row.classList.add('search-flash');
+}
+paramSearchInput.addEventListener('input', runParamSearch);
+paramSearchInput.addEventListener('keydown', (evt) => {
+  if (evt.key === 'Escape') { paramSearchInput.value = ''; runParamSearch(); }
+  if (evt.key === 'Enter') paramSearchResults.querySelector('button')?.click();
+});
+document.addEventListener('click', (evt) => {
+  if (!evt.target.closest('#param-search-wrap')) paramSearchResults.hidden = true;
+});
+
+// ---- Device profiles (.qyprofile): pins + custom names ----
+el('save-profile-btn').addEventListener('click', async () => {
+  const file = { format: 'qyprofile', version: 1, savedAt: new Date().toISOString(), pins: pinnedControls, names: customParamNames };
+  try {
+    const savedName = await writeFile('My Controls.qyprofile', JSON.stringify(file, null, 1), 'QY70/QY100 Console Profile', '.qyprofile');
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    await showAlert('Profile saved', `Saved ${plural(pinnedControls.length, 'pinned control')} and ${plural(Object.keys(customParamNames).length, 'custom name')} as ${savedName}.`);
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+async function loadProfileText(text, filename) {
+  let data;
+  try { data = JSON.parse(text); } catch { data = null; }
+  if (data?.format !== 'qyprofile' || !Array.isArray(data.pins)) {
+    statusEl.textContent = 'Error: not a valid .qyprofile file.';
+    return;
+  }
+  const replace = await showConfirm('Load profile',
+    `Replace your current pinned controls and custom names with the ones in ${filename || 'this profile'}?`, 'Replace');
+  if (!replace) return;
+  pinnedControls = data.pins.filter((p) => p && typeof p.key === 'string' && typeof p.sectionKey === 'string' && typeof p.name === 'string');
+  customParamNames = {};
+  for (const [k, v] of Object.entries(data.names || {})) if (typeof v === 'string') customParamNames[k] = v;
+  savePinsAndNames();
+  renderParamPanel();
+}
+el('load-profile-btn').addEventListener('click', async () => {
+  try {
+    if (window.showOpenFilePicker) {
+      const [handle] = await window.showOpenFilePicker({ types: [{ description: 'QY70/QY100 Console Profile', accept: { 'application/json': ['.qyprofile'] } }] });
+      const file = await handle.getFile();
+      await loadProfileText(await file.text(), handle.name);
+    } else {
+      el('profile-file-input').click();
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+});
+el('profile-file-input').addEventListener('change', async () => {
+  const file = el('profile-file-input').files[0];
+  el('profile-file-input').value = '';
+  if (file) await loadProfileText(await file.text(), file.name);
+});
 partSelect.addEventListener('change', renderParamPanel);
 // This dropdown only picks which note names to display/edit here - it does
 // NOT push anything to the device (that's what Push Parameters is for,
@@ -5208,7 +6061,11 @@ drumkitSelect.addEventListener('change', () => { populateNoteSelect(); renderPar
 noteSelect.addEventListener('change', renderParamPanel);
 // Drum Setup's address depends on the main Channel selector now.
 channelSelect.addEventListener('change', () => {
-  if (sectionSelect.value === 'drumSetup') renderParamPanel();
+  // Drum Setup and the channel-message sections send on this channel (and
+  // channel sections show its own remembered values); My Controls' pinned
+  // drum rows follow it too.
+  const viewKey = sectionSelect.value;
+  if (viewKey === 'drumSetup' || viewKey === 'pinned' || parameters[viewKey]?.kind === 'channel') renderParamPanel();
   const displayValue = channelSelect.value === 'all' ? 'All' : Number(channelSelect.value) + 1;
   sendMessageWindow(`MIDI Ch: ${displayValue}`);
 });
@@ -5255,8 +6112,10 @@ pushDrumParamsBtn.addEventListener('click', async () => {
 pushParamsBtn.addEventListener('click', () => {
   const sectionKey = sectionSelect.value;
   const context = currentContext(sectionKey);
-  const values = sectionKey === 'multiPart' ? paramState.multiPart[context.part] : paramState[sectionKey];
-  resendSectionContext(sectionKey, context, values);
+  const values = getParamStore(sectionKey, paramContextKey(sectionKey, context));
+  // Multi Part pushes target a specific part, so they stay part-addressed
+  // SysEx even with Send as CC/NRPN on (see applyVoiceToPart).
+  resendSectionContext(sectionKey, sectionKey === 'multiPart' ? { ...context, forceSysex: true } : context, values);
   statusEl.textContent = 'Parameters pushed.';
   sendMessageWindow(`${parameters[sectionKey]?.label || 'Params'} Pushed`);
 });
@@ -5270,7 +6129,7 @@ pushAllPartsBtn.addEventListener('click', async () => {
   showProgress('Pushing all Multi Part parts', 'This resends every part\'s parameters - avoid touching the QY70/QY100 until it finishes.');
   try {
     for (let i = 0; i < partKeys.length; i++) {
-      resendSectionContext('multiPart', { part: Number(partKeys[i]) }, paramState.multiPart[partKeys[i]]);
+      resendSectionContext('multiPart', { part: Number(partKeys[i]), forceSysex: true }, paramState.multiPart[partKeys[i]]);
       updateProgress(i + 1, partKeys.length);
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
@@ -5348,6 +6207,295 @@ const qyIo = {
   waitFor: waitForMidi,
   sleep,
 };
+
+// ---- Connection Check (the header's Probe button) ----
+// One click runs every check this console can make without changing
+// anything on the QY, and lists each result in plain language: ok (✓),
+// worth knowing (!), or a problem (✗). Only harmless messages are sent:
+// an Identity Request, (if that gets no answer) the Data Filer's bulk mode
+// read-back, and two RPN nulls.
+const probeBtn = el('probe-btn');
+const probeResultsEl = el('probe-results');
+const PROBE_LISTEN_MS = 600;
+
+function renderProbeResults(results) {
+  const icons = { ok: '✓', warn: '!', fail: '✗', info: 'i' };
+  probeResultsEl.innerHTML = results.map(({ status, text }) =>
+    `<li class="probe-${status}"><span class="probe-icon">${icons[status]}</span><span>${escapeHtml(text)}</span></li>`).join('');
+  probeResultsEl.hidden = false;
+}
+
+async function runConnectionCheck() {
+  const results = [];
+  const show = () => renderProbeResults(results);
+  if (!outputSelect.value) {
+    results.push({ status: 'fail', text: 'No MIDI Out selected. Click Find Devices, then pick your MIDI interface under MIDI Out.' });
+    return show();
+  }
+  results.push({ status: 'ok', text: 'MIDI Out is selected.' });
+  if (!inputSelect.value) {
+    results.push({ status: 'warn', text: 'No MIDI In selected, so the QY can\'t be heard and the other checks can\'t run. Pick your MIDI interface under MIDI In (Highlighted Part, Data Filer pulls and this check all need it).' });
+    return show();
+  }
+
+  // 1. Is anything coming in at all? The QY sends Active Sensing (FE) about
+  // every 200ms, or MIDI Clock (F8) while playing.
+  const heard = await collectMidi((b) => b[0] === 0xfe || b[0] === 0xf8, PROBE_LISTEN_MS);
+  if (!heard.length) {
+    results.push({ status: 'fail', text: 'Nothing is arriving at MIDI In. Check the cable from the QY\'s MIDI OUT to your interface\'s MIDI IN, and that the right port is picked under MIDI In.' });
+    return show();
+  }
+  results.push({ status: 'ok', text: 'Receiving from the QY (the cable from its MIDI OUT works).' });
+
+  // 2. Which model answers?
+  const model = await detectDevice();
+  if (!model) {
+    results.push({ status: 'fail', text: 'The QY didn\'t answer an Identity Request. Check the cable from your interface\'s MIDI OUT to the QY\'s MIDI IN, and that the right port is picked under MIDI Out.' });
+    return show();
+  }
+  results.push({ status: 'ok', text: `${model} connected and answering (the cable to its MIDI IN works).` });
+
+  // 3. ECHO BACK, via the same probe Highlighted Part uses.
+  const echo = interpretEcho(await probeEchoChannels());
+  if (typeof echo === 'number') {
+    results.push({ status: 'ok', text: `ECHO BACK is on RecMontr, so Highlighted Part works. The highlighted track is on MIDI channel ${echo + 1} (Part ${echo + 1} in Song mode, ${partLabel(16 + (echo % 8))} in Pattern mode).` });
+  } else if (echo.failure === 'thru') {
+    results.push({ status: 'warn', text: 'Messages come back unchanged: the QY\'s UTILITY > MIDI ECHO BACK is on Thru, or your MIDI interface echoes what it receives. Highlighted Part needs ECHO BACK on RecMontr.' });
+  } else {
+    results.push({ status: 'warn', text: 'No echo: the QY\'s UTILITY > MIDI ECHO BACK is Off, or PATT OUT CH is Off while in Pattern mode. That\'s fine for everything except Highlighted Part, which needs ECHO BACK on RecMontr and PATT OUT CH on 1~8 or 9~16.' });
+  }
+
+  return show();
+}
+
+probeBtn.addEventListener('click', async () => {
+  probeBtn.disabled = true;
+  probeBtn.textContent = 'Probing...';
+  try {
+    await runConnectionCheck();
+  } catch (err) {
+    renderProbeResults([{ status: 'fail', text: `The check stopped with an error: ${err.message}` }]);
+  } finally {
+    probeBtn.disabled = false;
+    probeBtn.textContent = 'Probe';
+  }
+});
+
+// ---- Pull from QY ----
+// Reads the QY's current XG settings back into the console. Confirmed on
+// the user's QY100 (2026-10-04): an XG Dump Request (F0 43 2n 4C hh mm ll
+// F7) is answered with an XG Bulk Dump (F0 43 0n 4C cnt cnt hh mm ll data
+// sum F7), and an XG Parameter Request (3n) with a Parameter Change (1n),
+// for any address. Dumps only answer at a block's start address, so each
+// section lists its blocks (offsets from its addressBase); anything they
+// don't cover is then asked for one parameter at a time. With ECHO BACK
+// on RecMontr the request itself bounces back first; matching on the
+// reply's own substatus (0n/1n) skips it.
+const PULL_BLOCKS = {
+  system: [0x00],
+  reverb: [0x00, 0x10],
+  chorus: [0x20, 0x30],
+  variation: [0x40, 0x70],
+  multiPart: [0x00, 0x30],
+  drumSetup: [0x00],
+  multiEq: [0x00],
+  insertion1: [0x00, 0x20, 0x30],
+  insertion2: [0x00, 0x20, 0x30],
+  insertion3: [0x00, 0x20, 0x30],
+  insertion4: [0x00, 0x20, 0x30],
+};
+const PULL_REPLY_MS = 600;
+const PULL_PARAM_REPLY_MS = 300;
+
+function pullAddressBase(section, context) {
+  return section.addressBase.map((b) => (typeof b === 'string' ? context[b] : b));
+}
+
+const sameAddress = (b, at, [h, m, l]) => b[at] === h && b[at + 1] === m && b[at + 2] === l;
+
+// One XG block: its data bytes, or null if nothing (valid) came back.
+async function requestXgBlock(address) {
+  const reply = waitForMidi((b) => b.length > 11 && b[0] === 0xf0 && b[1] === 0x43 && (b[2] & 0xf0) === 0x00
+    && b[3] === 0x4c && sameAddress(b, 6, address), PULL_REPLY_MS);
+  await qyIo.send([0xf0, 0x43, 0x20, 0x4c, ...address, 0xf7]);
+  const b = await reply;
+  if (!b) return null;
+  const count = (b[4] << 7) | b[5];
+  const body = Array.from(b.slice(4, b.length - 1)); // count..data..checksum
+  if (body.reduce((a, x) => a + x, 0) & 0x7f) return null; // bad checksum
+  return Array.from(b.slice(9, 9 + count));
+}
+
+// One parameter's value bytes (size bytes for a multi-byte value), or null.
+async function requestXgParameter(address, size) {
+  const reply = waitForMidi((b) => b.length >= 9 && b[0] === 0xf0 && b[1] === 0x43 && (b[2] & 0xf0) === 0x10
+    && b[3] === 0x4c && sameAddress(b, 4, address), PULL_PARAM_REPLY_MS);
+  await qyIo.send([0xf0, 0x43, 0x30, 0x4c, ...address, 0xf7]);
+  const b = await reply;
+  return b ? Array.from(b.slice(7, 7 + size)) : null;
+}
+
+// Pulls one section/context into its store. Returns { got, missing } row
+// counts; rows that never send (commands, note pickers) are skipped.
+// `into` (another context) writes the values there instead, e.g. Pull
+// Highlighted Part reading the QY's highlighted part into the part picked
+// in the console; `skip` names rows to leave untouched (Rcv Channel).
+async function pullSectionContext(sectionKey, context, { into = context, skip = [] } = {}) {
+  const section = parameters[sectionKey];
+  const base = pullAddressBase(section, context);
+  const bytes = new Map(); // address offset -> byte
+  const blocks = PULL_BLOCKS[sectionKey] || [];
+  for (const start of blocks) {
+    const data = await requestXgBlock([base[0], base[1], base[2] + start]);
+    if (data) data.forEach((v, i) => bytes.set(start + i, v));
+    // No answer to the first block: the device doesn't have this part or
+    // section at all (e.g. the QY100's Hidden parts), so don't wait on the rest.
+    else if (start === blocks[0]) break;
+  }
+  const store = getParamStore(sectionKey, paramContextKey(sectionKey, into));
+  let got = 0;
+  let missing = 0;
+  // Asking one parameter at a time costs a timeout per row when nothing
+  // answers (a section the device doesn't have), so two unanswered
+  // requests in a row mean the device doesn't have this block: stop asking.
+  // Nothing at all came back from the blocks: allow just one try.
+  let unanswered = bytes.size ? 0 : 1;
+  // Group size (nibble rows stay whole; MSB/LSB rows are already split).
+  for (const row of expandRows(section.params)) {
+    if (row.action || row.msg || skip.includes(row.name)) continue;
+    const size = row.encoding === 'nibble' ? row.size : 1;
+    let raw = Array.from({ length: size }, (_, i) => bytes.get(row.offset + i));
+    if (raw.some((v) => v === undefined)) {
+      raw = unanswered >= 2 ? null : await requestXgParameter([base[0], base[1], base[2] + row.offset], size);
+      unanswered = raw ? 0 : unanswered + 1;
+    }
+    if (!raw || raw.length < size) { missing++; continue; }
+    store[row.name] = row.encoding === 'nibble' ? nibbleUnpack(raw) : raw[0];
+    got++;
+  }
+  return { got, missing };
+}
+
+function requirePullInput() {
+  if (outputSelect.value && inputSelect.value) return true;
+  showAlert('Pull from QY', 'Pull needs both MIDI Out and MIDI In selected at the top of the page, so the console can ask the QY and hear its answer.');
+  return false;
+}
+
+function pullResultMessage(what, { got, missing }) {
+  if (!got) return `Nothing came back for ${what}. Check MIDI In, or run Probe; an MU-only block (Multi EQ, Insertion) has no answer on the QY70/QY100.`;
+  return `Pulled ${what} from the QY (${got} values${missing ? `, ${missing} with no reply` : ''}).`;
+}
+
+// Shares the Data Filer's queue (deviceSessionQueue, declared further
+// down) so a pull never interleaves with a bulk transfer. XG requests don't
+// need bulk mode, so this skips that part.
+function runQySession(fn) {
+  const run = deviceSessionQueue.then(fn);
+  deviceSessionQueue = run.catch(() => {});
+  return run;
+}
+
+async function withPullButtons(fn) {
+  const btns = [pullParamsBtn, pullAllPartsBtn, pullHighlightedBtn, pullKitBtn];
+  btns.forEach((b) => { b.disabled = true; });
+  try {
+    return await runQySession(fn);
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+    return null;
+  } finally {
+    btns.forEach((b) => { b.disabled = false; });
+  }
+}
+
+pullParamsBtn.addEventListener('click', async () => {
+  if (!requirePullInput()) return;
+  const sectionKey = sectionSelect.value;
+  const context = currentContext(sectionKey);
+  if (sectionKey === 'drumSetup' && context.allChannels) {
+    await showAlert('Pull from QY', 'Pick one Channel at the top of the page (not All): Drum Setup is read from the kit playing on that channel.');
+    return;
+  }
+  const label = sectionKey === 'multiPart' ? partLabel(context.part)
+    : sectionKey === 'drumSetup' ? `${noteName(context.note)} of the kit on Channel ${context.drumHigh - 0x2f}`
+      : parameters[sectionKey].label;
+  const result = await withPullButtons(() => pullSectionContext(sectionKey, context));
+  if (!result) return;
+  statusEl.textContent = pullResultMessage(label, result);
+  renderParamPanel();
+});
+
+pullAllPartsBtn.addEventListener('click', async () => {
+  if (!requirePullInput()) return;
+  showProgress('Pulling all 24 parts', 'Reading every Multi Part part from the QY. Nothing on the QY changes.');
+  let total = { got: 0, missing: 0 };
+  const silent = [];
+  try {
+    await withPullButtons(async () => {
+      for (let part = 0; part < QY_PART_COUNT; part++) {
+        const r = await pullSectionContext('multiPart', { part });
+        total = { got: total.got + r.got, missing: total.missing + r.missing };
+        if (!r.got) silent.push(part + 1);
+        updateProgress(part + 1, QY_PART_COUNT);
+      }
+    });
+  } finally {
+    hideProgress();
+  }
+  const answered = QY_PART_COUNT - silent.length;
+  statusEl.textContent = !total.got ? pullResultMessage('any part', total)
+    : silent.length
+      ? `Pulled ${answered} parts from the QY (${total.got} values). Parts ${silent.length > 2 && silent[silent.length - 1] - silent[0] === silent.length - 1 ? `${silent[0]} to ${silent[silent.length - 1]}` : silent.join(', ')} didn't answer, so they keep their previous values.`
+      : pullResultMessage(`all ${QY_PART_COUNT} parts`, total);
+  renderParamPanel();
+});
+
+// Reads the part highlighted on the QY into the part picked in the console
+// (no switching), so a part can be copied: pull it into another part, then
+// Push Parameters to send it there. The target keeps its own Rcv Channel.
+pullHighlightedBtn.addEventListener('click', async () => {
+  if (!requirePullInput()) return;
+  const target = Number(partSelect.value || 0);
+  // Same detection as Apply to: Highlighted Part (probe, then Song/Pattern).
+  const source = await resolveHighlightedTarget('', { pull: true, intoLabel: partLabel(target) });
+  if (source === null) return;
+  const copying = source !== target;
+  const result = await withPullButtons(() => pullSectionContext('multiPart', { part: source }, {
+    into: { part: target },
+    skip: copying ? ['Rcv Channel'] : [],
+  }));
+  if (!result) return;
+  statusEl.textContent = copying && result.got
+    ? `Pulled ${partLabel(source)} (highlighted on the QY) into ${partLabel(target)}, keeping its Rcv Channel (${result.got} values). Click Push Parameters to send it to ${partLabel(target)} on the QY.`
+    : pullResultMessage(partLabel(source), result);
+  renderParamPanel();
+});
+
+pullKitBtn.addEventListener('click', async () => {
+  if (!requirePullInput()) return;
+  const context = currentContext('drumSetup');
+  if (context.allChannels) {
+    await showAlert('Pull Kit', 'Pick one Channel at the top of the page (not All): the kit is read from that channel.');
+    return;
+  }
+  const [lo, hi] = parameters.drumSetup.noteRange;
+  showProgress('Pulling the kit', 'Reading every drum note\'s settings from the QY. Nothing on the QY changes.');
+  let total = { got: 0, missing: 0 };
+  try {
+    await withPullButtons(async () => {
+      for (let note = lo; note <= hi; note++) {
+        const r = await pullSectionContext('drumSetup', { ...context, note });
+        total = { got: total.got + r.got, missing: total.missing + r.missing };
+        updateProgress(note - lo + 1, hi - lo + 1);
+      }
+    });
+  } finally {
+    hideProgress();
+  }
+  statusEl.textContent = pullResultMessage(`every note of the kit on Channel ${context.drumHigh - 0x2f}`, total);
+  renderParamPanel();
+});
 
 // ---- Which device is connected ----
 //
@@ -6398,11 +7546,19 @@ updateDataFilerPullNumberVisibility();
 (async () => {
   [voices, parameters, drumNotes, presets, effectTypes, effectParams, effectValueTables, fxPresets, graphicsPresets, graphicsAnimationPresets] = await Promise.all(
     [loadVoices(), loadParameters(), loadDrumNotes(), loadPresets(), loadEffectTypes(), loadEffectParams(), loadEffectValueTables(), loadFxPresets(), loadGraphicsPresets(), loadGraphicsAnimationPresets()]);
+  // Sections beyond the six built in above (MIDI Controllers, RPN/NRPN,
+  // MU effect blocks...) get their own value/Ignored memory.
+  for (const key of Object.keys(parameters)) {
+    paramState[key] ??= {};
+    ignoredState[key] ??= {};
+  }
   refreshCategoryOptions();
   renderVoiceList();
   populatePartSelect(partSelect);
   populatePartSelect(voicePartSelect);
-  updateBankSelectAvailability();
+  voicePartSelect.insertAdjacentHTML('afterbegin', `<optgroup label="Any Mode"><option value="${HIGHLIGHTED_PART}">Highlighted Part (on the QY)</option></optgroup>`);
+  // Highlighted Part is the default target: it follows the QY's own cursor.
+  voicePartSelect.value = HIGHLIGHTED_PART;
   populateDrumkitSelect();
   populateNoteSelect();
   renderParamPanel();

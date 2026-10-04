@@ -53,8 +53,8 @@ const DRUM_SETUP = {
 };
 
 function sectionKind(section) {
-  if (section.addressBase[0] === 0x08) return 'multiPart';
-  if (section.addressBase[0] === 'drumHigh') return 'drumSetup';
+  if (section.addressBase?.[0] === 0x08) return 'multiPart';
+  if (section.addressBase?.[0] === 'drumHigh') return 'drumSetup';
   return null;
 }
 

@@ -215,11 +215,15 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
    own content instead, with nowrap keeping the two columns side by side
    (each still wraps its own fields internally via .connect-row) down to
    the 600px breakpoint below, which switches to a full column stack. */
+/* One column at every width, top to bottom: devices + channel, the
+   Connection Check box, the System On box, then tempo/transports/song/
+   sections. (It used to be two side-by-side columns, which ran off the right
+   edge at ~620-780px.) */
 #connect-bar {
   display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: 2rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
 }
 
 .connect-left-column {
@@ -231,13 +235,45 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
 .connect-right-column {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 1rem;
-  margin-left: auto;
 }
 
-.connect-row-1-right,
+/* The System On box (row 2 in the markup) sits above Tempo/Transports/
+   Song/Sections. */
 .connect-row-2-right {
-  justify-content: flex-end;
+  order: -1;
+}
+
+/* Every block spans the full width: MIDI In/Out grow to share the first
+   row, the Tempo/Transports/Song/Sections fields spread across theirs, and
+   the System On box puts its buttons and its settings at either end.
+   Above the phone breakpoint only: below it these rows stack vertically,
+   where a flex-basis would stretch heights instead of widths. */
+.messaging-box {
+  flex: 1 1 auto;
+}
+@media (min-width: 601px) {
+  .connect-row-1-left > label:has(#input-select),
+  .connect-row-1-left > label:has(#output-select) {
+    flex: 1 1 12rem;
+  }
+  .connect-row-1-left #input-select,
+  .connect-row-1-left #output-select {
+    width: 100%;
+  }
+  .connect-row-1-right {
+    justify-content: space-between;
+  }
+  .messaging-box {
+    justify-content: space-between;
+  }
+}
+
+/* Tempo starts its row now, so its divider would just be a stray line. */
+.connect-row-1-right > .connect-divider:first-child {
+  border-left: none;
+  padding-left: 0;
 }
 
 /* Each row above is itself a flex row of fields, wrapping within its own
@@ -313,13 +349,18 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
   gap: 0.3rem;
 }
 
-/* flex-end rather than center - the knob widget is dial-on-top,
-   value-input-below, so centering the Tap button against its full height
-   lines it up with the dial instead of the value input beside it. */
+/* Dial, Reset, value and Tap on one line: the tempo knob is laid out as a
+   row (other knobs keep dial-on-top) so this field is no taller than the
+   Transports beside it. */
 #tempo-row {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 0.5rem;
+}
+
+#tempo-knob .knob-wrap {
+  flex-direction: row;
+  gap: 0.4rem;
 }
 
 #tap-tempo-btn {
@@ -372,8 +413,9 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
    than the transport icons above, so they need their own width/padding
    instead of the fixed 2rem icon-button box. */
 .section-controls {
+  /* All seven on one line when there's room, wrapping only as the
+     window narrows. */
   flex-wrap: wrap;
-  max-width: 14rem;
 }
 
 .section-controls .section-btn {
@@ -680,7 +722,37 @@ section {
 #voice-list li:hover { background: rgba(71, 82, 96, 0.08); }
 #voice-list li.selected { background: rgba(71, 82, 96, 0.16); }
 
-#voice-list .voice-meta { color: var(--muted); font-size: 0.78rem; margin-left: auto; }
+/* The name takes the free space and the bank/program/bank-LSB text sits in
+   a fixed-width column just before Push, so it lines up row to row instead
+   of floating to a different spot depending on the name's length (sized
+   for the longest, "SFX Voice P128 B127"). */
+#voice-list .voice-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+/* Dotted leader line from a voice's name across to its bank/program text,
+   like a table of contents (main voice rows only; presets have no meta). */
+#voice-list .voice-name::after {
+  content: '';
+  flex: 1 1 auto;
+  min-width: 1rem;
+  margin: 0 0.6rem;
+  border-bottom: 1px dotted #b9bec6;
+  transform: translateY(0.2rem);
+}
+@media (max-width: 600px) {
+  /* The bank/program text moves under the name on phones - nothing to
+     lead to. */
+  #voice-list .voice-name::after { display: none; }
+}
+#voice-list .voice-meta {
+  flex: 0 0 7rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
 
 #voice-list li.qy100-only { color: var(--qy100); }
 
@@ -792,6 +864,37 @@ section {
 #drum-kit-hint p { margin: 0.5rem 0 0; line-height: 1.4; }
 #drum-kit-hint p:last-child { margin-bottom: 0; }
 
+/* Multi Part's "External XG Parameters" (rows the QY70/QY100 ignore), built
+   in renderParamPanel - same framed look as #drum-kit-hint above. */
+.external-xg {
+  margin: 0.75rem 0 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.5rem 0.65rem;
+}
+
+.external-xg summary {
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.external-xg-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.external-xg-heading {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0.9rem 0 0.1rem;
+}
+
 #param-controls {
   display: flex;
   flex-wrap: wrap;
@@ -839,10 +942,16 @@ section {
 }
 
 .param-row .param-name {
-  width: 12.5rem;
-  flex: none;
+  /* Up to 12.5rem, but gives way (down to 6.5rem) before the knobs and
+     the Insert/Active columns do, e.g. on two-knob MSB/LSB rows or with
+     the pin star taking room. */
+  flex: 0 1 12.5rem;
+  min-width: 6.5rem;
   font-size: 0.85rem;
   line-height: 1.15;
+  /* Long names ("CC 71 Harmonic Content (Resonance)", custom names) wrap
+     inside the column instead of pushing the knobs around. */
+  overflow-wrap: anywhere;
 }
 .param-row .cc-badge {
   display: inline-block;
@@ -856,6 +965,24 @@ section {
   vertical-align: 1px;
   cursor: help;
 }
+/* Support tag badge (XG / MIDI) on parameters the QY70/QY100 don't respond
+   to - see PARAM_TAGS in app.js. Same shape as .cc-badge, but filled so it
+   reads as "who this is for" rather than "how it's sent". */
+.param-row .tag-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.3rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.03em;
+  color: #fff;
+  vertical-align: 1px;
+  cursor: help;
+}
+.param-row .tag-badge--xg { background: #2a7f86; }
+.param-row .tag-badge--midi { background: #6f58b8; }
 .param-row .param-desc {
   flex: 1;
   min-width: 0;
@@ -890,6 +1017,9 @@ section {
   align-self: stretch;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
+  white-space: nowrap;
+  /* Fits "IGNORED", its longer label. */
+  min-height: 4.2rem;
   padding: 0.3rem 0.15rem;
   font-size: 0.62rem;
   font-weight: 600;
@@ -940,10 +1070,19 @@ section {
 
 .insert-btn {
   flex: 1;
-  min-height: 0;
+  /* Tall enough for the longer line ("REC-ARM") even when the row's line
+     is short (on/off switches, Send buttons in the narrow-list layout). */
+  min-height: 3rem;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  padding: 0.2rem 0.1rem;
+  /* Always exactly two lines ("PUNCH / INSERT", "REC-ARM / INSERT", from the
+     label's line break) at one fixed width, so a short row can't wrap the
+     text onto 1-3 lines and make the buttons uneven or overlap. */
+  white-space: pre;
+  width: 1.5rem;
+  line-height: 1.15;
+  overflow: hidden;
+  padding: 0.2rem 0;
   font-size: 0.48rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -2320,6 +2459,24 @@ section {
   margin-bottom: 0.4rem;
 }
 
+/* showConfirm's optional tick box + info icon (e.g. "Load External XG
+   Parameters"); the icon sits outside the label so clicking it doesn't
+   toggle the box. */
+.confirm-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.9rem;
+}
+
+.confirm-checkbox-row[hidden] {
+  display: none;
+}
+
+.confirm-checkbox-row label.checkbox-row {
+  margin: 0;
+}
+
 .app-dialog input[type="text"],
 .app-dialog select {
   width: 100%;
@@ -2377,7 +2534,10 @@ section {
    line to a stacked layout so nothing gets clipped or forces horizontal
    scrolling. */
 
-@media (max-width: 900px) {
+/* Single column until there's room for Voice Browser and Parameters side
+   by side: a Parameters row needs ~530px, which two columns couldn't give
+   it between 900 and ~980px (the panel pushed past the window edge). */
+@media (max-width: 1000px) {
   #tab-panel-voice-parameters.active {
     grid-template-columns: 1fr;
     grid-template-rows: none;
@@ -2467,6 +2627,17 @@ section {
 
   .connect-right-column {
     margin-left: 0;
+    /* Full width like the device pickers above, so the stacked rows'
+       divider lines and the Connection Check box line up edge to edge. */
+    align-items: stretch;
+  }
+
+  .connect-left-column {
+    align-self: stretch;
+  }
+
+  #connection-check {
+    width: auto;
   }
 
   .connect-row {
@@ -2584,7 +2755,10 @@ section {
 
   #voice-list .voice-meta {
     margin-left: 1.6rem;
-    flex-basis: 100%;
+    /* Its own line under the name; allowed to shrink so the indent doesn't
+       push it past the row (the desktop rule fixes it at 8.5rem). */
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .push-voice-btn {
@@ -2603,7 +2777,11 @@ section {
 
   .param-row .param-name {
     width: auto;
-    flex: 1 1 auto;
+    /* Always shares the first line with the pin star and info icon (it
+       takes the rest of that line and wraps inside itself), so a long or
+       custom name doesn't drop onto a line of its own. */
+    flex: 1 1 calc(100% - 4rem);
+    min-width: 0;
     order: 1;
   }
 
@@ -2635,6 +2813,10 @@ section {
     transform: none;
     width: auto;
     padding: 0.2rem 0.5rem;
+    /* One line here: nowrap also turns the label's line break into a space. */
+    white-space: nowrap;
+    line-height: normal;
+    min-height: 0;
   }
 
   /* Text is horizontal at this width (no rotate(180deg) base transform
@@ -2732,4 +2914,286 @@ section {
     width: 1.5rem;
     height: 1.5rem;
   }
+}
+
+/* ---- Pins (My Controls), custom names, Send buttons, search ---- */
+.param-row .pin-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0 0.1rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+.param-row .pin-btn.pinned { color: #e0a100; }
+.param-row .pin-btn:hover { color: #e0a100; }
+
+.param-row .rename-btn {
+  background: none;
+  border: none;
+  margin-left: 0.15rem;
+  padding: 0 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  vertical-align: 1px;
+}
+.param-row .rename-btn:hover { color: var(--text); }
+
+.param-row .param-name-sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: var(--muted);
+}
+
+.param-row .action-send-btn {
+  min-width: 4.5rem;
+}
+
+.param-group-heading:first-child { margin-top: 0.25rem; }
+
+#param-search-wrap {
+  position: relative;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+/* Phones stack #param-controls vertically, where a 14rem flex-basis would
+   become a 14rem-tall gap under the search box. */
+@media (max-width: 600px) {
+  #param-search-wrap { flex: 0 0 auto; }
+}
+#param-search { width: 100%; }
+#param-search-results {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  max-height: 22rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+#param-search-results button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+#param-search-results button:hover,
+#param-search-results button:focus-visible { background: var(--panel); }
+#param-search-results .tag-badge {
+  padding: 0 0.3rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #fff;
+}
+#param-search-results .tag-badge--xg { background: #2a7f86; }
+#param-search-results .tag-badge--midi { background: #6f58b8; }
+.param-search-section {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.param-search-empty {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@keyframes search-flash {
+  0%, 30% { background: rgba(224, 161, 0, 0.28); }
+  100% { background: transparent; }
+}
+.param-row.search-flash { animation: search-flash 1.6s ease-out; }
+
+#pinned-controls,
+#channel-section-hint,
+#section-note { flex-basis: 100%; }
+#pinned-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+#pinned-controls[hidden] { display: none; }
+
+/* ---- XG Address (Diagnostics + Raw SysEx) ---- */
+#xg-address-controls { margin-top: 0.9rem; }
+#xg-address-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+#xg-address-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+#xg-address-row input { width: 3.2rem; font-family: monospace; }
+#xg-address-row #xg-addr-data { width: 9rem; }
+#xg-addr-preview { margin-top: 0.4rem; font-family: monospace; }
+.param-row .info-icon-spacer { flex: none; width: 1.1rem; }
+/* .hint's negative top margin would pull this above #param-list's
+   scrolling edge, where it gets clipped. */
+#param-list .param-list-empty { margin: 0.75rem 0; }
+
+/* ---- Connection Check (Probe button under MIDI In / MIDI Out) ---- */
+/* Same box shape as .messaging-box (Send GM/XG System On), outlined in
+   the site's navy instead of orange. */
+#connection-check {
+  margin-top: 0.6rem;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+.connection-check-row { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+.connection-check-label { font-size: 0.8rem; color: var(--muted); }
+#probe-results {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+#probe-results[hidden] { display: none; }
+#probe-results li { display: flex; gap: 0.45rem; align-items: flex-start; margin: 0.25rem 0; }
+#probe-results .probe-icon {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.1rem;
+  text-align: center;
+  color: #fff;
+}
+#probe-results .probe-ok .probe-icon { background: #2e8b57; }
+#probe-results .probe-warn .probe-icon { background: #d48a00; }
+#probe-results .probe-fail .probe-icon { background: var(--qy100); }
+#probe-results .probe-info .probe-icon { background: var(--accent); font-family: Georgia, serif; font-style: italic; }
+/* Hints under the Parameters buttons (channel note, section note, Drum
+   Setup tip): .hint's negative top margin would butt them against the
+   Push/Reset buttons. */
+#param-controls .hint { margin: 0.25rem 0 0; }
+
+/* Continuous Send Rate: slider plus an exact-value box (1-300 ms). */
+.send-rate-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.send-rate-control input[type="range"] {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+  accent-color: var(--accent);
+}
+.send-rate-control input[type="number"] {
+  width: 4rem;
+}
+.send-rate-unit {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Transports takes the Tempo row's spare width and its four buttons stretch
+   evenly across it (Sections shares .transport-controls but keeps its
+   natural-width text buttons). */
+@media (min-width: 601px) {
+  /* Not on phones: there the row stacks vertically and a flex-basis would
+     stretch its height instead. */
+  .connect-row-1-right > .connect-field:has(> .transport-controls:not(.section-controls)) {
+    flex: 1 1 10rem;
+  }
+}
+.transport-controls:not(.section-controls) button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 2rem;
+}
+
+/* Parameter rows when the list itself is narrow (whatever the window size,
+   e.g. the Parameters panel beside the Voice Browser): the readout moves to
+   its own line under the name instead of being squeezed to nothing beside
+   wide controls (Part Mode's 4-way switch, MSB/LSB knob pairs). Phones keep
+   their own stacked layout (the max-width: 600px rules). */
+#param-list { container-type: inline-size; container-name: param-list; }
+@media (min-width: 601px) {
+  @container param-list (max-width: 780px) {
+    .param-row { flex-wrap: wrap; row-gap: 0.1rem; }
+    /* A small basis so the name gives way (and wraps its own text) before
+       anything else on the line wraps; it still grows into spare room. */
+    .param-row .param-name { flex: 1 1 6.5rem; }
+    .param-row .param-desc {
+      order: 10;
+      flex: 1 1 100%;
+      /* Lines up under the name (after the pin star and info icon). */
+      padding-left: calc(2.2rem + 1.2rem);
+      min-height: 0;
+    }
+    .param-row .param-desc:empty { display: none; }
+  }
+
+  /* Very narrow lists (e.g. ~1000-1150px windows with the Voice Browser
+     beside it): two knobs plus the name and send buttons can't share a
+     line, so stack like phones do: name + send buttons, readout, knobs. */
+  @container param-list (max-width: 520px) {
+    .param-row { row-gap: 0.35rem; }
+    .param-row .param-name { flex: 1 1 calc(100% - 4rem); min-width: 0; order: 1; }
+    .param-row .param-desc { order: 3; padding-left: 0; }
+    .param-row .knob-group { flex-basis: 100%; margin-left: 0; order: 4; }
+    .param-row .insert-wrap,
+    .param-row .ignore-toggle { order: 2; align-self: auto; }
+    .param-row .insert-wrap { flex-direction: row; align-items: center; }
+    .param-row .insert-btn,
+    .param-row .ignore-toggle {
+      writing-mode: horizontal-tb;
+      transform: none;
+      width: auto;
+      padding: 0.2rem 0.5rem;
+      white-space: nowrap;
+      line-height: normal;
+      min-height: 0;
+    }
+    .param-row .insert-btn:active:not(:disabled),
+    .param-row .ignore-toggle:active:not(:disabled) { transform: scale(0.97); }
+  }
+}
+
+/* The smallest phones (~320-360px): Punch Insert, Rec-Arm Insert and
+   Active need slightly tighter padding and gaps to share one line. */
+@media (max-width: 360px) {
+  .param-row { column-gap: 0.4rem; }
+  .param-row .insert-btn,
+  .param-row .ignore-toggle { padding: 0.2rem 0.35rem; }
+  .param-row .insert-wrap { gap: 0.15rem; }
+}
+@media (max-width: 340px) {
+  /* Hover-only tooltips, which touch screens can't show anyway; hiding them
+     lets Punch Insert, Rec-Arm Insert and Active share one line. */
+  .param-row .insert-info-icon { display: none; }
+  .external-xg { padding-left: 0.35rem; padding-right: 0.35rem; }
+  .param-row { column-gap: 0.25rem; }
+  .param-row .insert-btn,
+  .param-row .ignore-toggle { padding: 0.2rem 0.25rem; }
 }

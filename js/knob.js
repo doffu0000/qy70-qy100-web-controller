@@ -16,7 +16,7 @@ const DRAG_PIXELS_FOR_FULL_RANGE = 160;
 // Continuous Send Rate) since some USB MIDI interfaces were found garbling
 // back-to-back SysEx even at 60ms spacing. The browser's own output was
 // confirmed clean, but the QY still recorded merged/corrupted Exc events.
-let continuousSendMs = 120;
+let continuousSendMs = 1;
 
 export function setContinuousSendMs(ms) {
   continuousSendMs = ms;

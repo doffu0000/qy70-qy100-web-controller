@@ -34,6 +34,41 @@
         "dataMax": 88,
         "default": 64,
         "description": "28H-58H, -24..+24 semitones centered at 40H"
+      },
+      {
+        "offset": 125,
+        "size": 1,
+        "name": "Drum Setup 1 Reset",
+        "dataMin": 0,
+        "dataMax": 0,
+        "group": "Reset Commands",
+        "action": true,
+        "value": 0,
+        "description": "Returns every Drum Setup 1 parameter to its default",
+        "keyOffset": 637
+      },
+      {
+        "offset": 125,
+        "size": 1,
+        "name": "Drum Setup 2 Reset",
+        "dataMin": 1,
+        "dataMax": 1,
+        "group": "Reset Commands",
+        "action": true,
+        "value": 1,
+        "description": "Returns every Drum Setup 2 parameter to its default",
+        "keyOffset": 381
+      },
+      {
+        "offset": 127,
+        "size": 1,
+        "name": "All Parameter Reset",
+        "dataMin": 0,
+        "dataMax": 0,
+        "group": "Reset Commands",
+        "action": true,
+        "value": 0,
+        "description": "Resets every XG parameter, like XG System On"
       }
     ]
   },
@@ -620,7 +655,7 @@
     ],
     "partRange": [
       0,
-      31
+      23
     ],
     "params": [
       {
@@ -1047,6 +1082,516 @@
         "dataMin": 0,
         "dataMax": 127,
         "default": 0
+      },
+      {
+        "offset": 109,
+        "size": 1,
+        "name": "Velocity Limit Low",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 1,
+        "tag": "xg",
+        "group": "Velocity Limits"
+      },
+      {
+        "offset": 110,
+        "size": 1,
+        "name": "Velocity Limit High",
+        "dataMin": 1,
+        "dataMax": 127,
+        "default": 127,
+        "tag": "xg",
+        "group": "Velocity Limits"
+      },
+      {
+        "offset": 48,
+        "size": 1,
+        "name": "Rcv Pitch Bend",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 49,
+        "size": 1,
+        "name": "Rcv Ch AfterTouch",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 50,
+        "size": 1,
+        "name": "Rcv Program Change",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 51,
+        "size": 1,
+        "name": "Rcv Control Change",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 52,
+        "size": 1,
+        "name": "Rcv Poly AfterTouch",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 53,
+        "size": 1,
+        "name": "Rcv Note Message",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 54,
+        "size": 1,
+        "name": "Rcv RPN",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 55,
+        "size": 1,
+        "name": "Rcv NRPN",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 56,
+        "size": 1,
+        "name": "Rcv Modulation",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 57,
+        "size": 1,
+        "name": "Rcv Volume",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 58,
+        "size": 1,
+        "name": "Rcv Pan",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 59,
+        "size": 1,
+        "name": "Rcv Expression",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 60,
+        "size": 1,
+        "name": "Rcv Hold 1",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 61,
+        "size": 1,
+        "name": "Rcv Portamento",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 62,
+        "size": 1,
+        "name": "Rcv Sostenuto",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 63,
+        "size": 1,
+        "name": "Rcv Soft Pedal",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 64,
+        "size": 1,
+        "name": "Rcv Bank Select",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "xg",
+        "group": "Receive Switches"
+      },
+      {
+        "offset": 65,
+        "size": 1,
+        "name": "Scale Tuning C",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 66,
+        "size": 1,
+        "name": "Scale Tuning C#",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 67,
+        "size": 1,
+        "name": "Scale Tuning D",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 68,
+        "size": 1,
+        "name": "Scale Tuning D#",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 69,
+        "size": 1,
+        "name": "Scale Tuning E",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 70,
+        "size": 1,
+        "name": "Scale Tuning F",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 71,
+        "size": 1,
+        "name": "Scale Tuning F#",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 72,
+        "size": 1,
+        "name": "Scale Tuning G",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 73,
+        "size": 1,
+        "name": "Scale Tuning G#",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 74,
+        "size": 1,
+        "name": "Scale Tuning A",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 75,
+        "size": 1,
+        "name": "Scale Tuning A#",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 76,
+        "size": 1,
+        "name": "Scale Tuning B",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Scale Tuning"
+      },
+      {
+        "offset": 83,
+        "size": 1,
+        "name": "PAT Pitch Control",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 64,
+        "tag": "xg",
+        "group": "Polyphonic Aftertouch"
+      },
+      {
+        "offset": 84,
+        "size": 1,
+        "name": "PAT Filter Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Polyphonic Aftertouch"
+      },
+      {
+        "offset": 85,
+        "size": 1,
+        "name": "PAT Amplitude Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Polyphonic Aftertouch"
+      },
+      {
+        "offset": 86,
+        "size": 1,
+        "name": "PAT LFO PMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Polyphonic Aftertouch"
+      },
+      {
+        "offset": 87,
+        "size": 1,
+        "name": "PAT LFO FMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Polyphonic Aftertouch"
+      },
+      {
+        "offset": 88,
+        "size": 1,
+        "name": "PAT LFO AMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Polyphonic Aftertouch"
+      },
+      {
+        "offset": 89,
+        "size": 1,
+        "name": "AC1 Controller Number",
+        "dataMin": 0,
+        "dataMax": 95,
+        "default": 16,
+        "tag": "xg",
+        "group": "Assignable Controller 1"
+      },
+      {
+        "offset": 90,
+        "size": 1,
+        "name": "AC1 Pitch Control",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 64,
+        "tag": "xg",
+        "group": "Assignable Controller 1"
+      },
+      {
+        "offset": 91,
+        "size": 1,
+        "name": "AC1 Filter Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Assignable Controller 1"
+      },
+      {
+        "offset": 92,
+        "size": 1,
+        "name": "AC1 Amplitude Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Assignable Controller 1"
+      },
+      {
+        "offset": 93,
+        "size": 1,
+        "name": "AC1 LFO PMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Assignable Controller 1"
+      },
+      {
+        "offset": 94,
+        "size": 1,
+        "name": "AC1 LFO FMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Assignable Controller 1"
+      },
+      {
+        "offset": 95,
+        "size": 1,
+        "name": "AC1 LFO AMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Assignable Controller 1"
+      },
+      {
+        "offset": 96,
+        "size": 1,
+        "name": "AC2 Controller Number",
+        "dataMin": 0,
+        "dataMax": 95,
+        "default": 17,
+        "tag": "xg",
+        "group": "Assignable Controller 2"
+      },
+      {
+        "offset": 97,
+        "size": 1,
+        "name": "AC2 Pitch Control",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 64,
+        "tag": "xg",
+        "group": "Assignable Controller 2"
+      },
+      {
+        "offset": 98,
+        "size": 1,
+        "name": "AC2 Filter Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Assignable Controller 2"
+      },
+      {
+        "offset": 99,
+        "size": 1,
+        "name": "AC2 Amplitude Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Assignable Controller 2"
+      },
+      {
+        "offset": 100,
+        "size": 1,
+        "name": "AC2 LFO PMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Assignable Controller 2"
+      },
+      {
+        "offset": 101,
+        "size": 1,
+        "name": "AC2 LFO FMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Assignable Controller 2"
+      },
+      {
+        "offset": 102,
+        "size": 1,
+        "name": "AC2 LFO AMod Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "xg",
+        "group": "Assignable Controller 2"
       }
     ]
   },
@@ -1203,6 +1748,3600 @@
         "dataMax": 127,
         "default": 64,
         "description": "-64..63 relative"
+      }
+    ]
+  },
+  "controllers": {
+    "label": "PC + MIDI CC",
+    "kind": "channel",
+    "params": [
+      {
+        "offset": 128,
+        "size": 1,
+        "name": "Program Change",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Program Change",
+        "msg": {
+          "type": "pc"
+        }
+      },
+      {
+        "offset": 0,
+        "size": 1,
+        "name": "CC 0 Bank Select MSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 0
+        }
+      },
+      {
+        "offset": 1,
+        "size": 1,
+        "name": "CC 1 Modulation",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 1
+        }
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "CC 2 Breath Controller",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 2
+        }
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "CC 3 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 3
+        }
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "CC 4 Foot Controller",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 4
+        }
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "CC 5 Portamento Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 5
+        }
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "CC 6 Data Entry MSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 6
+        }
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "CC 7 Volume",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 100,
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 7
+        }
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "CC 8 Balance",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 8
+        }
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "CC 9 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 9
+        }
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "CC 10 Pan",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 10
+        }
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "CC 11 Expression",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127,
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 11
+        }
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "CC 12 Effect Control 1",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 12
+        }
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "CC 13 Effect Control 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 13
+        }
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "CC 14 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 14
+        }
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "CC 15 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 15
+        }
+      },
+      {
+        "offset": 16,
+        "size": 1,
+        "name": "CC 16 General Purpose 1 (AC1)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 16
+        }
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "CC 17 General Purpose 2 (AC2)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 17
+        }
+      },
+      {
+        "offset": 18,
+        "size": 1,
+        "name": "CC 18 General Purpose 3",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 18
+        }
+      },
+      {
+        "offset": 19,
+        "size": 1,
+        "name": "CC 19 General Purpose 4",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 19
+        }
+      },
+      {
+        "offset": 20,
+        "size": 1,
+        "name": "CC 20 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 20
+        }
+      },
+      {
+        "offset": 21,
+        "size": 1,
+        "name": "CC 21 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 21
+        }
+      },
+      {
+        "offset": 22,
+        "size": 1,
+        "name": "CC 22 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 22
+        }
+      },
+      {
+        "offset": 23,
+        "size": 1,
+        "name": "CC 23 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 23
+        }
+      },
+      {
+        "offset": 24,
+        "size": 1,
+        "name": "CC 24 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 24
+        }
+      },
+      {
+        "offset": 25,
+        "size": 1,
+        "name": "CC 25 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 25
+        }
+      },
+      {
+        "offset": 26,
+        "size": 1,
+        "name": "CC 26 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 26
+        }
+      },
+      {
+        "offset": 27,
+        "size": 1,
+        "name": "CC 27 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 27
+        }
+      },
+      {
+        "offset": 28,
+        "size": 1,
+        "name": "CC 28 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 28
+        }
+      },
+      {
+        "offset": 29,
+        "size": 1,
+        "name": "CC 29 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 29
+        }
+      },
+      {
+        "offset": 30,
+        "size": 1,
+        "name": "CC 30 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 30
+        }
+      },
+      {
+        "offset": 31,
+        "size": 1,
+        "name": "CC 31 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 0 to 31",
+        "msg": {
+          "type": "cc",
+          "cc": 31
+        }
+      },
+      {
+        "offset": 32,
+        "size": 1,
+        "name": "CC 32 Bank Select LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 32
+        }
+      },
+      {
+        "offset": 33,
+        "size": 1,
+        "name": "CC 33 Modulation LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 33
+        }
+      },
+      {
+        "offset": 34,
+        "size": 1,
+        "name": "CC 34 Breath Controller LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 34
+        }
+      },
+      {
+        "offset": 35,
+        "size": 1,
+        "name": "CC 35 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 35
+        }
+      },
+      {
+        "offset": 36,
+        "size": 1,
+        "name": "CC 36 Foot Controller LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 36
+        }
+      },
+      {
+        "offset": 37,
+        "size": 1,
+        "name": "CC 37 Portamento Time LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 37
+        }
+      },
+      {
+        "offset": 38,
+        "size": 1,
+        "name": "CC 38 Data Entry LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 38
+        }
+      },
+      {
+        "offset": 39,
+        "size": 1,
+        "name": "CC 39 Volume LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 39
+        }
+      },
+      {
+        "offset": 40,
+        "size": 1,
+        "name": "CC 40 Balance LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 40
+        }
+      },
+      {
+        "offset": 41,
+        "size": 1,
+        "name": "CC 41 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 41
+        }
+      },
+      {
+        "offset": 42,
+        "size": 1,
+        "name": "CC 42 Pan LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 42
+        }
+      },
+      {
+        "offset": 43,
+        "size": 1,
+        "name": "CC 43 Expression LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 43
+        }
+      },
+      {
+        "offset": 44,
+        "size": 1,
+        "name": "CC 44 Effect Control 1 LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 44
+        }
+      },
+      {
+        "offset": 45,
+        "size": 1,
+        "name": "CC 45 Effect Control 2 LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 45
+        }
+      },
+      {
+        "offset": 46,
+        "size": 1,
+        "name": "CC 46 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 46
+        }
+      },
+      {
+        "offset": 47,
+        "size": 1,
+        "name": "CC 47 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 47
+        }
+      },
+      {
+        "offset": 48,
+        "size": 1,
+        "name": "CC 48 General Purpose 1 (AC1) LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 48
+        }
+      },
+      {
+        "offset": 49,
+        "size": 1,
+        "name": "CC 49 General Purpose 2 (AC2) LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 49
+        }
+      },
+      {
+        "offset": 50,
+        "size": 1,
+        "name": "CC 50 General Purpose 3 LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 50
+        }
+      },
+      {
+        "offset": 51,
+        "size": 1,
+        "name": "CC 51 General Purpose 4 LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 51
+        }
+      },
+      {
+        "offset": 52,
+        "size": 1,
+        "name": "CC 52 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 52
+        }
+      },
+      {
+        "offset": 53,
+        "size": 1,
+        "name": "CC 53 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 53
+        }
+      },
+      {
+        "offset": 54,
+        "size": 1,
+        "name": "CC 54 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 54
+        }
+      },
+      {
+        "offset": 55,
+        "size": 1,
+        "name": "CC 55 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 55
+        }
+      },
+      {
+        "offset": 56,
+        "size": 1,
+        "name": "CC 56 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 56
+        }
+      },
+      {
+        "offset": 57,
+        "size": 1,
+        "name": "CC 57 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 57
+        }
+      },
+      {
+        "offset": 58,
+        "size": 1,
+        "name": "CC 58 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 58
+        }
+      },
+      {
+        "offset": 59,
+        "size": 1,
+        "name": "CC 59 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 59
+        }
+      },
+      {
+        "offset": 60,
+        "size": 1,
+        "name": "CC 60 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 60
+        }
+      },
+      {
+        "offset": 61,
+        "size": 1,
+        "name": "CC 61 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 61
+        }
+      },
+      {
+        "offset": 62,
+        "size": 1,
+        "name": "CC 62 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 62
+        }
+      },
+      {
+        "offset": 63,
+        "size": 1,
+        "name": "CC 63 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Controllers 32 to 63 (LSB)",
+        "msg": {
+          "type": "cc",
+          "cc": 63
+        }
+      },
+      {
+        "offset": 64,
+        "size": 1,
+        "name": "CC 64 Hold 1 (Sustain)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "group": "Switches and Pedals 64 to 69",
+        "msg": {
+          "type": "cc",
+          "cc": 64
+        }
+      },
+      {
+        "offset": 65,
+        "size": 1,
+        "name": "CC 65 Portamento",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "group": "Switches and Pedals 64 to 69",
+        "msg": {
+          "type": "cc",
+          "cc": 65
+        }
+      },
+      {
+        "offset": 66,
+        "size": 1,
+        "name": "CC 66 Sostenuto",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "group": "Switches and Pedals 64 to 69",
+        "msg": {
+          "type": "cc",
+          "cc": 66
+        }
+      },
+      {
+        "offset": 67,
+        "size": 1,
+        "name": "CC 67 Soft Pedal",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "group": "Switches and Pedals 64 to 69",
+        "msg": {
+          "type": "cc",
+          "cc": 67
+        }
+      },
+      {
+        "offset": 68,
+        "size": 1,
+        "name": "CC 68 Legato Footswitch",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Switches and Pedals 64 to 69",
+        "msg": {
+          "type": "cc",
+          "cc": 68
+        }
+      },
+      {
+        "offset": 69,
+        "size": 1,
+        "name": "CC 69 Hold 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Switches and Pedals 64 to 69",
+        "msg": {
+          "type": "cc",
+          "cc": 69
+        }
+      },
+      {
+        "offset": 70,
+        "size": 1,
+        "name": "CC 70 Sound Variation",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 70
+        }
+      },
+      {
+        "offset": 71,
+        "size": 1,
+        "name": "CC 71 Harmonic Content (Resonance)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 71
+        }
+      },
+      {
+        "offset": 72,
+        "size": 1,
+        "name": "CC 72 Release Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 72
+        }
+      },
+      {
+        "offset": 73,
+        "size": 1,
+        "name": "CC 73 Attack Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 73
+        }
+      },
+      {
+        "offset": 74,
+        "size": 1,
+        "name": "CC 74 Brightness (Cutoff)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 74
+        }
+      },
+      {
+        "offset": 75,
+        "size": 1,
+        "name": "CC 75 Decay Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 75
+        }
+      },
+      {
+        "offset": 76,
+        "size": 1,
+        "name": "CC 76 Vibrato Rate",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 76
+        }
+      },
+      {
+        "offset": 77,
+        "size": 1,
+        "name": "CC 77 Vibrato Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 77
+        }
+      },
+      {
+        "offset": 78,
+        "size": 1,
+        "name": "CC 78 Vibrato Delay",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 78
+        }
+      },
+      {
+        "offset": 79,
+        "size": 1,
+        "name": "CC 79 Sound Controller 10",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Sound Controllers 70 to 79",
+        "msg": {
+          "type": "cc",
+          "cc": 79
+        }
+      },
+      {
+        "offset": 80,
+        "size": 1,
+        "name": "CC 80 General Purpose 5",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 80
+        }
+      },
+      {
+        "offset": 81,
+        "size": 1,
+        "name": "CC 81 General Purpose 6",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 81
+        }
+      },
+      {
+        "offset": 82,
+        "size": 1,
+        "name": "CC 82 General Purpose 7",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 82
+        }
+      },
+      {
+        "offset": 83,
+        "size": 1,
+        "name": "CC 83 General Purpose 8",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 83
+        }
+      },
+      {
+        "offset": 84,
+        "size": 1,
+        "name": "CC 84 Portamento Control",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 84
+        }
+      },
+      {
+        "offset": 85,
+        "size": 1,
+        "name": "CC 85 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 85
+        }
+      },
+      {
+        "offset": 86,
+        "size": 1,
+        "name": "CC 86 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 86
+        }
+      },
+      {
+        "offset": 87,
+        "size": 1,
+        "name": "CC 87 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 87
+        }
+      },
+      {
+        "offset": 88,
+        "size": 1,
+        "name": "CC 88 High Resolution Velocity Prefix",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 88
+        }
+      },
+      {
+        "offset": 89,
+        "size": 1,
+        "name": "CC 89 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 89
+        }
+      },
+      {
+        "offset": 90,
+        "size": 1,
+        "name": "CC 90 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "General Purpose and Misc 80 to 90",
+        "msg": {
+          "type": "cc",
+          "cc": 90
+        }
+      },
+      {
+        "offset": 91,
+        "size": 1,
+        "name": "CC 91 Reverb Send (Effect 1)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 40,
+        "group": "Effect Depths 91 to 95",
+        "msg": {
+          "type": "cc",
+          "cc": 91
+        }
+      },
+      {
+        "offset": 92,
+        "size": 1,
+        "name": "CC 92 Tremolo (Effect 2)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Effect Depths 91 to 95",
+        "msg": {
+          "type": "cc",
+          "cc": 92
+        }
+      },
+      {
+        "offset": 93,
+        "size": 1,
+        "name": "CC 93 Chorus Send (Effect 3)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "group": "Effect Depths 91 to 95",
+        "msg": {
+          "type": "cc",
+          "cc": 93
+        }
+      },
+      {
+        "offset": 94,
+        "size": 1,
+        "name": "CC 94 Variation Send (Effect 4)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "group": "Effect Depths 91 to 95",
+        "msg": {
+          "type": "cc",
+          "cc": 94
+        }
+      },
+      {
+        "offset": 95,
+        "size": 1,
+        "name": "CC 95 Phaser (Effect 5)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Effect Depths 91 to 95",
+        "msg": {
+          "type": "cc",
+          "cc": 95
+        }
+      },
+      {
+        "offset": 96,
+        "size": 1,
+        "name": "CC 96 Data Increment",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Data Entry and Parameter Numbers 96 to 101",
+        "msg": {
+          "type": "cc",
+          "cc": 96
+        }
+      },
+      {
+        "offset": 97,
+        "size": 1,
+        "name": "CC 97 Data Decrement",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Data Entry and Parameter Numbers 96 to 101",
+        "msg": {
+          "type": "cc",
+          "cc": 97
+        }
+      },
+      {
+        "offset": 98,
+        "size": 1,
+        "name": "CC 98 NRPN LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Data Entry and Parameter Numbers 96 to 101",
+        "msg": {
+          "type": "cc",
+          "cc": 98
+        }
+      },
+      {
+        "offset": 99,
+        "size": 1,
+        "name": "CC 99 NRPN MSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Data Entry and Parameter Numbers 96 to 101",
+        "msg": {
+          "type": "cc",
+          "cc": 99
+        }
+      },
+      {
+        "offset": 100,
+        "size": 1,
+        "name": "CC 100 RPN LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Data Entry and Parameter Numbers 96 to 101",
+        "msg": {
+          "type": "cc",
+          "cc": 100
+        }
+      },
+      {
+        "offset": 101,
+        "size": 1,
+        "name": "CC 101 RPN MSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "Data Entry and Parameter Numbers 96 to 101",
+        "msg": {
+          "type": "cc",
+          "cc": 101
+        }
+      },
+      {
+        "offset": 102,
+        "size": 1,
+        "name": "CC 102 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 102
+        }
+      },
+      {
+        "offset": 103,
+        "size": 1,
+        "name": "CC 103 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 103
+        }
+      },
+      {
+        "offset": 104,
+        "size": 1,
+        "name": "CC 104 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 104
+        }
+      },
+      {
+        "offset": 105,
+        "size": 1,
+        "name": "CC 105 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 105
+        }
+      },
+      {
+        "offset": 106,
+        "size": 1,
+        "name": "CC 106 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 106
+        }
+      },
+      {
+        "offset": 107,
+        "size": 1,
+        "name": "CC 107 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 107
+        }
+      },
+      {
+        "offset": 108,
+        "size": 1,
+        "name": "CC 108 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 108
+        }
+      },
+      {
+        "offset": 109,
+        "size": 1,
+        "name": "CC 109 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 109
+        }
+      },
+      {
+        "offset": 110,
+        "size": 1,
+        "name": "CC 110 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 110
+        }
+      },
+      {
+        "offset": 111,
+        "size": 1,
+        "name": "CC 111 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 111
+        }
+      },
+      {
+        "offset": 112,
+        "size": 1,
+        "name": "CC 112 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 112
+        }
+      },
+      {
+        "offset": 113,
+        "size": 1,
+        "name": "CC 113 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 113
+        }
+      },
+      {
+        "offset": 114,
+        "size": 1,
+        "name": "CC 114 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 114
+        }
+      },
+      {
+        "offset": 115,
+        "size": 1,
+        "name": "CC 115 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 115
+        }
+      },
+      {
+        "offset": 116,
+        "size": 1,
+        "name": "CC 116 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 116
+        }
+      },
+      {
+        "offset": 117,
+        "size": 1,
+        "name": "CC 117 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 117
+        }
+      },
+      {
+        "offset": 118,
+        "size": 1,
+        "name": "CC 118 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 118
+        }
+      },
+      {
+        "offset": 119,
+        "size": 1,
+        "name": "CC 119 Undefined",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Undefined 102 to 119",
+        "msg": {
+          "type": "cc",
+          "cc": 119
+        }
+      },
+      {
+        "offset": 120,
+        "size": 1,
+        "name": "CC 120 All Sound Off",
+        "dataMin": 0,
+        "dataMax": 0,
+        "msg": {
+          "type": "cc",
+          "cc": 120
+        },
+        "action": true,
+        "value": 0,
+        "group": "Channel Mode 120 to 127"
+      },
+      {
+        "offset": 121,
+        "size": 1,
+        "name": "CC 121 Reset All Controllers",
+        "dataMin": 0,
+        "dataMax": 0,
+        "msg": {
+          "type": "cc",
+          "cc": 121
+        },
+        "action": true,
+        "value": 0,
+        "group": "Channel Mode 120 to 127"
+      },
+      {
+        "offset": 122,
+        "size": 1,
+        "name": "CC 122 Local Control",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 1,
+        "tag": "midi",
+        "msg": {
+          "type": "cc",
+          "cc": 122,
+          "toggle": true
+        },
+        "group": "Channel Mode 120 to 127"
+      },
+      {
+        "offset": 123,
+        "size": 1,
+        "name": "CC 123 All Notes Off",
+        "dataMin": 0,
+        "dataMax": 0,
+        "msg": {
+          "type": "cc",
+          "cc": 123
+        },
+        "action": true,
+        "value": 0,
+        "group": "Channel Mode 120 to 127"
+      },
+      {
+        "offset": 124,
+        "size": 1,
+        "name": "CC 124 Omni Off",
+        "dataMin": 0,
+        "dataMax": 0,
+        "msg": {
+          "type": "cc",
+          "cc": 124
+        },
+        "action": true,
+        "value": 0,
+        "group": "Channel Mode 120 to 127"
+      },
+      {
+        "offset": 125,
+        "size": 1,
+        "name": "CC 125 Omni On",
+        "dataMin": 0,
+        "dataMax": 0,
+        "msg": {
+          "type": "cc",
+          "cc": 125
+        },
+        "action": true,
+        "value": 0,
+        "group": "Channel Mode 120 to 127"
+      },
+      {
+        "offset": 126,
+        "size": 1,
+        "name": "CC 126 Mono On",
+        "dataMin": 1,
+        "dataMax": 1,
+        "msg": {
+          "type": "cc",
+          "cc": 126
+        },
+        "action": true,
+        "value": 1,
+        "group": "Channel Mode 120 to 127"
+      },
+      {
+        "offset": 127,
+        "size": 1,
+        "name": "CC 127 Poly On",
+        "dataMin": 0,
+        "dataMax": 0,
+        "msg": {
+          "type": "cc",
+          "cc": 127
+        },
+        "action": true,
+        "value": 0,
+        "group": "Channel Mode 120 to 127"
+      }
+    ]
+  },
+  "channelVoice": {
+    "label": "Pitch Bend + Aftertouch",
+    "kind": "channel",
+    "params": [
+      {
+        "offset": 0,
+        "size": 1,
+        "name": "Pitch Bend",
+        "dataMin": 0,
+        "dataMax": 16383,
+        "default": 8192,
+        "group": "Pitch Bend",
+        "msg": {
+          "type": "pb"
+        }
+      },
+      {
+        "offset": 1,
+        "size": 1,
+        "name": "Channel Aftertouch",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "group": "Channel Aftertouch",
+        "msg": {
+          "type": "cat"
+        }
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Poly Aftertouch Note",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 60,
+        "tag": "midi",
+        "group": "Poly Aftertouch",
+        "msg": {
+          "type": "none",
+          "partOf": "pat"
+        }
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Poly Aftertouch Pressure",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "midi",
+        "group": "Poly Aftertouch",
+        "msg": {
+          "type": "pat",
+          "noteFrom": "Poly Aftertouch Note"
+        }
+      }
+    ]
+  },
+  "rpnNrpn": {
+    "label": "RPN / NRPN",
+    "kind": "channel",
+    "params": [
+      {
+        "offset": 0,
+        "size": 1,
+        "name": "Pitch Bend Sensitivity",
+        "dataMin": 0,
+        "dataMax": 24,
+        "default": 2,
+        "group": "RPN",
+        "msg": {
+          "type": "rpn",
+          "msb": 0,
+          "lsb": 0
+        }
+      },
+      {
+        "offset": 1,
+        "size": 1,
+        "name": "Fine Tune",
+        "dataMin": 0,
+        "dataMax": 16383,
+        "default": 8192,
+        "group": "RPN",
+        "msg": {
+          "type": "rpn",
+          "msb": 0,
+          "lsb": 1,
+          "wide": true
+        }
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Coarse Tune",
+        "dataMin": 40,
+        "dataMax": 88,
+        "default": 64,
+        "group": "RPN",
+        "msg": {
+          "type": "rpn",
+          "msb": 0,
+          "lsb": 2
+        }
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Modulation Depth Range",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "RPN",
+        "msg": {
+          "type": "rpn",
+          "msb": 0,
+          "lsb": 5
+        }
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "RPN Reset (Null)",
+        "dataMin": 0,
+        "dataMax": 0,
+        "group": "RPN",
+        "msg": {
+          "type": "rpnNull"
+        },
+        "action": true,
+        "value": 0
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "NRPN Vibrato Rate",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 1,
+          "lsb": 8
+        }
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "NRPN Vibrato Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 1,
+          "lsb": 9
+        }
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "NRPN Vibrato Delay",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 1,
+          "lsb": 10
+        }
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "NRPN Filter Cutoff",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 1,
+          "lsb": 32
+        }
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "NRPN Filter Resonance",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 1,
+          "lsb": 33
+        }
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "NRPN EG Attack Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 1,
+          "lsb": 99
+        }
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "NRPN EG Decay Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 1,
+          "lsb": 100
+        }
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "NRPN EG Release Time",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 1,
+          "lsb": 102
+        }
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "Drum NRPN Note",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 36,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "none",
+          "partOf": "nrpn"
+        }
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "Drum Filter Cutoff",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 20,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "Drum Filter Resonance",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 21,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 16,
+        "size": 1,
+        "name": "Drum EG Attack Rate",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 22,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "Drum EG Decay Rate",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 23,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 18,
+        "size": 1,
+        "name": "Drum Pitch Coarse",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 24,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 19,
+        "size": 1,
+        "name": "Drum Pitch Fine",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 25,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 20,
+        "size": 1,
+        "name": "Drum Level",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 26,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 21,
+        "size": 1,
+        "name": "Drum Pan",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 28,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 22,
+        "size": 1,
+        "name": "Drum Reverb Send",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 29,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 23,
+        "size": 1,
+        "name": "Drum Chorus Send",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 30,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 24,
+        "size": 1,
+        "name": "Drum Variation Send",
+        "dataMin": 0,
+        "dataMax": 127,
+        "group": "XG Drum NRPN",
+        "msg": {
+          "type": "nrpn",
+          "msb": 31,
+          "noteFrom": "Drum NRPN Note"
+        }
+      },
+      {
+        "offset": 25,
+        "size": 1,
+        "name": "Custom Parameter Type",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 0,
+        "tag": "midi",
+        "group": "Custom RPN / NRPN",
+        "msg": {
+          "type": "none",
+          "partOf": "custom"
+        }
+      },
+      {
+        "offset": 26,
+        "size": 1,
+        "name": "Custom Parameter MSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "midi",
+        "group": "Custom RPN / NRPN",
+        "msg": {
+          "type": "none",
+          "partOf": "custom"
+        }
+      },
+      {
+        "offset": 27,
+        "size": 1,
+        "name": "Custom Parameter LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 0,
+        "tag": "midi",
+        "group": "Custom RPN / NRPN",
+        "msg": {
+          "type": "none",
+          "partOf": "custom"
+        }
+      },
+      {
+        "offset": 28,
+        "size": 1,
+        "name": "Custom Data Entry MSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Custom RPN / NRPN",
+        "msg": {
+          "type": "custom",
+          "part": "msb"
+        }
+      },
+      {
+        "offset": 29,
+        "size": 1,
+        "name": "Custom Data Entry LSB",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "midi",
+        "group": "Custom RPN / NRPN",
+        "msg": {
+          "type": "custom",
+          "part": "lsb"
+        }
+      }
+    ]
+  },
+  "multiEq": {
+    "label": "Multi EQ (MU)",
+    "addressBase": [
+      2,
+      64,
+      0
+    ],
+    "params": [
+      {
+        "offset": 0,
+        "size": 1,
+        "name": "EQ Type",
+        "dataMin": 0,
+        "dataMax": 4,
+        "default": 0,
+        "tag": "xg"
+      },
+      {
+        "offset": 1,
+        "size": 1,
+        "name": "EQ Gain 1",
+        "dataMin": 52,
+        "dataMax": 76,
+        "default": 64,
+        "tag": "xg",
+        "group": "Band 1"
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "EQ Frequency 1",
+        "dataMin": 4,
+        "dataMax": 40,
+        "default": 12,
+        "tag": "xg",
+        "group": "Band 1"
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "EQ Q 1",
+        "dataMin": 1,
+        "dataMax": 120,
+        "default": 7,
+        "tag": "xg",
+        "group": "Band 1"
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "EQ Shape 1",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 0,
+        "tag": "xg",
+        "group": "Band 1"
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "EQ Gain 2",
+        "dataMin": 52,
+        "dataMax": 76,
+        "default": 64,
+        "tag": "xg",
+        "group": "Band 2"
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "EQ Frequency 2",
+        "dataMin": 14,
+        "dataMax": 54,
+        "default": 28,
+        "tag": "xg",
+        "group": "Band 2"
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "EQ Q 2",
+        "dataMin": 1,
+        "dataMax": 120,
+        "default": 7,
+        "tag": "xg",
+        "group": "Band 2"
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "EQ Gain 3",
+        "dataMin": 52,
+        "dataMax": 76,
+        "default": 64,
+        "tag": "xg",
+        "group": "Band 3"
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "EQ Frequency 3",
+        "dataMin": 14,
+        "dataMax": 54,
+        "default": 34,
+        "tag": "xg",
+        "group": "Band 3"
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "EQ Q 3",
+        "dataMin": 1,
+        "dataMax": 120,
+        "default": 7,
+        "tag": "xg",
+        "group": "Band 3"
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "EQ Gain 4",
+        "dataMin": 52,
+        "dataMax": 76,
+        "default": 64,
+        "tag": "xg",
+        "group": "Band 4"
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "EQ Frequency 4",
+        "dataMin": 14,
+        "dataMax": 54,
+        "default": 46,
+        "tag": "xg",
+        "group": "Band 4"
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "EQ Q 4",
+        "dataMin": 1,
+        "dataMax": 120,
+        "default": 7,
+        "tag": "xg",
+        "group": "Band 4"
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "EQ Gain 5",
+        "dataMin": 52,
+        "dataMax": 76,
+        "default": 64,
+        "tag": "xg",
+        "group": "Band 5"
+      },
+      {
+        "offset": 18,
+        "size": 1,
+        "name": "EQ Frequency 5",
+        "dataMin": 28,
+        "dataMax": 58,
+        "default": 52,
+        "tag": "xg",
+        "group": "Band 5"
+      },
+      {
+        "offset": 19,
+        "size": 1,
+        "name": "EQ Q 5",
+        "dataMin": 1,
+        "dataMax": 120,
+        "default": 7,
+        "tag": "xg",
+        "group": "Band 5"
+      },
+      {
+        "offset": 20,
+        "size": 1,
+        "name": "EQ Shape 5",
+        "dataMin": 0,
+        "dataMax": 1,
+        "default": 0,
+        "tag": "xg",
+        "group": "Band 5"
+      }
+    ]
+  },
+  "insertion1": {
+    "label": "Insertion Effect 1 (MU)",
+    "addressBase": [
+      3,
+      0,
+      0
+    ],
+    "params": [
+      {
+        "offset": 0,
+        "size": 2,
+        "name": "Insertion 1 Type",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Type"
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Insertion 1 Parameter 1",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Insertion 1 Parameter 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "Insertion 1 Parameter 3",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "Insertion 1 Parameter 4",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "Insertion 1 Parameter 5",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "Insertion 1 Parameter 6",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "Insertion 1 Parameter 7",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "Insertion 1 Parameter 8",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "Insertion 1 Parameter 9",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "Insertion 1 Parameter 10",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 32,
+        "size": 1,
+        "name": "Insertion 1 Parameter 11",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 33,
+        "size": 1,
+        "name": "Insertion 1 Parameter 12",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 34,
+        "size": 1,
+        "name": "Insertion 1 Parameter 13",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 35,
+        "size": 1,
+        "name": "Insertion 1 Parameter 14",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 36,
+        "size": 1,
+        "name": "Insertion 1 Parameter 15",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 37,
+        "size": 1,
+        "name": "Insertion 1 Parameter 16",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "Insertion 1 Part",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "Insertion 1 MW Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "Insertion 1 Bend Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "Insertion 1 CAT Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 16,
+        "size": 1,
+        "name": "Insertion 1 AC1 Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "Insertion 1 AC2 Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 48,
+        "size": 2,
+        "name": "Insertion 1 Parameter 1 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 50,
+        "size": 2,
+        "name": "Insertion 1 Parameter 2 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 52,
+        "size": 2,
+        "name": "Insertion 1 Parameter 3 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 54,
+        "size": 2,
+        "name": "Insertion 1 Parameter 4 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 56,
+        "size": 2,
+        "name": "Insertion 1 Parameter 5 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 58,
+        "size": 2,
+        "name": "Insertion 1 Parameter 6 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 60,
+        "size": 2,
+        "name": "Insertion 1 Parameter 7 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 62,
+        "size": 2,
+        "name": "Insertion 1 Parameter 8 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 64,
+        "size": 2,
+        "name": "Insertion 1 Parameter 9 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 66,
+        "size": 2,
+        "name": "Insertion 1 Parameter 10 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      }
+    ]
+  },
+  "insertion2": {
+    "label": "Insertion Effect 2 (MU)",
+    "addressBase": [
+      3,
+      1,
+      0
+    ],
+    "params": [
+      {
+        "offset": 0,
+        "size": 2,
+        "name": "Insertion 2 Type",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Type"
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Insertion 2 Parameter 1",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Insertion 2 Parameter 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "Insertion 2 Parameter 3",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "Insertion 2 Parameter 4",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "Insertion 2 Parameter 5",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "Insertion 2 Parameter 6",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "Insertion 2 Parameter 7",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "Insertion 2 Parameter 8",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "Insertion 2 Parameter 9",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "Insertion 2 Parameter 10",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 32,
+        "size": 1,
+        "name": "Insertion 2 Parameter 11",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 33,
+        "size": 1,
+        "name": "Insertion 2 Parameter 12",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 34,
+        "size": 1,
+        "name": "Insertion 2 Parameter 13",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 35,
+        "size": 1,
+        "name": "Insertion 2 Parameter 14",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 36,
+        "size": 1,
+        "name": "Insertion 2 Parameter 15",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 37,
+        "size": 1,
+        "name": "Insertion 2 Parameter 16",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "Insertion 2 Part",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "Insertion 2 MW Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "Insertion 2 Bend Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "Insertion 2 CAT Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 16,
+        "size": 1,
+        "name": "Insertion 2 AC1 Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "Insertion 2 AC2 Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 48,
+        "size": 2,
+        "name": "Insertion 2 Parameter 1 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 50,
+        "size": 2,
+        "name": "Insertion 2 Parameter 2 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 52,
+        "size": 2,
+        "name": "Insertion 2 Parameter 3 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 54,
+        "size": 2,
+        "name": "Insertion 2 Parameter 4 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 56,
+        "size": 2,
+        "name": "Insertion 2 Parameter 5 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 58,
+        "size": 2,
+        "name": "Insertion 2 Parameter 6 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 60,
+        "size": 2,
+        "name": "Insertion 2 Parameter 7 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 62,
+        "size": 2,
+        "name": "Insertion 2 Parameter 8 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 64,
+        "size": 2,
+        "name": "Insertion 2 Parameter 9 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 66,
+        "size": 2,
+        "name": "Insertion 2 Parameter 10 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      }
+    ]
+  },
+  "insertion3": {
+    "label": "Insertion Effect 3 (MU)",
+    "addressBase": [
+      3,
+      2,
+      0
+    ],
+    "params": [
+      {
+        "offset": 0,
+        "size": 2,
+        "name": "Insertion 3 Type",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Type"
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Insertion 3 Parameter 1",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Insertion 3 Parameter 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "Insertion 3 Parameter 3",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "Insertion 3 Parameter 4",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "Insertion 3 Parameter 5",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "Insertion 3 Parameter 6",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "Insertion 3 Parameter 7",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "Insertion 3 Parameter 8",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "Insertion 3 Parameter 9",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "Insertion 3 Parameter 10",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 32,
+        "size": 1,
+        "name": "Insertion 3 Parameter 11",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 33,
+        "size": 1,
+        "name": "Insertion 3 Parameter 12",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 34,
+        "size": 1,
+        "name": "Insertion 3 Parameter 13",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 35,
+        "size": 1,
+        "name": "Insertion 3 Parameter 14",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 36,
+        "size": 1,
+        "name": "Insertion 3 Parameter 15",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 37,
+        "size": 1,
+        "name": "Insertion 3 Parameter 16",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "Insertion 3 Part",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "Insertion 3 MW Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "Insertion 3 Bend Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "Insertion 3 CAT Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 16,
+        "size": 1,
+        "name": "Insertion 3 AC1 Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "Insertion 3 AC2 Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 48,
+        "size": 2,
+        "name": "Insertion 3 Parameter 1 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 50,
+        "size": 2,
+        "name": "Insertion 3 Parameter 2 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 52,
+        "size": 2,
+        "name": "Insertion 3 Parameter 3 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 54,
+        "size": 2,
+        "name": "Insertion 3 Parameter 4 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 56,
+        "size": 2,
+        "name": "Insertion 3 Parameter 5 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 58,
+        "size": 2,
+        "name": "Insertion 3 Parameter 6 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 60,
+        "size": 2,
+        "name": "Insertion 3 Parameter 7 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 62,
+        "size": 2,
+        "name": "Insertion 3 Parameter 8 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 64,
+        "size": 2,
+        "name": "Insertion 3 Parameter 9 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 66,
+        "size": 2,
+        "name": "Insertion 3 Parameter 10 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      }
+    ]
+  },
+  "insertion4": {
+    "label": "Insertion Effect 4 (MU)",
+    "addressBase": [
+      3,
+      3,
+      0
+    ],
+    "params": [
+      {
+        "offset": 0,
+        "size": 2,
+        "name": "Insertion 4 Type",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Type"
+      },
+      {
+        "offset": 2,
+        "size": 1,
+        "name": "Insertion 4 Parameter 1",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 3,
+        "size": 1,
+        "name": "Insertion 4 Parameter 2",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 4,
+        "size": 1,
+        "name": "Insertion 4 Parameter 3",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 5,
+        "size": 1,
+        "name": "Insertion 4 Parameter 4",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 6,
+        "size": 1,
+        "name": "Insertion 4 Parameter 5",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 7,
+        "size": 1,
+        "name": "Insertion 4 Parameter 6",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 8,
+        "size": 1,
+        "name": "Insertion 4 Parameter 7",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 9,
+        "size": 1,
+        "name": "Insertion 4 Parameter 8",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 10,
+        "size": 1,
+        "name": "Insertion 4 Parameter 9",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 11,
+        "size": 1,
+        "name": "Insertion 4 Parameter 10",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 32,
+        "size": 1,
+        "name": "Insertion 4 Parameter 11",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 33,
+        "size": 1,
+        "name": "Insertion 4 Parameter 12",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 34,
+        "size": 1,
+        "name": "Insertion 4 Parameter 13",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 35,
+        "size": 1,
+        "name": "Insertion 4 Parameter 14",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 36,
+        "size": 1,
+        "name": "Insertion 4 Parameter 15",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 37,
+        "size": 1,
+        "name": "Insertion 4 Parameter 16",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Parameters"
+      },
+      {
+        "offset": 12,
+        "size": 1,
+        "name": "Insertion 4 Part",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 127,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 13,
+        "size": 1,
+        "name": "Insertion 4 MW Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 14,
+        "size": 1,
+        "name": "Insertion 4 Bend Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 15,
+        "size": 1,
+        "name": "Insertion 4 CAT Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 16,
+        "size": 1,
+        "name": "Insertion 4 AC1 Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 17,
+        "size": 1,
+        "name": "Insertion 4 AC2 Control Depth",
+        "dataMin": 0,
+        "dataMax": 127,
+        "default": 64,
+        "tag": "xg",
+        "group": "Routing and Control"
+      },
+      {
+        "offset": 48,
+        "size": 2,
+        "name": "Insertion 4 Parameter 1 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 50,
+        "size": 2,
+        "name": "Insertion 4 Parameter 2 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 52,
+        "size": 2,
+        "name": "Insertion 4 Parameter 3 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 54,
+        "size": 2,
+        "name": "Insertion 4 Parameter 4 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 56,
+        "size": 2,
+        "name": "Insertion 4 Parameter 5 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 58,
+        "size": 2,
+        "name": "Insertion 4 Parameter 6 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 60,
+        "size": 2,
+        "name": "Insertion 4 Parameter 7 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 62,
+        "size": 2,
+        "name": "Insertion 4 Parameter 8 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 64,
+        "size": 2,
+        "name": "Insertion 4 Parameter 9 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
+      },
+      {
+        "offset": 66,
+        "size": 2,
+        "name": "Insertion 4 Parameter 10 (2-byte)",
+        "dataMin": 0,
+        "dataMax": 127,
+        "tag": "xg",
+        "group": "Two-Byte Parameters (types that need them)"
       }
     ]
   }

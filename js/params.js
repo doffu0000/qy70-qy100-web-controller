@@ -55,7 +55,9 @@ export function expandRows(params) {
         });
       }
     } else {
-      rows.push({ ...p, key: `${p.offset}:0` });
+      // keyOffset separates rows that share an address but send different
+      // data (System's Drum Setup 1/2 Reset are both 00 00 7D).
+      rows.push({ ...p, key: `${p.keyOffset ?? p.offset}:0` });
     }
   }
   return rows;
@@ -80,8 +82,12 @@ export function isControllerSendEnabled() {
   return controllerSend.enabled;
 }
 
+// context.forceSysex keeps a send part-addressed even with Send as CC/NRPN
+// on: the QY70/QY100 play incoming channel messages on whichever track is
+// highlighted on the device, whatever channel they arrive on, so a CC or
+// Program Change meant for Part 3 lands on the highlighted part instead.
 function trySendAsController(midiLink, section, context, row, value) {
-  if (!controllerSend.enabled) return false;
+  if (!controllerSend.enabled || context.forceSysex) return false;
   const desc = controllerFor(section, row);
   if (!desc) return false;
   const channel = controllerSend.resolveChannel?.(section, context);
@@ -98,9 +104,66 @@ function trySendAsController(midiLink, section, context, row, value) {
   return true;
 }
 
+// Channel-message sections (kind "channel" in parameters.json: CCs, Pitch
+// Bend, Aftertouch, Channel Mode, RPN/NRPN) describe each row's message in
+// row.msg instead of an XG address. `lookup(name)` reads another row's
+// current value in the same section/channel, for messages built from
+// several rows (Poly Aftertouch's note, the custom RPN/NRPN builder).
+export function buildChannelMessages(msg, channel, value, lookup) {
+  const status = (s) => new Uint8Array(s);
+  const cc = (n, v) => status([0xb0 | channel, n, v & 0x7f]);
+  const select = (isRpn, msb, lsb) => (isRpn
+    ? [cc(0x65, msb), cc(0x64, lsb)]
+    : [cc(0x63, msb), cc(0x62, lsb)]);
+  const nullSelect = () => [cc(0x65, 0x7f), cc(0x64, 0x7f)];
+  switch (msg.type) {
+    case 'cc':
+      return [cc(msg.cc, msg.toggle ? (value ? 127 : 0) : value)];
+    case 'pb':
+      return [status([0xe0 | channel, value & 0x7f, (value >> 7) & 0x7f])];
+    case 'cat':
+      return [status([0xd0 | channel, value & 0x7f])];
+    case 'pat':
+      return [status([0xa0 | channel, lookup(msg.noteFrom) & 0x7f, value & 0x7f])];
+    case 'pc':
+      return [status([0xc0 | channel, value & 0x7f])];
+    case 'rpn':
+    case 'nrpn': {
+      const lsb = msg.noteFrom ? lookup(msg.noteFrom) : msg.lsb;
+      const data = msg.wide
+        ? [cc(0x06, value >> 7), cc(0x26, value)]
+        : [cc(0x06, value)];
+      // Closed with a null RPN afterwards, same as Send as CC/NRPN, so a
+      // stray Data Entry later can't keep editing this parameter.
+      return [...select(msg.type === 'rpn', msg.msb, lsb), ...data, ...nullSelect()];
+    }
+    case 'rpnNull':
+      return nullSelect();
+    case 'custom': {
+      // Left open (no null RPN) so Data Increment/Decrement (CC 96/97)
+      // can keep stepping the chosen parameter.
+      const isRpn = lookup('Custom Parameter Type') === 1;
+      return [
+        ...select(isRpn, lookup('Custom Parameter MSB'), lookup('Custom Parameter LSB')),
+        cc(msg.part === 'lsb' ? 0x26 : 0x06, value),
+      ];
+    }
+    default:
+      return [];
+  }
+}
+
 // addressBase is [high, mid, low-literal(0)] with "part"/"drumHigh"/"note"
 // placeholders resolved from `context`; row.offset is added to the low byte.
 export function sendParam(midiLink, deviceNumber, section, context, row, value) {
+  if (section.kind === 'channel') {
+    // context.channel is 0-15, or 'all' for every channel at once.
+    const channels = context.channel === 'all' ? [...Array(16).keys()] : [context.channel];
+    for (const ch of channels) {
+      for (const m of buildChannelMessages(row.msg, ch, value, context.lookup)) midiLink.send(m);
+    }
+    return;
+  }
   if (trySendAsController(midiLink, section, context, row, value)) return;
   const base = resolveAddressBase(section.addressBase, context);
   const address = [base[0], base[1], base[2] + row.offset];

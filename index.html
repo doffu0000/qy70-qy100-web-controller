@@ -64,6 +64,14 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
         <select id="channel-select"></select>
       </label>
     </div>
+    <div id="connection-check">
+      <div class="connection-check-row">
+        <button type="button" id="probe-btn">Probe</button>
+        <button type="button" class="info-icon" data-tooltip="Checks your MIDI connection and the QY's MIDI settings in one go: both cables, which model answers, the UTILITY > MIDI ECHO BACK setting (Highlighted Part needs RecMontr), and which channel the highlighted track is on. It only sends harmless messages and changes nothing on the QY.">i</button>
+        <span class="connection-check-label">Connection Check</span>
+      </div>
+      <ul id="probe-results" hidden></ul>
+    </div>
     <span id="status"></span>
     </div>
     <div class="connect-right-column">
@@ -119,6 +127,8 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
         <button type="button" class="info-icon" data-tooltip="Switches the QY70/QY100 into General MIDI mode instead of XG mode - resets volume, pan, program, bank, and most controllers to GM defaults. Rarely needed; XG mode (the default) is what unlocks the QY100's own extended parameters below.">i</button>
         <button id="xg-on-btn" class="btn-warning">Send XG System On</button>
         <button type="button" class="info-icon" data-tooltip="Switches the QY70/QY100 to XG mode. Resets every voice on every channel to its default.">i</button>
+        <button id="panic-btn" class="btn-warning">Panic</button>
+        <button type="button" class="info-icon" data-tooltip="Stops stuck or hanging notes: sends All Sound Off (CC 120) and All Notes Off (CC 123) on all 16 channels. Reaches anything on the MIDI output, including external gear chained after the QY.">i</button>
         </div>
         <div class="messaging-group messaging-settings">
         <div class="connect-field connect-divider">
@@ -134,20 +144,15 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
           <span class="label-row">Continuous Send Rate
             <button type="button" class="label-info-icon" data-tooltip="Minimum time between messages sent while dragging a knob. If your QY70/QY100 records stray or garbled Exc events while you turn knobs, your MIDI interface may be corrupting closely spaced messages, so try a slower rate.">i</button>
           </span>
-          <select id="knob-send-rate">
-            <option value="30">30 ms</option>
-            <option value="60">60 ms</option>
-            <option value="100">100 ms</option>
-            <option value="120" selected>120 ms</option>
-            <option value="150">150 ms</option>
-            <option value="200">200 ms</option>
-            <option value="300">300 ms</option>
-            <option value="500">500 ms</option>
-          </select>
+          <div class="send-rate-control">
+            <input type="range" id="knob-send-rate" min="1" max="300" step="1" value="1" aria-label="Continuous Send Rate in milliseconds">
+            <input type="number" id="knob-send-rate-ms" min="1" max="300" step="1" value="1" aria-label="Continuous Send Rate, exact milliseconds">
+            <span class="send-rate-unit">ms</span>
+          </div>
         </div>
         <div class="connect-field connect-divider">
           <span class="label-row">Send as CC/NRPN
-            <button type="button" class="label-info-icon" data-tooltip="Sends every Multi Part and Drum Setup parameter that has a controller form (Volume = CC 7, Filter Cutoff = CC 74, EG Decay = NRPN 01 64, drum Level = NRPN 1A + note, voice = Bank Select + Program Change, and so on) as that channel message instead of SysEx. Controllers are shorter, can be recorded onto a song track, and don't need XG System On. They go to the part's Rcv Channel, so every part listening on that channel changes. Parameters with no controller form, parts on channel 17-32 or Off, and values a controller can't express (Pan Random, negative Pitch Bend range) still go out as SysEx. Rows sent this way show a CC badge.">i</button>
+            <button type="button" class="label-info-icon" data-tooltip="Sends every Multi Part and Drum Setup parameter that has a controller form (Volume = CC 7, Filter Cutoff = CC 74, EG Decay = NRPN 01 64, drum Level = NRPN 1A + note, voice = Bank Select + Program Change, and so on) as that channel message instead of SysEx. Controllers are shorter, can be recorded onto a song track, and don't need XG System On. They go to the part's Rcv Channel, so every part listening on that channel changes, but in every mode (Song, Pattern or Voice) the QY70/QY100 play incoming channel messages on whichever track is highlighted on the device, so highlight the track you're editing. Voice, preset and User Voice changes, Push and Push All Parts always go out as part-addressed SysEx so they reach the part you picked. Parameters with no controller form, parts on channel 17-32 or Off, and values a controller can't express (Pan Random, negative Pitch Bend range) still go out as SysEx. Rows with a controller form show a CC, NRPN, RPN or PC badge while this is on, and an XG badge (sent as XG SysEx) while it's off.">i</button>
           </span>
           <label class="toggle-switch">
             <input type="checkbox" id="controller-send-enabled" checked>
@@ -249,25 +254,60 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
 
     <div id="param-controls">
       <select id="section-select">
-        <option value="system">System</option>
-        <option value="reverb">Reverb</option>
-        <option value="chorus">Chorus</option>
-        <option value="variation">Variation</option>
-        <option value="multiPart">Multi Part</option>
-        <option value="drumSetup">Drum Setup</option>
+        <option value="pinned">★ My Controls</option>
+        <optgroup label="XG (QY70/QY100)">
+          <option value="system" selected>System</option>
+          <option value="reverb">Reverb</option>
+          <option value="chorus">Chorus</option>
+          <option value="variation">Variation</option>
+          <option value="multiPart">Multi Part</option>
+          <option value="drumSetup">Drum Setup</option>
+        </optgroup>
+        <optgroup label="MIDI Channel Messages">
+          <option value="controllers">PC + MIDI CC</option>
+          <option value="channelVoice">Pitch Bend + Aftertouch</option>
+          <option value="rpnNrpn">RPN / NRPN</option>
+        </optgroup>
+        <optgroup label="External XG (MU modules)">
+          <option value="multiEq">Multi EQ</option>
+          <option value="insertion1">Insertion Effect 1</option>
+          <option value="insertion2">Insertion Effect 2</option>
+          <option value="insertion3">Insertion Effect 3</option>
+          <option value="insertion4">Insertion Effect 4</option>
+        </optgroup>
       </select>
       <select id="part-select" class="context-select" hidden></select>
       <select id="drumkit-select" class="context-select" hidden></select>
       <select id="note-select" class="context-select" hidden></select>
+      <div id="param-search-wrap">
+        <input type="text" id="param-search" placeholder="Search all parameters..." autocomplete="off" aria-label="Search all parameters">
+        <ul id="param-search-results" hidden></ul>
+      </div>
       <button id="reset-section-btn" class="btn-warning">Reset All to Default</button>
       <button id="push-params-btn" hidden>Push Parameters</button>
       <button id="push-all-parts-btn" hidden>Push All Parts</button>
       <button id="push-drum-params-btn" hidden>Push Parameters</button>
+      <button id="pull-params-btn" hidden>Pull from QY</button>
+      <button id="pull-all-parts-btn" hidden>Pull All Parts</button>
+      <button id="pull-highlighted-btn" hidden>Pull Highlighted Part</button>
+      <button id="pull-kit-btn" hidden>Pull Kit</button>
+      <button type="button" class="info-icon" id="pull-info" hidden data-tooltip="Pull reads the QY's current settings into these knobs without changing anything on the QY: the part, effect or drum note on screen, every part (Pull All Parts), the track highlighted on the QY into the Part picked here, e.g. to copy one part to another and then Push it (Pull Highlighted Part, needs ECHO BACK on RecMontr), or every note of the kit (Pull Kit). It reads what the QY's tone generator has loaded right now: the song or pattern's settings plus any edits. Needs MIDI In.">i</button>
       <p class="hint" id="drum-setup-hint" hidden>
         Drum Setup edits whatever kit is currently playing on the
         <strong>Channel</strong> selected above, not the kit picker here -
         that dropdown only picks which note <em>names</em> to display.
       </p>
+      <p class="hint" id="channel-section-hint" hidden>
+        These are sent on the <strong>Channel</strong> selected at the top of
+        the page (All sends to every channel). Values are remembered per channel.
+      </p>
+      <p class="hint" id="section-note" hidden></p>
+      <div id="pinned-controls" hidden>
+        <input type="file" id="profile-file-input" accept=".qyprofile" hidden>
+        <button id="save-profile-btn">Save Profile</button>
+        <button id="load-profile-btn">Load Profile</button>
+        <button type="button" class="info-icon" data-tooltip="A profile holds your pinned controls and any custom names you gave parameters (for example naming CC 16 after what it does on your MU2000). Save it to keep a setup for a particular piece of gear, and load it on another computer or browser.">i</button>
+      </div>
     </div>
 
     <div id="fx-file-controls" hidden>
@@ -380,6 +420,21 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
           </div>
         </label>
         <button type="button" id="raw-sysex-send-btn">Send Raw SysEx</button>
+      </div>
+
+      <div id="xg-address-controls">
+        <span class="label-row">XG Address
+          <button type="button" class="label-info-icon" data-tooltip="Sends an XG Parameter Change (F0 43 10 4C High Mid Low Data F7) to any XG address, including ones the Parameters panel doesn't list, using the addresses in your QY or MU module's Data List. Request asks the device to send the value back (watch the MIDI Log or Diagnostics).">i</button>
+        </span>
+        <div id="xg-address-row">
+          <label>High <input type="text" id="xg-addr-high" maxlength="2" placeholder="08"></label>
+          <label>Mid <input type="text" id="xg-addr-mid" maxlength="2" placeholder="00"></label>
+          <label>Low <input type="text" id="xg-addr-low" maxlength="2" placeholder="6D"></label>
+          <label>Data <input type="text" id="xg-addr-data" placeholder="5B"></label>
+          <button type="button" id="xg-addr-send-btn">Send</button>
+          <button type="button" id="xg-addr-request-btn">Request</button>
+        </div>
+        <p class="hint" id="xg-addr-preview"></p>
       </div>
 
       <hr>
@@ -768,6 +823,10 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
 <dialog id="confirm-dialog" class="app-dialog">
   <h3 id="confirm-dialog-title" class="app-dialog-title"></h3>
   <p id="confirm-dialog-message"></p>
+  <div id="confirm-dialog-checkbox-row" class="confirm-checkbox-row" hidden>
+    <label class="checkbox-row"><input type="checkbox" id="confirm-dialog-checkbox"> <span id="confirm-dialog-checkbox-text"></span></label>
+    <button type="button" id="confirm-dialog-checkbox-info" class="info-icon">i</button>
+  </div>
   <div id="confirm-dialog-actions" class="app-dialog-actions">
     <button id="confirm-dialog-cancel">Cancel</button>
     <button id="confirm-dialog-ok" class="btn-warning">Send</button>
