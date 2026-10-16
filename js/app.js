@@ -12,7 +12,7 @@ import { loadParameters, expandRows, sendParam, sendParamGroup, configureControl
 import { controllerFor, controllerLabel } from './controllers.js';
 import { createKnob, createToggle, createMultiToggle, setContinuousSendMs } from './knob.js';
 import { isStandardMidiFile, unwrapMidiFile, convertMidiToQySong } from './smf.js';
-import { splitSysex, listDumpItems, itemLabel, buildItemTransfer, exportSongToMidi, isDataFilerBulkFile, extractBulkFileMessages, isQyDataBlock, retargetBlock, blockKind, blockModel, QY_KIND_SONG, QY_KIND_PATTERN } from './qysong.js';
+import { splitSysex, listDumpItems, itemLabel, buildItemTransfer, setTrackPartMode, exportSongToMidi, isDataFilerBulkFile, extractBulkFileMessages, isQyDataBlock, retargetBlock, blockKind, blockModel, QY_KIND_SONG, QY_KIND_PATTERN } from './qysong.js';
 import { buildQ1a, parseQ1a, buildBlk, orderForRestore, buildClearAllCommand, isQ1aFile } from './qyfiles.js';
 import { detectQyModel, enterBulkMode, exitBulkMode, readMemoryList, buildClearCommand, formatTenths } from './qydevice.js';
 
@@ -1209,7 +1209,7 @@ function renderGraphicsLibrary() {
   });
 }
 
-// writeFile (used by Save Parameters etc.) is hardcoded to JSON text -
+// writeFile (used by Save All Parameters etc.) is hardcoded to JSON text -
 // this is the same File System Access API / download-link fallback
 // pattern, but for arbitrary binary content.
 async function writeBinaryFile(filename, bytes, description, extension, mimeType = 'image/bmp') {
@@ -2498,17 +2498,10 @@ function refreshCategoryOptions() {
 let userVoices = [];
 let userKits = [];
 
-// Save Voice only makes sense once a real Normal/SFX voice (or one of its
-// presets) is highlighted as the thing to snapshot; Save Kit only makes
-// sense once a Drum Kit/SFX Kit voice is highlighted. selectedVoiceKey
-// always starts with the bank string for whatever's selected (plain voice
-// keys are "bank:program:msb:lsb", preset keys prefix that same voice key),
-// so its first segment tells us which case (if either) currently applies.
-function updateSaveButtonsState() {
-  const bank = selectedVoiceKey?.split(':')[0];
-  saveVoiceBtn.disabled = !(bank === 'normal' || bank === 'sfx' || bank === 'userVoice');
-  saveKitBtn.disabled = !(bank === 'drum' || bank === 'sfxkit' || bank === 'userKit');
-}
+// Save Voice and Save Kit are always available: their dialogs pick the
+// part or kit, and the file name falls back to what's on that part when
+// nothing is selected in the Voice Browser. Kept as a hook for callers.
+function updateSaveButtonsState() {}
 
 function currentFilteredVoices() {
   const bankCategoryFiltered = filterVoices(voices, {
@@ -2601,7 +2594,7 @@ async function detectHighlightedChannel() {
 // or null if it can't tell (the user is told why) or the user cancels.
 // The Song/Pattern answer is remembered for next time.
 const HIGHLIGHT_MODE_KEY = 'qyHighlightedPartMode';
-async function resolveHighlightedTarget(name, { pull = false, intoLabel = '' } = {}) {
+async function resolveHighlightedTarget(name, { pull = false, intoLabel = '', fromLabel = '' } = {}) {
   const detected = await detectHighlightedChannel();
   if (typeof detected === 'number') {
     const songPart = detected;
@@ -2609,14 +2602,14 @@ async function resolveHighlightedTarget(name, { pull = false, intoLabel = '' } =
     let lastMode = 'song';
     try { lastMode = localStorage.getItem(HIGHLIGHT_MODE_KEY) || 'song'; } catch { /* keep Song */ }
     const target = await showSaveAsDialog({
-      title: pull ? 'Pull the highlighted track' : `Apply ${name} to the highlighted track`,
+      title: pull ? 'Pull the highlighted track' : fromLabel ? 'Push to the highlighted track' : `Apply ${name} to the highlighted track`,
       targetLabelText: 'The QY is in',
       populateTarget: (selectEl) => {
         selectEl.innerHTML = `<option value="${songPart}">Song Mode</option>`
           + `<option value="${patternPart}">Pattern Mode</option>`;
       },
       defaultTarget: String(lastMode === 'pattern' ? patternPart : songPart),
-      message: `The QY70/QY100 reports the highlighted track is on MIDI channel ${detected + 1}: ${partLabel(songPart)} in Song Mode, ${partLabel(patternPart)} in Pattern Mode. ${pull ? `Pick the mode it's in and that part's settings are read from the QY into ${intoLabel} in the console.` : "Pick the mode it's in and the full voice is sent to that part."}`,
+      message: `The QY70/QY100 reports the highlighted track is on MIDI channel ${detected + 1}: ${partLabel(songPart)} in Song Mode, ${partLabel(patternPart)} in Pattern Mode. ${pull ? `Pick the mode it's in and that part's settings are read from the QY into ${intoLabel} in the console.` : fromLabel ? `Pick the mode it's in and ${fromLabel}'s settings in the console are sent to that part. It keeps its own Rcv Channel.` : "Pick the mode it's in and the full voice is sent to that part."}`,
     });
     if (target === null) return null;
     try { localStorage.setItem(HIGHLIGHT_MODE_KEY, Number(target) === patternPart ? 'pattern' : 'song'); } catch { /* not remembered */ }
@@ -2735,8 +2728,8 @@ function applyPreset(preset, part) {
   refreshIfViewingPart(part);
 }
 
-// A preset built from a full 24-part .qyvoice snapshot (see promptDsSlotChannel's
-// sibling saveVoiceBtn handler) has its own per-part voice baked into each
+// A preset built from a full 24-part .qyvoice snapshot (see the
+// saveVoiceBtn handler) has its own per-part voice baked into each
 // part's own Bank Select/Program Number - unlike a curated single-part
 // preset, there's no single shared base voice to apply first, so this just
 // replays every part's full row data as-is (reusing
@@ -2885,9 +2878,11 @@ const VOICE_SETTLE_MS = 80;
 // back to the event loop every note (keeping the tab responsive and letting
 // a progress popup actually repaint) and reports progress if the caller
 // wants to show one.
-async function sendKitNotesToChannel(drumHigh, notes, onProgress) {
+// `channel` is where the trigger notes go (Push Kit passes the part's own
+// channel); it defaults to the old Ds slot channel.
+async function sendKitNotesToChannel(drumHigh, notes, onProgress, channel = ([drumHigh].flat()[0] - 0x30) & 0x0f) {
   const section = parameters.drumSetup;
-  const channel = (drumHigh - 0x30) & 0x0f;
+  const drumHighs = [drumHigh].flat();
   const entries = Object.entries(notes);
   for (let i = 0; i < entries.length; i++) {
     const [noteStr, params] = entries[i];
@@ -2908,10 +2903,12 @@ async function sendKitNotesToChannel(drumHigh, notes, onProgress) {
     }
     for (const row of expandRows(section.params)) {
       if (!(row.name in params)) continue;
-      try {
-        sendParam(link, 0, section, { drumHigh, note }, row, params[row.name]);
-      } catch (err) {
-        statusEl.textContent = `Error: ${err.message}`;
+      for (const high of drumHighs) {
+        try {
+          sendParam(link, 0, section, { drumHigh: high, note }, row, params[row.name]);
+        } catch (err) {
+          statusEl.textContent = `Error: ${err.message}`;
+        }
       }
     }
     onProgress?.(i + 1, entries.length);
@@ -3027,26 +3024,17 @@ function renderUserKitList() {
         statusEl.textContent = 'Error: this kit voice isn\'t in the current voice list.';
         return;
       }
-      const ok = await showConfirm('Are you sure?', confirmApplyToHighlightedTrackMessage(entry.name), 'Apply', { html: true });
-      if (!ok) return;
+      const target = await pickKitTarget(entry.name, { kitTypeLabel: entry.voice.bank === 'sfxkit' ? 'SFX' : 'drum' });
+      if (!target) return;
       const kit = drumKits[kitIndex];
+      // Selecting the kit's own voice first matters: otherwise this only
+      // actually "loads" the kit when the device is already on it.
+      if (!(await selectKitOnPart(target.part, entry.voice, target.mode))) return;
       loadKitParamsIntoStore(`${kit.bankMsb}:${kit.program}`, entry.notes);
-      const ch = await promptDsSlotChannel('Which Drum Setup slot are you loading to?', {
-        kitTypeLabel: entry.voice.bank === 'sfxkit' ? 'SFX' : 'drum',
-      });
-      if (ch === null) return;
+      followKitPart(target.part);
       showProgress(`Loading ${entry.name}`, KIT_PUSH_WARNING);
       try {
-        // Select the kit's own voice on this Ds slot's Channel first (same
-        // real-time MIDI mechanism the plain Voice Browser entry uses, not
-        // Part-addressed XG SysEx - see VOICE_SETTLE_MS above for why this
-        // is safe here where it wasn't before), then wait for the device's
-        // own voice-change reset to settle before pushing the saved notes -
-        // otherwise this only actually "loads" the kit when the device
-        // already happens to be on it already.
-        sendVoiceSelectToChannel(ch, entry.voice);
-        await new Promise((resolve) => setTimeout(resolve, VOICE_SETTLE_MS));
-        await sendKitNotesToChannel(0x30 + ch, entry.notes, updateProgress);
+        await sendKitNotesToChannel(DRUM_SETUP_FOR_PART_MODE[target.mode], entry.notes, updateProgress, partRcvChannel(target.part) ?? undefined);
       } catch (err) {
         statusEl.textContent = `Error: ${err.message}`;
       } finally {
@@ -3063,7 +3051,7 @@ function renderUserKitList() {
       sendMessageWindow(entry.name);
       await showAlert(
         'Kit loaded',
-        `Ds${ch + 1}'s parameters have been set to ${entry.name}. Navigate to Ds${ch + 1} on any track on your device to hear it.`
+        `${entry.name} is on ${partLabel(target.part)} as ${partModeLabel(target.mode)}.`
       );
     });
     voiceListEl.appendChild(li);
@@ -3130,36 +3118,24 @@ function renderVoiceList() {
       const name = voiceDisplayName(v);
       let part;
       if (v.bank === 'drum' || v.bank === 'sfxkit') {
-        const ok = await showConfirm('Are you sure?', confirmApplyMessage(name, applyTargetLabel()), 'Apply', { html: true });
-        if (!ok) return;
-        const ch = await promptDsSlotChannel('Which Drum Setup slot are you selecting this kit for?', {
-          allowOtherTrack: true,
-          otherTrackLabel: v.bank === 'sfxkit' ? 'Sfx' : 'Dr',
-          kitTypeLabel: v.bank === 'sfxkit' ? 'SFX' : 'drum',
-        });
-        if (ch === null) return;
-        if (ch === 'other') {
-          // Falls through to the regular Part-addressed apply below, same as
-          // any non-drum voice.
-          part = isHighlightedTarget() ? await resolveHighlightedTarget(name) : Number(voicePartSelect.value);
-          if (part === null) return;
-        } else {
-          sendVoiceSelectToChannel(ch, v);
-          selectedVoiceKey = key;
-          selectedVoiceLabel = name;
-          selectedVoiceObj = v;
-          renderVoiceList();
-          const kitIndex = drumKits.findIndex((k) => k.bankMsb === v.bankMsb && k.program === v.program);
-          if (kitIndex !== -1) {
-            sectionSelect.value = 'drumSetup';
-            drumkitSelect.value = kitIndex;
-            populateNoteSelect();
-            renderParamPanel();
-          }
-          sendMessageWindow(name);
-          await showAlert('Kit selected', `${name} has been selected for Ds${ch + 1} (Channel ${ch + 1}). Navigate to Ds${ch + 1} on your device to hear it.`);
-          return;
+        const target = await pickKitTarget(name, { allowPreset: true, kitTypeLabel: v.bank === 'sfxkit' ? 'SFX' : 'drum' });
+        if (!target) return;
+        if (!(await selectKitOnPart(target.part, v, target.mode))) return;
+        followKitPart(target.part);
+        selectedVoiceKey = key;
+        selectedVoiceLabel = name;
+        selectedVoiceObj = v;
+        renderVoiceList();
+        const kitIndex = drumKits.findIndex((k) => k.bankMsb === v.bankMsb && k.program === v.program);
+        if (kitIndex !== -1) {
+          sectionSelect.value = 'drumSetup';
+          drumkitSelect.value = kitIndex;
+          populateNoteSelect();
         }
+        renderParamPanel();
+        sendMessageWindow(name);
+        statusEl.textContent = `${name} is on ${partLabel(target.part)} as ${kitModeLabel(target.mode, v.bank)}.`;
+        return;
       } else if (isHighlightedTarget()) {
         part = await resolveHighlightedTarget(name);
         if (part === null) return;
@@ -3217,21 +3193,15 @@ function renderVoiceList() {
           if (preset.notes) {
             const kitIndex = drumKits.findIndex((k) => k.bankMsb === v.bankMsb && k.program === v.program);
             if (kitIndex === -1) { statusEl.textContent = 'Error: this kit voice isn\'t in the current voice list.'; return; }
-            const ok = await showConfirm('Are you sure?', confirmApplyMessage(preset.name, applyTargetLabel()), 'Apply', { html: true });
-            if (!ok) return;
+            const target = await pickKitTarget(preset.name, { kitTypeLabel: v.bank === 'sfxkit' ? 'SFX' : 'drum' });
+            if (!target) return;
             const kitKey = `${v.bankMsb}:${v.program}`;
+            if (!(await selectKitOnPart(target.part, v, target.mode))) return;
             loadKitParamsIntoStore(kitKey, preset.notes);
-            const ch = await promptDsSlotChannel('Which Drum Setup slot are you loading to?', {
-              kitTypeLabel: v.bank === 'sfxkit' ? 'SFX' : 'drum',
-            });
-            if (ch === null) return;
+            followKitPart(target.part);
             showProgress(`Loading ${preset.name}`, KIT_PUSH_WARNING);
             try {
-              // Select the preset's own kit voice first, then settle - see
-              // VOICE_SETTLE_MS above.
-              sendVoiceSelectToChannel(ch, v);
-              await new Promise((resolve) => setTimeout(resolve, VOICE_SETTLE_MS));
-              await sendKitNotesToChannel(0x30 + ch, preset.notes, updateProgress);
+              await sendKitNotesToChannel(DRUM_SETUP_FOR_PART_MODE[target.mode], preset.notes, updateProgress, partRcvChannel(target.part) ?? undefined);
             } catch (err) {
               statusEl.textContent = `Error: ${err.message}`;
             } finally {
@@ -3246,7 +3216,7 @@ function renderVoiceList() {
             populateNoteSelect();
             renderParamPanel();
             sendMessageWindow(preset.name);
-            await showAlert('Kit loaded', `Ds${ch + 1}'s parameters have been set to ${preset.name}. Navigate to Ds${ch + 1} on any track on your device to hear it.`);
+            await showAlert('Kit loaded', `${preset.name} is on ${partLabel(target.part)} as ${partModeLabel(target.mode)}.`);
             return;
           } else if (preset.parts) {
             const { ok, includeExternal } = await confirmApplyVoice(preset.name, 'all 24 Multi Part parts', Object.values(preset.parts));
@@ -3311,46 +3281,34 @@ categorySelect.addEventListener('change', () => {
 });
 searchBox.addEventListener('input', renderVoiceList);
 
-// No "which Part" prompt - captures every one of the 24 Multi Part parts in
-// one file, so this is a full Multi Part snapshot rather than a single
-// instrument sound.
-// Same Song Mode/Pattern Mode/Hidden groups as "Apply to" above, plus an
-// "All 24 Parts" choice up front - lets Save Voice capture either a single
-// edited Part (giving Load Voice/Push its own Part picker again, same as a
-// legacy single-part preset) or a full multitimbral snapshot.
-function populateSaveVoiceTargetSelect(selectEl) {
-  populatePartSelect(selectEl);
-  const allOption = document.createElement('option');
-  allOption.value = 'all';
-  allOption.textContent = 'All 24 Parts';
-  selectEl.insertBefore(allOption, selectEl.firstChild);
+// Save Voice captures one Part (a single instrument sound), using the same
+// Song Mode/Pattern Mode groups as "Apply to" above. Older all-parts
+// .qyvoice files still load (see loadVoiceFile).
+
+// The voice name for a part's stored Bank Select/Program Number, or null.
+function partVoiceName(part) {
+  const store = paramState.multiPart[String(part)] ?? {};
+  const voice = voices.find((v) => v.bankMsb === (store['Bank Select MSB'] ?? 0)
+    && v.bankLsb === (store['Bank Select LSB'] ?? 0) && v.program === (store['Program Number'] ?? 0) + 1);
+  return voice ? voiceDisplayName(voice) : null;
 }
 
 saveVoiceBtn.addEventListener('click', async () => {
-  const name = selectedVoiceLabel;
   const target = await showSaveAsDialog({
     title: 'Select Part to Save',
     targetLabelText: 'Part',
-    populateTarget: populateSaveVoiceTargetSelect,
-    defaultTarget: isHighlightedTarget() ? 'all' : voicePartSelect.value,
+    populateTarget: populatePartSelect,
+    // Apply to's Highlighted Part isn't a part number, so fall back to the
+    // part open in Multi Part.
+    defaultTarget: isHighlightedTarget() ? partSelect.value : voicePartSelect.value,
   });
   if (target === null) return;
-  let voiceFile;
-  let savedDesc;
-  if (target === 'all') {
-    const parts = {};
-    for (let part = 0; part < QY_PART_COUNT; part++) {
-      parts[part] = snapshotPartVoice(part);
-    }
-    voiceFile = { format: 'qyvoice', version: 2, savedAt: new Date().toISOString(), name, parts };
-    savedDesc = 'all 24 Parts';
-  } else {
-    const part = Number(target);
-    voiceFile = { format: 'qyvoice', version: 1, savedAt: new Date().toISOString(), name, params: snapshotPartVoice(part) };
-    savedDesc = partLabel(part);
-  }
+  const part = Number(target);
+  const name = selectedVoiceLabel || partVoiceName(part) || partLabel(part);
+  const voiceFile = { format: 'qyvoice', version: 1, savedAt: new Date().toISOString(), name, params: snapshotPartVoice(part) };
+  const savedDesc = partLabel(part);
   try {
-    const savedName = await writeFile(`${name}.qyvoice`, JSON.stringify(voiceFile, null, 1), 'QY70/QY100 Voice', '.qyvoice');
+    const savedName = await writeFile(`${voiceFile.name}.qyvoice`, JSON.stringify(voiceFile, null, 1), 'QY70/QY100 Voice', '.qyvoice');
     await showAlert('Voice saved', `Saved ${savedDesc} as ${savedName}.`);
   } catch (err) {
     if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
@@ -3454,26 +3412,26 @@ voiceFileInput.addEventListener('change', async () => {
 // channel internally to actually read the live parameter data (Drum Setup
 // is channel-addressed), but what the user actually cares about naming is
 // which kit these note edits belong to.
-function populateDrumKitVoiceSelect(selectEl, bank) {
-  const kits = drumKits.filter((k) => k.bank === bank);
-  selectEl.innerHTML = kits.map((k) => `<option value="${k.bankMsb}:${k.program}">${escapeHtml(voiceDisplayName(k))}</option>`).join('');
+// Every Drum Kit and SFX Kit (their Bank MSBs differ, so bankMsb:program
+// is unique across both).
+function populateDrumKitVoiceSelect(selectEl) {
+  selectEl.innerHTML = drumKits.map((k) => `<option value="${k.bankMsb}:${k.program}">${escapeHtml(voiceDisplayName(k))}</option>`).join('');
 }
 
 saveKitBtn.addEventListener('click', async () => {
-  // Selecting (not pushing) a User Kit whose voice isn't in the current
-  // voice list (e.g. QY70-only view) leaves selectedVoiceObj unset even
-  // though the button's enabled by bank prefix alone - guard against that.
-  if (!selectedVoiceObj) { statusEl.textContent = 'Error: this kit voice isn\'t in the current voice list.'; return; }
-  const kitBank = selectedVoiceObj.bank;
+  // Defaults to the kit selected in the Voice Browser, or else the one in
+  // Drum Setup's kit picker.
+  const selectedKit = selectedVoiceObj && drumKits.find((k) => k.bankMsb === selectedVoiceObj.bankMsb && k.program === selectedVoiceObj.program);
+  const defaultKit = selectedKit || drumKits[Number(drumkitSelect.value || 0)];
   const target = await showSaveAsDialog({
     title: 'Select Drum Kit to Save',
     targetLabelText: 'Drum Kit',
-    populateTarget: (selectEl) => populateDrumKitVoiceSelect(selectEl, kitBank),
-    defaultTarget: `${selectedVoiceObj.bankMsb}:${selectedVoiceObj.program}`,
+    populateTarget: (selectEl) => populateDrumKitVoiceSelect(selectEl),
+    defaultTarget: defaultKit ? `${defaultKit.bankMsb}:${defaultKit.program}` : undefined,
   });
   if (target === null) return;
   const [bankMsb, program] = target.split(':').map(Number);
-  const kitVoice = drumKits.find((k) => k.bank === kitBank && k.bankMsb === bankMsb && k.program === program);
+  const kitVoice = drumKits.find((k) => k.bankMsb === bankMsb && k.program === program);
   const kitName = voiceDisplayName(kitVoice);
   const kitFile = {
     format: 'qykit', version: 1, savedAt: new Date().toISOString(),
@@ -3641,16 +3599,6 @@ function confirmApplyMessage(name, target) {
   return target ? `Apply ${boldName} to <strong>${escapeHtml(target)}</strong>?` : `Apply ${boldName}?`;
 }
 
-// User Kit pushes always land wherever the Ds slot resolves to on the
-// device itself (see promptDsSlotChannel) - unlike a plain voice, there's
-// no "Apply to" Part fallback, so the confirm wording says so directly
-// instead of naming a Part that was never actually the target.
-function confirmApplyToHighlightedTrackMessage(name) {
-  const boldName = `<strong>${escapeHtml(name)}</strong>`;
-  return `Apply ${boldName} to currently highlighted track on the QY70/QY100?\n\n` +
-    '<span class="confirm-note"><strong>Note:</strong> User Kits are applied to whichever track is currently highlighted on the device.</span>';
-}
-
 // A plain acknowledgement popup (OK only, no Cancel) - reuses the same
 // dialog as showConfirm for a consistent look, e.g. after a Save/Load
 // finishes, rather than a yes/no prompt.
@@ -3696,7 +3644,7 @@ function showSaveAsDialog({ title, targetLabelText, populateTarget, defaultTarge
     const messageEl = el('save-as-message');
     // message may be a fixed string, or a function of the target select's
     // current value - the latter lets the explanation change live as the
-    // user switches targets (see promptDsSlotChannel's Dr option).
+    // user switches targets (see pickKitTarget).
     function refreshMessage() {
       const text = typeof message === 'function' ? message(saveAsTargetSelect.value) : message;
       messageEl.textContent = text || '';
@@ -3725,41 +3673,99 @@ function showSaveAsDialog({ title, targetLabelText, populateTarget, defaultTarge
   });
 }
 
-// Drum Setup only has three editable slots on the device itself (Ds1/Ds2
-// Song mode, Ds3 Pattern mode), each hardwired to a fixed MIDI Channel
-// (Ds1->1, Ds2->2, Ds3->3) no matter what Channel a track is actually
-// assigned elsewhere - see README.md. There's no way to tell which one is
-// open on the device over MIDI (it can only be picked on the device
-// itself), so this asks directly rather than guessing from the connect
-// bar's Channel selector. Returns the Channel (0-indexed) or null if
-// canceled.
-// allowOtherTrack adds a 4th "Dr" choice, only meaningful for a plain voice
-// select (there's no per-note data to push, so it's free to target any Part
-// instead of one of the 3 hardwired Ds channels) - Push Parameters/Load Kit
-// callers push real Drum Setup parameter data, which only a genuine Ds1/2/3
-// channel can receive, so they never pass this.
-async function promptDsSlotChannel(title, { allowOtherTrack = false, otherTrackLabel = 'Dr', kitTypeLabel = 'drum' } = {}) {
-  const EDITABLE_PARAGRAPH = `For editable ${kitTypeLabel} kits, navigate to Ds1 or Ds2 (in Song Mode), or Ds3 (in Pattern Mode) on the QY70/QY100's target track part.`;
-  const NON_EDITABLE_PARAGRAPH = `For non-editable ${kitTypeLabel} kits, navigate to ${otherTrackLabel} on the QY70/QY100's target track part.`;
-  const message = [
-    ...(allowOtherTrack ? [NON_EDITABLE_PARAGRAPH, EDITABLE_PARAGRAPH] : [EDITABLE_PARAGRAPH]),
-    'This must be done before proceeding.',
-  ].join('\n\n');
-  const dsSlot = await showSaveAsDialog({
-    title,
-    targetLabelText: kitTypeLabel === 'SFX' ? 'Drum Setup/SFX slot' : 'Drum Setup slot',
+// Voice Browser kit pushes go to the Apply to part (or the track
+// highlighted on the QY) and ask how that part plays the kit: Dr/Sfx, the
+// preset kit as is, or one of the user drum sets Ds1, Ds2, Ds3. Kit presets
+// and User Kits carry note data, which only a user drum set can hold, so
+// they leave out Dr/Sfx. Resolves { part, mode } (mode is the Part Mode:
+// 1 Dr/Sfx, 2 Ds1, 3 Ds2, 4 Ds3) or null when canceled.
+async function pickKitTarget(name, { allowPreset = false, kitTypeLabel = 'drum' } = {}) {
+  let part;
+  if (isHighlightedTarget()) {
+    part = await resolveHighlightedTarget(name);
+    if (part === null) return null;
+  } else {
+    part = Number(voicePartSelect.value);
+    const ok = await showConfirm('Are you sure?', confirmApplyMessage(name, partLabel(part)), 'Apply', { html: true });
+    if (!ok) return null;
+  }
+  const presetLabel = kitTypeLabel === 'SFX' ? 'Sfx' : 'Dr';
+  const choice = await showSaveAsDialog({
+    title: `How should ${partLabel(part)} play ${name}?`,
+    targetLabelText: 'Play it as',
     populateTarget: (selectEl) => {
-      const options = ['Ds1 (Song Mode) - Channel 1', 'Ds2 (Song Mode) - Channel 2', 'Ds3 (Pattern Mode) - Channel 3'];
-      if (allowOtherTrack) options.push(`${otherTrackLabel} - Other track (not live-editable)`);
-      selectEl.innerHTML = options.map((label, i) => `<option value="${i}">${label}</option>`).join('');
+      const options = [[2, 'Ds1 (user drum set 1)'], [3, 'Ds2 (user drum set 2)'], [4, 'Ds3 (user drum set 3)']];
+      if (allowPreset) options.unshift([1, `${presetLabel} (preset ${kitTypeLabel} kit)`]);
+      selectEl.innerHTML = options.map(([mode, label]) => `<option value="${mode}">${label}</option>`).join('');
     },
-    defaultTarget: '0',
-    message,
+    defaultTarget: allowPreset ? '1' : '2',
+    message: (value) => {
+      const mode = Number(value);
+      if (mode === 1) return `${partLabel(part)} plays the preset kit as it is. It can't be edited in Drum Setup.`;
+      const ds = partModeLabel(mode);
+      const editable = `${partLabel(part)} plays the kit on ${ds}, which can be edited in Drum Setup.`;
+      return mode === 4
+        ? `${editable} Ds3 is set by reading the song or pattern from the QY, changing the part and writing it back, so it takes longer and needs MIDI In.`
+        : editable;
+    },
   });
-  if (dsSlot === null) return null;
-  const idx = Number(dsSlot);
-  return allowOtherTrack && idx === 3 ? 'other' : idx;
+  if (choice === null) return null;
+  const mode = Number(choice);
+  if (mode === 4 && !requirePullInput('Set Ds3', 'read the song from the QY')) return null;
+  return { part, mode };
 }
+
+// Puts a kit on a part with the Part Mode picked. On the QY a Part Mode
+// change resets the part to Standard Kit, while a kit select keeps
+// whatever drum mode the part is already on. So the mode goes first and
+// the kit last: the part is reset (Part Mode Normal, GrandPno), the Part
+// Mode is written (Ds3 can't be, so it goes through the song or pattern's
+// bulk data, see setPartDs3), then the kit is selected. Afterwards the
+// part is read back when MIDI In is there, so Drum Setup shows what the QY
+// made of it. Resolves false when Ds3 wasn't set.
+const PART_MODE_SETTLE_MS = 150;
+async function selectKitOnPart(part, voice, mode) {
+  const reset = async () => {
+    resetPartToDefaults(part);
+    await sleep(VOICE_SETTLE_MS);
+  };
+  if (mode === 4) {
+    // Ds3 asks for the song or pattern first; the part is only touched
+    // once that's confirmed, so canceling leaves its voice as it was.
+    if (!(await setPartDs3(part, reset))) return false;
+    await sleep(PART_MODE_SETTLE_MS * 2);
+  } else {
+    await reset();
+    getParamStore('multiPart', String(part))[PART_MODE_ROW] = mode;
+    const row = parameters.multiPart.params.find((r) => r.name === PART_MODE_ROW);
+    try {
+      sendParam(link, 0, parameters.multiPart, { part, forceSysex: true }, row, mode);
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+    }
+    await sleep(PART_MODE_SETTLE_MS);
+  }
+  applyVoiceToPart(part, voice);
+  await sleep(VOICE_SETTLE_MS);
+  if (inputSelect.value) {
+    const data = await runQySession(() => requestXgBlock([0x08, part, 0x00])).catch(() => null);
+    if (data) {
+      storeDrumPartVoice(part, data);
+      // Lists this part under "Current QY Drum Part Settings" in Drum Setup.
+      if (data[7] >= 2) drumPartsRefreshed = true;
+    }
+  }
+  return true;
+}
+
+// Drum Setup edits after a kit push go to the part that just got the kit
+// (pattern parts are only reachable as the highlighted track).
+function followKitPart(part) {
+  drumPartSelect.value = part < 16 ? String(part) : HIGHLIGHTED_PATTERN_MODE;
+  if (part < 16) syncDrumKitToPart(part);
+}
+
+const kitModeLabel = (mode, bank) => (mode === 1 ? (bank === 'sfxkit' ? 'Sfx' : 'Dr') : partModeLabel(mode));
 
 const progressDialog = el('progress-dialog');
 const progressDialogTitle = el('progress-dialog-title');
@@ -3848,16 +3854,18 @@ knobSendRateSlider.addEventListener('change', () => applySendRate(knobSendRateSl
 knobSendRateInput.addEventListener('change', () => applySendRate(knobSendRateInput.value, { save: true }));
 
 // Send as CC/NRPN (see controllers.js and configureControllerSend in
-// params.js). On by default and remembered per browser like the send rate.
-// The key was renamed when the default flipped to on, so an "off" saved
-// while it defaulted off doesn't keep overriding it.
+// params.js). Off by default (live edits then always reach the part picked
+// here, since the QY plays channel messages on its highlighted track) and
+// remembered per browser like the send rate. The key is renamed whenever
+// the default flips (V2 was on by default), so an old saved choice doesn't
+// keep overriding the new default.
 // A part's controller channel is its Rcv Channel; a drum setup's is the
 // channel its 3n address is indexed by. Anything that doesn't resolve to
 // channels 1-16 stays SysEx.
-const CONTROLLER_SEND_KEY = 'qyControllerSendV2';
+const CONTROLLER_SEND_KEY = 'qyControllerSendV3';
 const controllerSendCheckbox = el('controller-send-enabled');
-controllerSendCheckbox.checked = true;
-try { if (localStorage.getItem(CONTROLLER_SEND_KEY) === '0') controllerSendCheckbox.checked = false; } catch { /* see above */ }
+controllerSendCheckbox.checked = false;
+try { if (localStorage.getItem(CONTROLLER_SEND_KEY) === '1') controllerSendCheckbox.checked = true; } catch { /* see above */ }
 configureControllerSend({
   enabled: controllerSendCheckbox.checked,
   resolveChannel: (section, context) => {
@@ -3865,7 +3873,10 @@ configureControllerSend({
       const stored = paramState.multiPart[String(context.part)]?.['Rcv Channel'];
       return stored ?? context.part;
     }
-    if (section === parameters?.drumSetup && typeof context.drumHigh === 'number') return context.drumHigh - 0x30;
+    if (section === parameters?.drumSetup && typeof context.drumHigh === 'number') {
+      // Highlighted Part fans out over 30-3F, one channel each.
+      return context.highlightedPattern ? context.drumHigh - 0x30 : partRcvChannel(context.part);
+    }
     return null;
   },
   resolveBankProgram: (context) => {
@@ -3991,6 +4002,14 @@ let effectParams = { groups: {}, typeToGroup: {} };
 let effectValueTables = {};
 const sectionSelect = el('section-select');
 const partSelect = el('part-select');
+// Drum Setup's own Part dropdown: "Highlighted Part" (any mode: the track
+// highlighted on the QY, Song or Pattern) plus Song parts 1-16, kept in
+// step with Multi Part's (see syncDrumPartFromMultiPart).
+const drumPartSelect = el('drum-part-select');
+const HIGHLIGHTED_PATTERN = 'highlighted';
+// Same as Highlighted Part, listed again under Pattern Mode; Multi Part's
+// pattern parts (17-24) pick this one.
+const HIGHLIGHTED_PATTERN_MODE = 'highlighted-pattern';
 const drumkitSelect = el('drumkit-select');
 const noteSelect = el('note-select');
 const drumSetupHint = el('drum-setup-hint');
@@ -4000,11 +4019,11 @@ const pinnedControlsEl = el('pinned-controls');
 const pushDrumParamsBtn = el('push-drum-params-btn');
 const pushParamsBtn = el('push-params-btn');
 const pushAllPartsBtn = el('push-all-parts-btn');
+const pushHighlightedBtn = el('push-highlighted-btn');
 const pullParamsBtn = el('pull-params-btn');
 const pullAllPartsBtn = el('pull-all-parts-btn');
 const pullHighlightedBtn = el('pull-highlighted-btn');
 const pullKitBtn = el('pull-kit-btn');
-const pullInfoIcon = el('pull-info');
 const paramListEl = el('param-list');
 let currentSectionResetFns = [];
 
@@ -4106,6 +4125,31 @@ function populatePartSelect(selectEl) {
     group('Pattern Mode', 16, 23, PATTERN_MODE_PART_LABELS);
 }
 
+function populateDrumPartSelect() {
+  drumPartSelect.innerHTML = `<optgroup label="Any Mode"><option value="${HIGHLIGHTED_PATTERN}">Highlighted Part</option></optgroup>`
+    + `<optgroup label="Song Mode">${Array.from({ length: 16 }, (_, i) =>
+      `<option value="${i}">Part ${i + 1}</option>`).join('')}</optgroup>`
+    + `<optgroup label="Pattern Mode"><option value="${HIGHLIGHTED_PATTERN_MODE}">Highlighted Part</option></optgroup>`;
+  // Starts on the track highlighted on the QY; picking a part in Multi Part
+  // still moves it to that part (see syncDrumPartFromMultiPart).
+  drumPartSelect.value = HIGHLIGHTED_PATTERN;
+}
+
+// Multi Part's Part 1-16 picks the same part here; Parts 17-24 (pattern
+// tracks, which can only be reached through the highlighted track) pick
+// Highlighted Part.
+function syncDrumPartFromMultiPart() {
+  const part = Number(partSelect.value || 0);
+  drumPartSelect.value = part < 16 ? String(part) : HIGHLIGHTED_PATTERN_MODE;
+}
+
+// The Drum Setup part: a Song part number, or HIGHLIGHTED_PATTERN for
+// either Highlighted Part option.
+function drumPartValue() {
+  const v = drumPartSelect.value;
+  return v === HIGHLIGHTED_PATTERN || v === HIGHLIGHTED_PATTERN_MODE ? HIGHLIGHTED_PATTERN : Number(v || 0);
+}
+
 let drumKits = [];
 
 function populateDrumkitSelect() {
@@ -4128,6 +4172,8 @@ function populateNoteSelect() {
     opts.push(`<option value="${n}">${noteName(n)} ${label}</option>`);
   }
   noteSelect.innerHTML = opts.join('');
+  // The kit on screen, so a kit change can tell which kit it came from.
+  drumkitSelect.dataset.shown = drumkitSelect.value;
 }
 
 // Track each channel's last Bank Select MSB/LSB (CC0/CC32) so an incoming
@@ -4139,6 +4185,9 @@ const lastBankSelect = {};
 // When the device itself switches to a drum or SFX kit voice (e.g. the user
 // changes the track's voice in Song/Pattern mode), follow it in the Drum
 // Setup kit picker so the note names shown stay in sync with what's playing.
+// Only while Drum Setup is already open: switching Song/Pattern mode on the
+// QY sends every track's Bank Select + Program Change too, which used to
+// pull the console into Drum Setup from whatever section was open.
 function handleIncomingVoiceChange(bytes) {
   if (bytes.length < 2) return;
   const type = bytes[0] & 0xf0;
@@ -4149,15 +4198,14 @@ function handleIncomingVoiceChange(bytes) {
     else if (bytes[1] === 32) state.lsb = bytes[2];
     return;
   }
-  if (type !== 0xc0) return;
-  const selectedChannel = currentChannel();
-  if (selectedChannel !== 'all' && ch !== selectedChannel) return;
+  if (type !== 0xc0 || sectionSelect.value !== 'drumSetup') return;
+  const drumPart = drumPartValue();
+  if (drumPart !== HIGHLIGHTED_PATTERN && ch !== partRcvChannel(drumPart)) return;
   const state = lastBankSelect[ch];
   if (!state || state.msb === undefined) return;
   const program = bytes[1] + 1; // wire value is 0-127; voices.json uses 1-128
   const kitIndex = drumKits.findIndex((k) => k.bankMsb === state.msb && k.program === program);
   if (kitIndex === -1) return;
-  sectionSelect.value = 'drumSetup';
   drumkitSelect.value = kitIndex;
   populateNoteSelect();
   renderParamPanel();
@@ -4170,8 +4218,8 @@ function handleIncomingNoteOn(bytes) {
   if (sectionSelect.value !== 'drumSetup') return;
   if (bytes.length < 3 || (bytes[0] & 0xf0) !== 0x90 || bytes[2] === 0) return;
   const ch = bytes[0] & 0x0f;
-  const selectedChannel = currentChannel();
-  if (selectedChannel !== 'all' && ch !== selectedChannel) return;
+  const drumPart = drumPartValue();
+  if (drumPart !== HIGHLIGHTED_PATTERN && ch !== partRcvChannel(drumPart)) return;
   const note = bytes[1];
   const [lo, hi] = parameters.drumSetup.noteRange;
   if (note < lo || note > hi || String(note) === noteSelect.value) return;
@@ -4200,23 +4248,318 @@ function currentContext(sectionKey) {
     return { part: Number(partSelect.value || 0) };
   }
   if (sectionKey === 'drumSetup') {
-    // The "3n" address high nibble only has 16 possible values (0-F), so on
-    // the wire it addresses a MIDI channel rather than a kit name (there are
-    // 20+ kits) - it always affects whatever kit is playing on that channel.
-    // Channel "All" sends the same edit to every one of the 16 possible
-    // addresses at once. drumHigh/allChannels below are only used to pick
-    // where to actually SEND; what gets STORED is keyed by kitKey (the kit
-    // selected in the dropdown), independent of which channel is playing it.
-    const ch = currentChannel();
+    // Drum Setup shares Multi Part's Part dropdown. A part doesn't own drum
+    // settings: the QY has two shared drum setups (30 = Ds1, 31 = Ds2;
+    // 32-3F are reserved and don't answer), and a part's Part Mode says
+    // which one it plays (see DRUM_SETUP_FOR_PART_MODE). drumHigh is null
+    // when the part isn't on Ds1/Ds2, and nothing is sent. What gets STORED
+    // is still keyed by kitKey (the kit picked for note names).
+    const part = drumPartValue();
     const kit = drumKits[Number(drumkitSelect.value || 0)];
+    if (part === HIGHLIGHTED_PATTERN) {
+      // Highlighted Part: whatever drum track is highlighted on the QY, in
+      // Song or Pattern mode (pattern drum tracks on Ds3 can't be addressed
+      // directly: their setup at 32 ignores XG edits). This works the way
+      // the live console always has: every edit goes to all 16 Drum Setup addresses
+      // (30-3F), and with Send as CC/NRPN on, as drum NRPN on all 16
+      // channels, which the QY (ECHO BACK RecMontr) applies to the
+      // highlighted track. drumHigh 32 is the base for Push Kit and labels.
+      return {
+        part,
+        highlightedPattern: true,
+        partMode: null,
+        drumHigh: 0x32,
+        note: Number(noteSelect.value || 0),
+        kitKey: kit ? `${kit.bankMsb}:${kit.program}` : '0:0',
+      };
+    }
+    const partMode = drumPartMode(part);
     return {
-      drumHigh: ch === 'all' ? null : 0x30 + ch,
-      allChannels: ch === 'all',
+      part,
+      partMode,
+      drumHigh: DRUM_SETUP_FOR_PART_MODE[partMode] ?? null,
       note: Number(noteSelect.value || 0),
       kitKey: kit ? `${kit.bankMsb}:${kit.program}` : '0:0',
     };
   }
   return {};
+}
+
+// Part Mode (08 nn 07) -> Drum Setup address high byte. Read from a QY100
+// on 2026-10-14: a track set to Ds1 reads Part Mode 2, Ds2 reads 3, Ds3 (a
+// Pattern drum track) reads 4, a preset kit (StdKit1) reads 1 and a normal
+// voice 0. Preset kits have no editable setup.
+// Ds3 (Part Mode 4, Pattern drum tracks) is at 32. It takes edits (the
+// console has always reached Ds3 there), but the QY100 never answers a
+// read request for it, so it can't be pulled.
+const DRUM_SETUP_FOR_PART_MODE = { 2: 0x30, 3: 0x31, 4: 0x32 };
+const WRITE_ONLY_DRUM_SETUPS = new Set([0x32]);
+const PART_MODE_ROW = 'Part Mode';
+// Parts whose Part Mode was read from the QY this session (otherwise it
+// comes from the console's own Multi Part values, which may not match).
+const drumPartModeFromQy = new Set();
+
+function drumPartMode(part) {
+  return paramState.multiPart[String(part)]?.[PART_MODE_ROW] ?? 0;
+}
+
+// The MIDI channel a part listens on (0-15), or null for 17-24 / Off.
+function partRcvChannel(part) {
+  const ch = paramState.multiPart[String(part)]?.['Rcv Channel'] ?? part;
+  return ch >= 0 && ch <= 15 ? ch : null;
+}
+
+function drumSetupLabel(drumHigh) {
+  return `Ds${drumHigh - 0x2f}`;
+}
+
+// Parts (by the console's Multi Part values) playing the given setup.
+function partsOnDrumSetup(drumHigh) {
+  const parts = [];
+  for (let p = 0; p < QY_PART_COUNT; p++) {
+    if (DRUM_SETUP_FOR_PART_MODE[drumPartMode(p)] === drumHigh) parts.push(partLabel(p));
+  }
+  return parts;
+}
+
+// Points the kit picker (which only chooses note names and the console's
+// storage) at the part's own kit. Ds1/Ds2 report Bank 127 Program 0 (the
+// Standard Kit they start from).
+function syncDrumKitToPart(part) {
+  const store = paramState.multiPart[String(part)];
+  if (!store || store['Bank Select MSB'] === undefined || store['Program Number'] === undefined) return;
+  const kitIndex = drumKits.findIndex((k) => k.bankMsb === store['Bank Select MSB'] && k.program === store['Program Number'] + 1);
+  if (kitIndex === -1 || String(kitIndex) === drumkitSelect.value) return;
+  drumkitSelect.value = kitIndex;
+  populateNoteSelect();
+}
+
+// Reads the selected part's voice and Part Mode from the QY (one XG dump
+// of 08 nn 00, read-only) so Drum Setup edits the setup the part really
+// plays. Runs only when the user picks a part or opens Drum Setup, never
+// in the background; without MIDI In the console's own values are used.
+async function refreshDrumPart() {
+  if (sectionSelect.value !== 'drumSetup' || !outputSelect.value || !inputSelect.value) return;
+  const part = drumPartValue();
+  if (part === HIGHLIGHTED_PATTERN) return;
+  const data = await runQySession(() => requestXgBlock([0x08, part, 0x00])).catch(() => null);
+  if (!data || drumPartValue() !== part) return;
+  storeDrumPartVoice(part, data);
+  syncDrumKitToPart(part);
+  if (sectionSelect.value === 'drumSetup') renderParamPanel();
+}
+
+// Keeps the voice and Part Mode bytes of one part's 08 nn 00 dump.
+function storeDrumPartVoice(part, data) {
+  const store = getParamStore('multiPart', String(part));
+  for (const row of expandRows(parameters.multiPart.params)) {
+    if (['Bank Select MSB', 'Bank Select LSB', 'Program Number', PART_MODE_ROW].includes(row.name) && data[row.offset] !== undefined) {
+      store[row.name] = data[row.offset];
+    }
+  }
+  drumPartModeFromQy.add(part);
+}
+
+// What a Part Mode means, for the status line and the Refresh Parts list.
+// Any value the console doesn't know is shown as-is rather than guessed.
+function partModeLabel(mode) {
+  return ['Normal', 'Drum', 'Ds1', 'Ds2', 'Ds3'][mode] ?? `Part Mode ${mode}`;
+}
+
+// Refresh Parts: reads every part's voice (read-only) so the summary under
+// the Part dropdown shows which parts play Ds1/Ds2/Ds3.
+const refreshDrumPartsBtn = el('refresh-drum-parts-btn');
+let drumPartsRefreshed = false;
+refreshDrumPartsBtn.addEventListener('click', async () => {
+  if (!requirePullInput('Refresh Parts', "read each part's voice from the QY")) return;
+  showProgress('Checking every part', "Reading each part's voice from the QY to find Ds1, Ds2 and Ds3. Nothing on the QY changes.");
+  let answered = 0;
+  try {
+    await runQySession(async () => {
+      for (let part = 0; part < QY_PART_COUNT; part++) {
+        const data = await requestXgBlock([0x08, part, 0x00]);
+        if (data) { storeDrumPartVoice(part, data); answered++; }
+        updateProgress(part + 1, QY_PART_COUNT);
+      }
+    });
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  } finally {
+    hideProgress();
+  }
+  drumPartsRefreshed = answered > 0;
+  statusEl.textContent = answered
+    ? `Read ${answered} of ${QY_PART_COUNT} parts from the QY.`
+    : 'Nothing came back from the QY. Check MIDI In, or run Probe.';
+  if (drumPartValue() !== HIGHLIGHTED_PATTERN) syncDrumKitToPart(drumPartValue());
+  renderParamPanel();
+});
+
+// User Drum Set: puts the Drum Setup Part (a Song part, or the track
+// highlighted on the QY) on Ds1, Ds2 or Ds3. Ds1 and Ds2 are an XG Part
+// Mode write (08 nn 07). Ds3 can't be reached that way (the QY clamps 4 to
+// 3), so it reads the song or pattern from the QY, sets that track's Part
+// Mode byte in the bulk data (setTrackPartMode) and writes it back. The
+// part is read back afterwards when MIDI In is there.
+document.querySelectorAll('[data-ds-set]').forEach((btn) => btn.addEventListener('click', async () => {
+  const mode = Number(btn.dataset.dsSet);
+  const label = partModeLabel(mode);
+  const highlighted = drumPartValue() === HIGHLIGHTED_PATTERN;
+  if ((highlighted || mode === 4) && !requirePullInput(`Set ${label}`, highlighted ? 'find the highlighted track' : 'read the song from the QY')) return;
+  const part = await resolveDrumSetTarget(label);
+  if (part === null) return;
+  if (mode === 4) {
+    await setPartDs3(part);
+  } else {
+    link.send(new Uint8Array([0xf0, 0x43, 0x10, 0x4c, 0x08, part, 0x07, mode, 0xf7]));
+    await sleep(200);
+  }
+  if (!inputSelect.value) {
+    statusEl.textContent = `Sent ${label} to ${partLabel(part)}.`;
+    return;
+  }
+  const data = await runQySession(() => requestXgBlock([0x08, part, 0x00])).catch(() => null);
+  if (data) {
+    storeDrumPartVoice(part, data);
+    statusEl.textContent = data[7] === mode
+      ? `${partLabel(part)} is now on ${label}.`
+      : `${partLabel(part)} reads back as ${partModeLabel(data[7])}, not ${label}.`;
+  }
+  renderParamPanel();
+}));
+
+// The part the Drum Setup Part dropdown points at: a Song part as is, Any
+// Mode's Highlighted Part asks the QY and the user (Song or Pattern),
+// Pattern Mode's Highlighted Part asks the QY only.
+async function resolveDrumSetTarget(label) {
+  const v = drumPartSelect.value;
+  if (v === HIGHLIGHTED_PATTERN) return resolveHighlightedTarget(label);
+  if (v === HIGHLIGHTED_PATTERN_MODE) {
+    const ch = await detectHighlightedChannel();
+    if (typeof ch === 'number') return 16 + (ch % 8);
+    await showAlert('Highlighted Part Unavailable', `${HIGHLIGHT_DETECT_FAILURES[ch.failure]} Or pick a Song part instead.`);
+    return null;
+  }
+  return Number(v);
+}
+
+// beforeRead, when given, runs once the song or pattern has been picked,
+// just before it's read from the QY (the Voice Browser's kit push resets
+// the part there, so nothing changes if the dialog is canceled).
+async function setPartDs3(part, beforeRead) {
+  const kind = part < 16 ? QY_KIND_SONG : QY_KIND_PATTERN;
+  const track = part < 16 ? part : part - 16;
+  const model = await resolveDeviceModel();
+  if (!model) return;
+  const choice = await showSlotDialog({
+    title: `Set ${partLabel(part)} to Ds3`,
+    okLabel: 'Set Ds3',
+    item: { kind },
+    model,
+    describe: (n, m) => `Pick the ${kind === QY_KIND_PATTERN ? 'pattern' : 'song'} selected on the QY. ${slotName(kind, n)} is read from the ${m}, ${partLabel(part)} is set to Ds3, and it is written back, replacing ${slotName(kind, n)}. ${REPLACE_HINT}`,
+  });
+  if (!choice) return;
+  if (beforeRead) await beforeRead();
+  const what = slotName(kind, choice.number);
+  const address = kind === QY_KIND_SONG ? qySongAddress(choice.number) : qyPatternAddress(choice.number);
+  const r = await withBulkMode(model, async () => {
+    let messages;
+    showProgress(`Reading ${what}`, `Reading ${what} from the ${model} to set ${partLabel(part)} to Ds3. Avoid touching the device until it finishes.`);
+    updateProgressIndeterminate('Waiting for the device to respond...');
+    try {
+      await qyIo.send(buildQyBulkDumpRequest(qyAddressForModel(address, model)));
+      messages = await dataFilerRunCapture();
+    } finally {
+      hideProgress();
+    }
+    const patched = messages.length ? setTrackPartMode(messages, kind, track, 4) : null;
+    if (!patched) return { unread: true };
+    const item = listDumpItems(patched.messages)[0];
+    const out = buildItemTransfer(patched.messages, item, model, choice.number).filter((m) => !isBulkModeSwitch(m));
+    return writeToSlots(model, `Setting ${partLabel(part)} to Ds3`, out, [{ kind, number: choice.number }]);
+  });
+  if (r.refused) return;
+  if (r.result.unread) {
+    await showAlert('Ds3 not set', `The ${model} didn't send ${what}, so nothing was changed. Check that MIDI In is connected, that ${what} holds data, and that the QY is stopped on its play screen.`);
+    return;
+  }
+  return reportWrite(r.result, model, `${what} with ${partLabel(part)} on Ds3`);
+}
+
+// After Refresh Parts: every part on a drum setup, as buttons that pick it.
+function renderDrumPartsSummary() {
+  if (!drumPartsRefreshed) return;
+  const groups = new Map();
+  for (let p = 0; p < QY_PART_COUNT; p++) {
+    const mode = drumPartMode(p);
+    if (!drumPartModeFromQy.has(p) || mode < 2) continue;
+    const key = partModeLabel(mode);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  }
+  const line = document.createElement('span');
+  line.className = 'drum-parts-summary';
+  if (!groups.size) {
+    line.textContent = 'Current QY Drum Part Settings: no part is set to Ds1, Ds2 or Ds3.';
+  } else {
+    line.append('Current QY Drum Part Settings: ');
+    [...groups].forEach(([key, parts], gi) => {
+      if (gi) line.append(' · ');
+      line.append(`${key} `);
+      parts.forEach((p, i) => {
+        if (i) line.append(', ');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'link-btn';
+        btn.textContent = partLabel(p);
+        btn.addEventListener('click', () => {
+          drumPartSelect.value = p < 16 ? String(p) : HIGHLIGHTED_PATTERN_MODE;
+          drumPartSelect.dispatchEvent(new Event('change'));
+        });
+        line.append(btn);
+      });
+    });
+  }
+  drumSetupHint.append(document.createElement('br'), line);
+}
+
+// The line above the Drum Setup rows: which setup the part plays and who
+// else shares it, or why there's nothing to edit (with a way to switch a
+// preset-kit part to Ds1/Ds2).
+function renderDrumPartStatus(context) {
+  drumSetupHint.replaceChildren();
+  if (context.highlightedPattern) {
+    drumSetupHint.append('Edits go to the drum track highlighted on the QY, in Song or Pattern mode, so highlight it there first (ECHO BACK on RecMontr). '
+      + 'Each edit is sent to every Drum Setup address, and as NRPN on every channel while Send as CC/NRPN is on, so other Ds kits may change too. '
+      + 'Pick a Song part instead to edit just its kit, or to Pull.');
+    renderDrumPartsSummary();
+    return;
+  }
+  const label = partLabel(context.part);
+  const source = drumPartModeFromQy.has(context.part) ? '' : ' (from the console\'s Multi Part values; connect MIDI In to read it from the QY)';
+  const text = (s) => drumSetupHint.append(document.createTextNode(s));
+  if (context.drumHigh !== null) {
+    const ds = drumSetupLabel(context.drumHigh);
+    const others = partsOnDrumSetup(context.drumHigh).filter((p) => p !== label);
+    text(`${label} plays ${ds}${source}. Edits here change ${ds}${others.length ? `, so ${others.join(', ')} ${others.length === 1 ? 'changes' : 'change'} too` : ''}. Picking a kit sends it to the part.`);
+    if (WRITE_ONLY_DRUM_SETUPS.has(context.drumHigh)) {
+      text(` The QY doesn't send ${ds} back over MIDI, so it can be edited and pushed but not pulled.`);
+    }
+    renderDrumPartsSummary();
+    return;
+  }
+  if (context.partMode > 1) {
+    text(`${label} reads ${partModeLabel(context.partMode)}${source}, which the console doesn't map to a drum setup yet.`);
+    renderDrumPartsSummary();
+    return;
+  }
+  if (context.partMode !== 1) {
+    text(`${label} plays a normal voice, not a drum kit${source}. Pick a part and set it to Ds1, Ds2 or Ds3 on the QY, then click ↻ to refresh.`);
+    renderDrumPartsSummary();
+    return;
+  }
+  text(`${label} plays a preset kit${source}, which the QY can't edit. To edit its drum notes, switch it to Ds1, Ds2 or Ds3 with the User Drum Set buttons, or on the QY and then click ↻ to refresh.`);
+  renderDrumPartsSummary();
 }
 
 // Some defaults depend on the current context rather than being a fixed
@@ -4271,7 +4614,7 @@ const NON_CONTINUOUS_PARAMS = new Set(['Bank Select', 'Program Number', 'Program
 // value, so it also serves as the DYNAMIC_PARAM_DESC lookup below.
 const MULTI_TOGGLE_PARAMS = {
   'Same Note Number Key On Assign': { labels: ['Single', 'Multi', 'Inst (Drum)'] },
-  'Part Mode': { labels: ['Normal', 'Drum Thru', 'Drum 1', 'Drum 2'] },
+  'Part Mode': { labels: ['Normal', 'Drum', 'Ds1', 'Ds2', 'Ds3'] },
   'Custom Parameter Type': { labels: ['NRPN', 'RPN'] },
   'EQ Type': { labels: ['Flat', 'Jazz', 'Pops', 'Rock', 'Classic'] },
 };
@@ -4421,7 +4764,7 @@ const PARAM_INFO = {
   'Send Chorus To Reverb': 'How much of the chorus\'s output is additionally fed into the reverb, for a chorus-then-reverb effect chain.',
   'Send Variation To Reverb': 'How much of the variation effect\'s output is additionally fed into the reverb, when Variation is in System mode.',
   'Send Variation To Chorus': 'How much of the variation effect\'s output is additionally fed into the chorus, when Variation is in System mode.',
-  VariMode: 'Whether Variation acts as a shared bus effect like Reverb/Chorus (System - any part can send into it) or is patched directly into one specific part\'s signal path (Insertion - see Variation Part below). Only works in Song Mode.',
+  VariMode: 'Whether Variation acts as a shared bus effect like Reverb/Chorus (System, where any part can send into it) or is patched directly into one specific part\'s signal path (Insertion, see Variation Part below). Insertion only works in Song Mode: in Pattern Mode, VariMode must be set to System or the Variation effect will not sound.',
   'Variation Part': 'Which part receives the Variation effect directly in its signal chain, when VariMode is set to Insertion. Only works in Song Mode.',
   'MW Variation Ctrl Depth': 'How much the Modulation Wheel affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
   'PB Variation Ctrl Depth': 'How much the Pitch Bend Wheel affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
@@ -4438,7 +4781,7 @@ const PARAM_INFO = {
   'Portamento Switch': 'Turns on a smooth pitch glide between consecutive notes on this part.',
   'Portamento Time': 'How long the pitch glide takes when Portamento is on - higher is a slower slide.',
   'Same Note Number Key On Assign': 'How repeated notes of the same pitch are handled: replace the previous note (Single), layer on top of it (Multi), or use drum-style one-shot behavior (Inst).',
-  'Part Mode': 'Whether this part behaves as a normal melodic part or is routed through drum-kit note mapping.',
+  'Part Mode': 'Normal for a melodic voice, Drum for a preset drum kit (not editable), or Ds1/Ds2 to play one of the QY\'s two editable drum setups (edited in the Drum Setup section). Pattern drum tracks on Ds3 read 4.',
   'Note Shift': 'Shifts this part\'s pitch in whole semitones, independent of the global Transpose.',
   Detune: 'Fine pitch offset for this part in Hz, for subtle chorus-like detuning against other parts.',
   Volume: 'This part\'s individual volume, relative to Master Volume.',
@@ -4610,6 +4953,45 @@ const tableDesc = (tableName, unit) => (v) => {
   if (raw === undefined || raw === null) return '';
   return /^THRU\(/.test(raw) ? raw.replace(')', `${unit})`) : `${raw}${unit}`;
 };
+// Effect parameters whose knob goes past what the QY70/QY100 accepts (the
+// full range stays for external XG gear): dots on the knob mark the ends of
+// the QY's range.
+const QY_RANGE_MARKS = {
+  'Reverb Time': { max: 69 },
+  Diffusion: { max: 10 },
+  'Initial Delay': { max: 63 },
+  'HPF Cutoff': { max: 52 },
+  'LPF Cutoff': { min: 34, max: 60 },
+};
+// Otherwise the documented range from EFFECT_PARAM_META: a named-choice
+// parameter (enum) stops at its last choice (Early Ref's Type at 5), a
+// linear one at its own data range (High Damp 1-10).
+function effectRangeMarks(name, groupKey) {
+  if (QY_RANGE_MARKS[name]) return QY_RANGE_MARKS[name];
+  const meta = effectParamMeta(name, groupKey);
+  if (meta?.kind === 'enum') return { max: meta.labels.length - 1 };
+  if (meta?.kind !== 'linear') return undefined;
+  const range = {};
+  if (meta.dataMin > 0) range.min = meta.dataMin;
+  if (meta.dataMax < 127) range.max = meta.dataMax;
+  return Object.keys(range).length ? range : undefined;
+}
+// msbMax: the delay times use both bytes (0.1ms steps), and their MSB tops
+// out here on the QY: 28 for 355.0ms, and by the same rule 56 for 715.0ms.
+// LFO Frequency as the QY's own screen shows it. The Data List table is
+// rounded, while the QY shows a value that is usually 0.01 lower (e.g. data
+// 8: 0.34 in the table, 0.33 on the QY), but not always (data 81 is 4.54 on
+// both), so only values read off the QY are corrected here. The QY also
+// drops trailing zeros (3.70 shows as 3.7).
+const QY_LFO_FREQ_SCREEN = {
+  4: '0.16', 8: '0.33', 9: '0.37', 12: '0.5', 14: '0.58', 28: '1.17',
+  32: '1.34', 70: '3.19', 76: '3.7', 81: '4.54', 83: '4.87',
+};
+function lfoFreqDesc(v) {
+  const raw = QY_LFO_FREQ_SCREEN[v] ?? effectValueTables.table1_lfoFreqHz?.[v];
+  return raw === undefined ? '' : `${parseFloat(raw)}Hz`;
+}
+
 const EFFECT_PARAM_META = {
   'Reverb Time': { kind: 'linear', dataMin: 0, dataMax: 69, format: tableDesc('table4_reverbTimeS', 's') },
   'HPF Cutoff': { kind: 'linear', dataMin: 0, dataMax: 52, format: tableDesc('table3_eqFreqHz', 'Hz') },
@@ -4617,24 +4999,24 @@ const EFFECT_PARAM_META = {
   Width: { kind: 'linear', dataMin: 0, dataMax: 37, format: tableDesc('table8_widthDepthHeightM', 'm') },
   Height: { kind: 'linear', dataMin: 0, dataMax: 73, format: tableDesc('table8_widthDepthHeightM', 'm') },
   Depth: { kind: 'linear', dataMin: 0, dataMax: 104, format: tableDesc('table8_widthDepthHeightM', 'm') },
-  'LFO Frequency': { kind: 'linear', dataMin: 0, dataMax: 127, format: tableDesc('table1_lfoFreqHz', 'Hz') },
+  'LFO Frequency': { kind: 'linear', dataMin: 0, dataMax: 127, format: lfoFreqDesc },
   'EQ Low Frequency': { kind: 'linear', dataMin: 8, dataMax: 40, format: tableDesc('table3_eqFreqHz', 'Hz') },
   'EQ High Frequency': { kind: 'linear', dataMin: 28, dataMax: 58, format: tableDesc('table3_eqFreqHz', 'Hz') },
-  'EQ Mid Frequency': { kind: 'static', text: '500Hz – 10.0kHz' },
-  'Room Size': { kind: 'static', text: '0.1 – 7.0m' },
+  'EQ Mid Frequency': { kind: 'linear', dataMin: 28, dataMax: 54, format: tableDesc('table3_eqFreqHz', 'Hz') },
+  'Room Size': { kind: 'linear', dataMin: 0, dataMax: 44, format: tableDesc('table6_roomSizeM', 'm') },
   Stage: { kind: 'static', text: '6-10 (Phaser 1) / 3-5 (Phaser 2)' },
-  'Lch Delay': { kind: 'static', text: '0.1 – 715.0ms' },
-  'Rch Delay': { kind: 'static', text: '0.1 – 715.0ms' },
-  'Cch Delay': { kind: 'static', text: '0.1 – 715.0ms' },
-  'Feedback Delay': { kind: 'static', text: '0.1 – 715.0ms' },
-  'Feedback Delay 1': { kind: 'static', text: '0.1 – 715.0ms' },
-  'Feedback Delay 2': { kind: 'static', text: '0.1 – 715.0ms' },
-  'L->R Delay': { kind: 'static', text: '0.1 – 355.0ms' },
-  'R->L Delay': { kind: 'static', text: '0.1 – 355.0ms' },
-  'Lch Delay1': { kind: 'static', text: '0.1 – 355.0ms' },
-  'Rch Delay1': { kind: 'static', text: '0.1 – 355.0ms' },
-  'Lch Delay2': { kind: 'static', text: '0.1 – 355.0ms' },
-  'Rch Delay2': { kind: 'static', text: '0.1 – 355.0ms' },
+  'Lch Delay': { kind: 'static', text: '0.1 – 715.0ms', msbMax: 56 },
+  'Rch Delay': { kind: 'static', text: '0.1 – 715.0ms', msbMax: 56 },
+  'Cch Delay': { kind: 'static', text: '0.1 – 715.0ms', msbMax: 56 },
+  'Feedback Delay': { kind: 'static', text: '0.1 – 715.0ms', msbMax: 56 },
+  'Feedback Delay 1': { kind: 'static', text: '0.1 – 715.0ms', msbMax: 56 },
+  'Feedback Delay 2': { kind: 'static', text: '0.1 – 715.0ms', msbMax: 56 },
+  'L->R Delay': { kind: 'static', text: '0.1 – 355.0ms', msbMax: 28 },
+  'R->L Delay': { kind: 'static', text: '0.1 – 355.0ms', msbMax: 28 },
+  'Lch Delay1': { kind: 'static', text: '0.1 – 355.0ms', msbMax: 28 },
+  'Rch Delay1': { kind: 'static', text: '0.1 – 355.0ms', msbMax: 28 },
+  'Lch Delay2': { kind: 'static', text: '0.1 – 355.0ms', msbMax: 28 },
+  'Rch Delay2': { kind: 'static', text: '0.1 – 355.0ms', msbMax: 28 },
 
   'Dry/Wet': { kind: 'linear', dataMin: 1, dataMax: 127, format: balanceDesc('Dry', 'Wet') },
   'Er/ Rev Balance': { kind: 'linear', dataMin: 1, dataMax: 127, format: balanceDesc('Early Ref.', 'Reverb') },
@@ -4673,6 +5055,31 @@ function computeEffectParamDesc(name, groupKey, value) {
   return '';
 }
 
+// Variation's parameters are 2 bytes (MSB, LSB). The documented value is
+// the LSB alone; only the delay times (msbMax below) need the MSB to
+// reach past 127. For everything else a non-zero MSB is off the QY's scale:
+// the QY seems to use the whole raw value (MSB x 128 + LSB) anyway, so it
+// still changes the sound, but its screen only shows the LSB part.
+function effectParamDesc(name, groupKey, knobs) {
+  const lsb = Math.round(knobs[knobs.length - 1].getValue());
+  // Delay times: MSB x 128 + LSB in 0.1ms steps.
+  if (knobs.length === 2 && effectParamMeta(name, groupKey)?.msbMax !== undefined) {
+    return `${((Math.round(knobs[0].getValue()) * 128 + lsb) / 10).toFixed(1)}ms`;
+  }
+  const text = computeEffectParamDesc(name, groupKey, lsb);
+  if (!lsbOnlyEffectParam(name, groupKey, knobs)) return text;
+  const msb = Math.round(knobs[0].getValue()) ? 'MSB On' : 'MSB Off';
+  return text ? `${text}, ${msb}` : msb;
+}
+
+// Every Variation parameter is LSB-only except the delay times (msbMax).
+function lsbOnlyEffectParam(name, groupKey, knobs) {
+  return knobs.length === 2 && effectParamMeta(name, groupKey)?.msbMax === undefined;
+}
+
+const MSB_OFF_SCALE_INFO = 'MSB is not part of this parameter on the QY70/QY100: its value is the LSB alone. '
+  + "A non-zero MSB still changes the sound (the QY seems to use the raw MSB x 128 + LSB), but the QY's screen won't show it. Leave it at 0 for documented behavior.";
+
 // A couple of the generic slots have a hardware-meaningful resting value
 // that differs from the shared 0-127 template's default of 0 - e.g. -63dB
 // isn't "no feedback", 0dB (data 64) is.
@@ -4680,7 +5087,127 @@ const EFFECT_PARAM_DEFAULT = {
   'Feedback Level': 64,
   'Lch Feedback Level': 64,
   'Rch Feedback Level': 64,
+  'EQ Low Gain': 64,
+  'EQ Mid Gain': 64,
+  'EQ High Gain': 64,
 };
+// Resting values that depend on the effect Type itself, checked first, as
+// the QY's own screen shows them for a freshly picked Type (Gate Reverb and
+// Reverse Gate share their slots but default to different Types).
+const EFFECT_TYPE_PARAM_DEFAULT = {
+  // 2.1s, 10, 8, 90Hz, 5.6kHz
+  'Hall 1': { 'Reverb Time': 18, Diffusion: 10, 'Initial Delay': 8, 'HPF Cutoff': 13, 'LPF Cutoff': 49 },
+  // 2.8s, 10, 28, 40Hz, 4.0kHz
+  'Hall 2': { 'Reverb Time': 25, Diffusion: 10, 'Initial Delay': 28, 'HPF Cutoff': 6, 'LPF Cutoff': 46 },
+  // 0.8s, 10, 16, 32Hz, 5.6kHz
+  'Room 1': { 'Reverb Time': 5, Diffusion: 10, 'Initial Delay': 16, 'HPF Cutoff': 4, 'LPF Cutoff': 49 },
+  // 1.5s, 10, 5, 32Hz, 1.6kHz
+  'Room 2': { 'Reverb Time': 12, Diffusion: 10, 'Initial Delay': 5, 'HPF Cutoff': 4, 'LPF Cutoff': 38 },
+  // 1.2s, 10, 47, 36Hz, 1.2kHz
+  'Room 3': { 'Reverb Time': 9, Diffusion: 10, 'Initial Delay': 47, 'HPF Cutoff': 5, 'LPF Cutoff': 36 },
+  // 2.2s, 10, 16, 45Hz, 10.0kHz
+  'Stage 1': { 'Reverb Time': 19, Diffusion: 10, 'Initial Delay': 16, 'HPF Cutoff': 7, 'LPF Cutoff': 54 },
+  // 1.4s, 10, 16, 45Hz, 7.0kHz
+  'Stage 2': { 'Reverb Time': 11, Diffusion: 10, 'Initial Delay': 16, 'HPF Cutoff': 7, 'LPF Cutoff': 51 },
+  // 2.8s, 10, 6, 50Hz, 5.6kHz
+  // Delay times in 0.1ms steps (2 bytes in Variation): 333.3ms, 166.7ms,
+  // 500.0ms, 500.0ms; Feedback Level +10; Dry/Wet D28>W on the QY's screen.
+  'Delay L, C, R': { 'Lch Delay': 3333, 'Rch Delay': 1667, 'Cch Delay': 5000, 'Feedback Delay': 5000, 'Feedback Level': 74, 'Dry/Wet': 37 },
+  // 250.0ms, 375.0ms, 375.2ms, 375.0ms; Feedback Level +23; Dry/Wet D32>W
+  // (data 33, by D28>W being 37 for Delay L, C, R).
+  'Delay L, R': { 'Lch Delay': 2500, 'Rch Delay': 3750, 'Feedback Delay 1': 3752, 'Feedback Delay 2': 3750, 'Feedback Level': 87, 'Dry/Wet': 33 },
+  // 170.0ms, +16, 178.0ms, +16, High Damp 1.0, Dry/Wet D24>W.
+  Echo: { 'Lch Delay1': 1700, 'Lch Feedback Level': 80, 'Rch Delay1': 1780, 'Rch Feedback Level': 80, 'High Damp': 10, 'Dry/Wet': 41 },
+  // 170.0ms, 175.0ms, +47, Input R, High Damp 1.0, Dry/Wet D32>W.
+  'Cross Delay': { 'L->R Delay': 1700, 'R->L Delay': 1750, 'Feedback Level': 111, 'Input Select': 1, 'High Damp': 10, 'Dry/Wet': 33 },
+  // Type S-H, Room Size 3.1m, 5, 16, Feedback Level +0, Dry/Wet D32>W.
+  'Early Ref 1': { Type: 0, 'Room Size': 19, Diffusion: 5, 'Initial Delay': 16, 'Feedback Level': 64, 'Dry/Wet': 33 },
+  // Type Rdm, Room Size 1.2m, 10, 16, Feedback Level +0, Dry/Wet D32>W.
+  'Early Ref 2': { Type: 2, 'Room Size': 7, Diffusion: 10, 'Initial Delay': 16, 'Feedback Level': 64, 'Dry/Wet': 33 },
+  // Delay Time 63, Feedback Level +33, HPF THRU, LPF 5.0kHz, Dry/Wet D=W.
+  'Karaoke 1': { 'Delay Time': 63, 'Feedback Level': 97, 'HPF Cutoff': 0, 'LPF Cutoff': 48, 'Dry/Wet': 64 },
+  // Delay Time 55, Feedback Level +41, HPF THRU, LPF 6.3kHz, Dry/Wet D=W.
+  'Karaoke 2': { 'Delay Time': 55, 'Feedback Level': 105, 'HPF Cutoff': 0, 'LPF Cutoff': 50, 'Dry/Wet': 64 },
+  // Delay Time 43, Feedback Level +46, HPF 100Hz, LPF 9.0kHz, Dry/Wet D=W.
+  'Karaoke 3': { 'Delay Time': 43, 'Feedback Level': 110, 'HPF Cutoff': 14, 'LPF Cutoff': 53, 'Dry/Wet': 64 },
+  // LFO 0.25Hz, PM Depth 54, Feedback Level +13, Delay Offset 106, Dry/Wet D=W.
+  'variation:Chorus 1': { 'LFO Frequency': 6, 'LFO PM Depth': 54, 'Feedback Level': 77, 'Delay Offset': 106, 'Dry/Wet': 64 },
+  // LFO 0.33Hz on the QY's screen (0.34 in the Data List table), PM Depth
+  // 63, Feedback Level +0, Delay Offset 30, Dry/Wet D=W.
+  'variation:Chorus 2': { 'LFO Frequency': 8, 'LFO PM Depth': 63, 'Feedback Level': 64, 'Delay Offset': 30, 'Dry/Wet': 64 },
+  // LFO 0.16Hz on the QY's screen (0.17 in the Data List table), PM Depth
+  // 44, Feedback Level +0, Delay Offset 110, Dry/Wet D=W.
+  'variation:Chorus 3': { 'LFO Frequency': 4, 'LFO PM Depth': 44, 'Feedback Level': 64, 'Delay Offset': 110, 'Dry/Wet': 64 },
+  // LFO 0.37Hz on the QY's screen (0.38 in the Data List table), PM Depth
+  // 32, Feedback Level +5, Delay Offset 104, Dry/Wet D=W.
+  'variation:Chorus 4': { 'LFO Frequency': 9, 'LFO PM Depth': 32, 'Feedback Level': 69, 'Delay Offset': 104, 'Dry/Wet': 64 },
+  // LFO 0.5Hz on the QY's screen (0.51 in the Data List table), PM Depth
+  // 32, Feedback Level +0, Delay Offset 0, Dry/Wet D<W63.
+  'variation:Celeste 1': { 'LFO Frequency': 12, 'LFO PM Depth': 32, 'Feedback Level': 64, 'Delay Offset': 0, 'Dry/Wet': 127 },
+  // LFO 1.17Hz on the QY's screen (1.18 in the Data List table), PM Depth
+  // 18, Feedback Level +26, Delay Offset 2, Dry/Wet D<W20.
+  'variation:Celeste 2': { 'LFO Frequency': 28, 'LFO PM Depth': 18, 'Feedback Level': 90, 'Delay Offset': 2, 'Dry/Wet': 84 },
+  // LFO 0.16Hz on the QY's screen (0.17 in the Data List table), PM Depth
+  // 63, Feedback Level -20, Delay Offset 2, Dry/Wet D<W63.
+  'variation:Celeste 3': { 'LFO Frequency': 4, 'LFO PM Depth': 63, 'Feedback Level': 44, 'Delay Offset': 2, 'Dry/Wet': 127 },
+  // LFO 0.33Hz on the QY's screen (0.34 in the Data List table), PM Depth
+  // 29, Feedback Level +0, Delay Offset 0, Dry/Wet D<W63.
+  'variation:Celeste 4': { 'LFO Frequency': 8, 'LFO PM Depth': 29, 'Feedback Level': 64, 'Delay Offset': 0, 'Dry/Wet': 127 },
+  // LFO 0.58Hz on the QY's screen (0.59 in the Data List table), Depth 14,
+  // Feedback Level +40, Delay Offset 2, Dry/Wet D<W32.
+  'variation:Flanger 1': { 'LFO Frequency': 14, 'LFO Depth': 14, 'Feedback Level': 104, 'Delay Offset': 2, 'Dry/Wet': 96 },
+  // LFO 1.34Hz on the QY's screen (1.35 in the Data List table), Depth 17,
+  // Feedback Level -38, Delay Offset 2, Dry/Wet D<W32.
+  'variation:Flanger 2': { 'LFO Frequency': 32, 'LFO Depth': 17, 'Feedback Level': 26, 'Delay Offset': 2, 'Dry/Wet': 96 },
+  // LFO 0.16Hz on the QY's screen (0.17 in the Data List table), Depth 109,
+  // Feedback Level +45, Delay Offset 2, Dry/Wet D<W63.
+  'variation:Flanger 3': { 'LFO Frequency': 4, 'LFO Depth': 109, 'Feedback Level': 109, 'Delay Offset': 2, 'Dry/Wet': 127 },
+  // LFO 0.5Hz on the QY's screen (0.51 in the Data List table), Depth 25,
+  // Delay Offset 16, Dry/Wet D<W63.
+  'variation:Symphonic': { 'LFO Frequency': 12, 'LFO Depth': 25, 'Delay Offset': 16, 'Dry/Wet': 127 },
+  // LFO 4.54Hz, Depth 35, Dry/Wet D<W63.
+  'variation:Rotary Speaker': { 'LFO Frequency': 81, 'LFO Depth': 35, 'Dry/Wet': 127 },
+  // LFO 4.87Hz on the QY's screen (4.88 in the Data List table), AM Depth
+  // 56, PM Depth 0.
+  'variation:Tremolo': { 'LFO Frequency': 83, 'AM Depth': 56, 'PM Depth': 0 },
+  // LFO 3.7Hz, L/R Depth 80, F/R Depth 32, PAN Direction L/R.
+  'variation:Auto Pan': { 'LFO Frequency': 76, 'L/R Depth': 80, 'F/R Depth': 32, 'PAN Direction': 5 },
+  // LFO 0.33Hz on the QY's screen (0.34 in the Data List table), Depth 111,
+  // Phase Shift Offset 74, Feedback Level +40, Dry/Wet D=W.
+  'variation:Phaser 1': { 'LFO Frequency': 8, 'LFO Depth': 111, 'Phase Shift Offset': 74, 'Feedback Level': 104, 'Dry/Wet': 64 },
+  // LFO 0.33Hz on the QY's screen (0.34 in the Data List table), Depth 111,
+  // Phase Shift Offset 74, Feedback Level +44, Dry/Wet D=W.
+  'variation:Phaser 2': { 'LFO Frequency': 8, 'LFO Depth': 111, 'Phase Shift Offset': 74, 'Feedback Level': 108, 'Dry/Wet': 64 },
+  // Drive 40, EQ Low 200Hz +8dB, LPF 9.0kHz, Output Level 48, Dry/Wet D<W63.
+  'variation:Distortion': { Drive: 40, 'EQ Low Frequency': 20, 'EQ Low Gain': 72, 'LPF Cutoff': 53, 'Output Level': 48, 'Dry/Wet': 127 },
+  // Drive 29, EQ Low 315Hz +4dB, LPF 3.6kHz, Output Level 55, Dry/Wet D<W63.
+  'variation:Over Drive': { Drive: 29, 'EQ Low Frequency': 24, 'EQ Low Gain': 68, 'LPF Cutoff': 45, 'Output Level': 55, 'Dry/Wet': 127 },
+  // Drive 39, AMP Type Stack, LPF 5.0kHz, Output Level 55, Dry/Wet D<W63.
+  'variation:Amp Simulator': { Drive: 39, 'AMP Type': 1, 'LPF Cutoff': 48, 'Output Level': 55, 'Dry/Wet': 127 },
+  // Low Gain +6dB, Mid 1.0kHz -4dB, Mid Width 1.0, High Gain +6dB.
+  'variation:3-Band EQ (Mono)': { 'EQ Low Gain': 70, 'EQ Mid Frequency': 34, 'EQ Mid Gain': 60, 'EQ Mid Width': 10, 'EQ High Gain': 70 },
+  // Low 500Hz +6dB, High 4.0kHz +6dB.
+  'variation:2-Band EQ (Stereo)': { 'EQ Low Frequency': 28, 'EQ Low Gain': 70, 'EQ High Frequency': 46, 'EQ High Gain': 70 },
+  // LFO 3.19Hz on the QY's screen (3.20 in the Data List table), Depth 56,
+  // Cutoff Frequency Offset 39, Resonance 2.5, Dry/Wet D<W63.
+  'variation:Auto Wah (LFO)': { 'LFO Frequency': 70, 'LFO Depth': 56, 'Cutoff Frequency Offset': 39, Resonance: 25, 'Dry/Wet': 127 },
+  Plate: { 'Reverb Time': 25, Diffusion: 10, 'Initial Delay': 6, 'HPF Cutoff': 8, 'LPF Cutoff': 49 },
+  // Type A, Room Size 2.5m, 6, 2, Feedback Level +0, Dry/Wet D32>W.
+  'Gate Reverb': { Type: 0, 'Room Size': 15, Diffusion: 6, 'Initial Delay': 2, 'Feedback Level': 64, 'Dry/Wet': 33 },
+  // Type B, Room Size 3.1m, 8, 3, Feedback Level +0, Dry/Wet D32>W.
+  'Reverse Gate': { Type: 1, 'Room Size': 19, Diffusion: 8, 'Initial Delay': 3, 'Feedback Level': 64, 'Dry/Wet': 33 },
+};
+// A 2-byte value as [MSB, LSB].
+function splitEffectValue(v) {
+  return [v >> 7, v & 0x7f];
+}
+// A "section:Type" key (e.g. "variation:Chorus 1") applies to that section
+// only and wins over the plain Type key, for Types whose QY defaults differ
+// between the Chorus and Variation blocks.
+function effectParamDefaultFor(sectionKey, typeName, label) {
+  return EFFECT_TYPE_PARAM_DEFAULT[`${sectionKey}:${typeName}`]?.[label]
+    ?? EFFECT_TYPE_PARAM_DEFAULT[typeName]?.[label] ?? EFFECT_PARAM_DEFAULT[label];
+}
 
 // Info-icon tooltip text for the generic Reverb/Chorus/Variation "Parameter
 // N" slots, keyed by their real name once relabeled - shown once the
@@ -5059,8 +5586,11 @@ function renderParamPanel() {
   const isPinnedView = sectionKey === 'pinned';
   const section = parameters[sectionKey];
   partSelect.hidden = sectionKey !== 'multiPart';
-  drumkitSelect.hidden = sectionKey !== 'drumSetup';
+  drumPartSelect.hidden = sectionKey !== 'drumSetup';
+  el('drumkit-wrap').hidden = sectionKey !== 'drumSetup';
   noteSelect.hidden = sectionKey !== 'drumSetup';
+  refreshDrumPartsBtn.hidden = sectionKey !== 'drumSetup';
+  el('ds-set-btns').hidden = sectionKey !== 'drumSetup';
   drumSetupHint.hidden = sectionKey !== 'drumSetup';
   channelSectionHint.hidden = section?.kind !== 'channel';
   pinnedControlsEl.hidden = !isPinnedView;
@@ -5069,11 +5599,11 @@ function renderParamPanel() {
   pushDrumParamsBtn.hidden = sectionKey !== 'drumSetup';
   pushParamsBtn.hidden = sectionKey === 'drumSetup' || isPinnedView;
   pushAllPartsBtn.hidden = sectionKey !== 'multiPart';
+  pushHighlightedBtn.hidden = sectionKey !== 'multiPart';
   // Pull reads XG settings back from the device, so it's for XG-address
   // sections only (channel messages can't be read back).
   const canPull = !!section && section.kind !== 'channel';
   pullParamsBtn.hidden = !canPull;
-  pullInfoIcon.hidden = !canPull;
   pullAllPartsBtn.hidden = sectionKey !== 'multiPart';
   pullHighlightedBtn.hidden = sectionKey !== 'multiPart';
   pullKitBtn.hidden = sectionKey !== 'drumSetup';
@@ -5088,6 +5618,14 @@ function renderParamPanel() {
   paramListEl.innerHTML = '';
   // Nothing to reset in an empty My Controls.
   resetSectionBtn.hidden = isPinnedView && !items.length;
+  if (sectionKey === 'drumSetup') {
+    renderDrumPartStatus(context);
+    const editable = context.drumHigh !== null;
+    for (const elx of [drumkitSelect, noteSelect, resetSectionBtn, pullParamsBtn, pushDrumParamsBtn, pullKitBtn]) elx.hidden = !editable;
+    if (!editable) { currentSectionResetFns = []; return; }
+    // Nothing comes back from a write-only setup (Ds3), so no Pull buttons.
+    if (context.highlightedPattern || WRITE_ONLY_DRUM_SETUPS.has(context.drumHigh)) pullParamsBtn.hidden = pullKitBtn.hidden = true;
+  }
   if (isPinnedView && !items.length) {
     paramListEl.innerHTML = '<p class="hint param-list-empty">Nothing pinned yet. Click the ☆ next to any parameter, in any section, to pin it here.</p>';
   }
@@ -5169,23 +5707,70 @@ function renderParamPanel() {
     const typeList = effectTypes[effectTypeParam.dataKey] || [];
     const match = typeList.find((t) => t.msb === msbKnob.getValue() && t.lsb === lsbKnob.getValue());
     const groupKey = (match && effectParams.typeToGroup[match.name]) || null;
-    return { groupKey, group: groupKey && effectParams.groups[groupKey] };
+    return { groupKey, group: groupKey && effectParams.groups[groupKey], typeName: match?.name };
   }
   function refreshEffectParamNames() {
     if (!effectTypeParam || !effectTypeKnobs) return;
     const { groupKey, group } = currentEffectGroup();
     currentEffectGroupKey = groupKey;
-    for (const { el, num, fallback, descEl, knob, row, infoIcon } of paramNameEls) {
+    for (const { el, num, fallback, descEl, knobs, row, infoIcon } of paramNameEls) {
       const used = !!(group && group[num - 1]);
       setNameText(el, used ? group[num - 1] : fallback);
-      descEl.textContent = used ? computeEffectParamDesc(nameText(el), currentEffectGroupKey, knob.getValue()) : '';
+      descEl.textContent = used ? effectParamDesc(nameText(el), currentEffectGroupKey, knobs) : '';
       row.classList.toggle('unused-param', !used);
+      // Variation's MSB: a notch at 0 and orange above it when the
+      // parameter's value is the LSB alone.
+      // Delay times instead get a notch at their own MSB maximum.
+      if (knobs.length === 2) {
+        const msbOff = used && lsbOnlyEffectParam(nameText(el), currentEffectGroupKey, knobs);
+        const msbMax = used ? effectParamMeta(nameText(el), currentEffectGroupKey)?.msbMax : undefined;
+        if (msbOff) {
+          knobs[0].setMarks?.([{ value: 0, title: MSB_OFF_SCALE_INFO }], [[0, knobs[0].max]]);
+        } else if (msbMax !== undefined) {
+          knobs[0].setMarks?.([{ value: msbMax, title: `QY70/QY100 maximum (${msbMax}). Higher values are for external XG gear.` }], [[msbMax, knobs[0].max]]);
+        } else {
+          knobs[0].setMarks?.([], []);
+        }
+      }
+      const knob = knobs[knobs.length - 1];
+      const range = used ? effectRangeMarks(nameText(el), currentEffectGroupKey) : undefined;
+      knob.setMarks?.([
+        range?.min !== undefined && { value: range.min, title: `QY70/QY100 minimum (${range.min}). Lower values are for external XG gear.` },
+        range?.max !== undefined && { value: range.max, title: `QY70/QY100 maximum (${range.max}). Higher values are for external XG gear.` },
+      ].filter(Boolean), [
+        range?.min !== undefined && [knob.min, range.min],
+        range?.max !== undefined && [range.max, knob.max],
+      ].filter(Boolean));
       if (infoIcon) {
         infoIcon.dataset.tooltip = used
           ? (EFFECT_PARAM_INFO[nameText(el)] || 'Meaning defined by the currently selected effect Type.')
+            + (lsbOnlyEffectParam(nameText(el), currentEffectGroupKey, knobs) ? ` ${MSB_OFF_SCALE_INFO}` : '')
           : EFFECT_PARAM_UNUSED_INFO;
       }
     }
+  }
+
+  // A new effect Type gives its slots new meanings, so a slot left at the
+  // old meaning's value can land somewhere odd (a Delay time of 0 becomes a
+  // Feedback Level of -63). Slots with a resting value in
+  // EFFECT_PARAM_DEFAULT (Feedback Level and EQ gains: data 64, i.e. 0) are set to it,
+  // MSB 0, and sent after the Type; the panel then rebuilds so each row's
+  // Reset uses the new meaning's default.
+  function applyEffectTypeDefaults() {
+    const { group, typeName } = currentEffectGroup();
+    if (!group) return;
+    for (const { num, knobs: slotKnobs } of paramNameEls) {
+      const def = effectParamDefaultFor(sectionKey, typeName, group[num - 1]);
+      if (def === undefined) continue;
+      if (slotKnobs.length === 2) {
+        const [msb, lsb] = splitEffectValue(def);
+        slotKnobs[0].setValue(msb, false);
+        slotKnobs[1].setValue(lsb, true);
+      } else {
+        slotKnobs[0].setValue(def, true);
+      }
+    }
+    setTimeout(renderParamPanel, 0);
   }
 
   // Multi Part's external XG rows (last in parameters.json) go into their
@@ -5319,7 +5904,7 @@ function renderParamPanel() {
     } else if (controllerDesc && isControllerSendEnabled()) {
       const badge = document.createElement('span');
       badge.className = 'cc-badge';
-      badge.textContent = controllerDesc.type === 'bankProgram' ? 'PC' : controllerDesc.type.toUpperCase();
+      badge.textContent = { bankProgram: 'PC', monoPoly: 'CC' }[controllerDesc.type] ?? controllerDesc.type.toUpperCase();
       badge.title = `Sent as ${controllerLabel(controllerDesc)}`;
       nameEl.appendChild(badge);
     } else if (section.kind !== 'channel') {
@@ -5350,14 +5935,19 @@ function renderParamPanel() {
     // point - so override it once we know what this slot currently means.
     let effectParamDefault;
     if (paramNumMatch) {
-      const { group } = currentEffectGroup();
+      const { group, typeName } = currentEffectGroup();
       const label = (group && group[Number(paramNumMatch[1]) - 1]) || baseName;
-      effectParamDefault = EFFECT_PARAM_DEFAULT[label];
+      effectParamDefault = effectParamDefaultFor(sectionKey, typeName, label);
     }
 
     for (const row of rows) {
       const caption = grouped ? (row.name.match(/\(([^)]*)\)$/)?.[1] ?? row.name.match(/ (MSB|LSB)$/)?.[1]) : undefined;
-      const defaultValue = effectParamDefault ?? resolveDefault(row, context);
+      // A 2-byte slot's resting value is split over MSB and LSB (only the
+      // delay times reach past 127, so the MSB is 0 for everything else).
+      const byteDefault = effectParamDefault === undefined ? undefined
+        : rows.length === 2 ? splitEffectValue(effectParamDefault)[rows.indexOf(row)]
+        : effectParamDefault;
+      const defaultValue = byteDefault ?? resolveDefault(row, context);
       defaults.push(defaultValue);
       // Re-visiting a part/section the user already dialed something into
       // (or reloading a saved .qyparam) should start from that value, not
@@ -5378,8 +5968,9 @@ function renderParamPanel() {
             effectSelect?.syncFromKnobs();
             refreshEffectParamNames();
           }
-          if (paramNumMatch) {
-            descEl.textContent = computeEffectParamDesc(nameText(nameEl), currentEffectGroupKey, value);
+          // Wait until every byte's knob exists (this also runs as each is built).
+          if (paramNumMatch && knobs.length === rows.length) {
+            descEl.textContent = effectParamDesc(nameText(nameEl), currentEffectGroupKey, knobs);
           }
           if (baseName === 'VariMode') updateVariModeDimming(value);
           if (baseName === 'Bank Select' || baseName === 'Program Number') refreshBankProgramVoiceName();
@@ -5416,7 +6007,7 @@ function renderParamPanel() {
                 sendParam(link, 0, section, ctx, row, value);
               }
             };
-            if (context.allChannels) {
+            if (context.highlightedPattern) {
               for (let ch = 0; ch < 16; ch++) doSend({ ...context, drumHigh: 0x30 + ch });
             } else {
               doSend(context);
@@ -5424,6 +6015,7 @@ function renderParamPanel() {
           } catch (err) {
             statusEl.textContent = `Error: ${err.message}`;
           }
+          if (isEffectTypeRow) applyEffectTypeDefaults();
         },
       };
       // Some params are a hard flag or a small set of named modes on real
@@ -5455,7 +6047,7 @@ function renderParamPanel() {
 
     if (paramNumMatch) {
       paramNameEls.push({
-        el: nameEl, num: Number(paramNumMatch[1]), fallback: baseName, descEl, knob: knobs[0],
+        el: nameEl, num: Number(paramNumMatch[1]), fallback: baseName, descEl, knobs,
         row: div, infoIcon: div.querySelector('.info-icon'),
       });
     }
@@ -5486,7 +6078,7 @@ function renderParamPanel() {
             rows.forEach((r, i) => sendParam(link, 0, section, ctx, r, knobs[i].getValue()));
           }
         };
-        if (context.allChannels) {
+        if (context.highlightedPattern) {
           for (let ch = 0; ch < 16; ch++) doSend({ ...context, drumHigh: 0x30 + ch });
         } else {
           doSend(context);
@@ -5784,10 +6376,12 @@ fxFileInput.addEventListener('change', async () => {
 // Resends a captured section+context's worth of stored values, reusing the
 // same grouping the live UI uses so a combineSend byte pair (e.g. Reverb
 // Type MSB+LSB) still goes out as one message.
-function resendSectionContext(sectionKey, context, values) {
+// `ignoredFrom` is the context whose Ignored flags apply, when values are
+// copied from one part to another (Push to Highlighted Part).
+function resendSectionContext(sectionKey, context, values, { ignoredFrom = context } = {}) {
   if (!values) return;
   const section = parameters[sectionKey];
-  const ignoredStore = getIgnoredStore(sectionKey, paramContextKey(sectionKey, context));
+  const ignoredStore = getIgnoredStore(sectionKey, paramContextKey(sectionKey, ignoredFrom));
   const groups = groupRows(expandRows(section.params));
   for (const { rows, combineSend } of groups) {
     if (rows.some((r) => ignoredStore[r.name])) continue;
@@ -5813,7 +6407,7 @@ function resendSectionContext(sectionKey, context, values) {
 }
 
 // .qyparam only covers System/Reverb/Chorus/Variation - Multi Part and Drum
-// Setup are excluded (both Save/Load Parameters and the info-icon tooltip
+// Setup are excluded (both Save/Load All Parameters and the info-icon tooltip
 // next to those buttons agree on this same list).
 const QYPARAM_SECTIONS = ['system', 'reverb', 'chorus', 'variation'];
 
@@ -5889,7 +6483,7 @@ async function loadPatchText(text, filename) {
   }
   const savedAt = patch.savedAt ? new Date(patch.savedAt).toLocaleString() : 'an unknown time';
   const confirmed = await showConfirm(
-    'Load parameters?',
+    'Load all parameters?',
     `This replaces this session's System, Reverb, Chorus, and Variation parameters with the saved state (saved ${savedAt}) and sends it to the device now.`
   );
   if (!confirmed) return;
@@ -5927,7 +6521,11 @@ patchFileInput.addEventListener('change', async () => {
   if (file) await loadPatchText(await file.text(), file.name);
 });
 
-sectionSelect.addEventListener('change', renderParamPanel);
+sectionSelect.addEventListener('change', () => {
+  if (sectionSelect.value === 'drumSetup' && drumPartValue() !== HIGHLIGHTED_PATTERN) syncDrumKitToPart(drumPartValue());
+  renderParamPanel();
+  refreshDrumPart();
+});
 
 // Panic: All Sound Off + All Notes Off on every channel.
 el('panic-btn').addEventListener('click', () => {
@@ -6052,20 +6650,140 @@ el('profile-file-input').addEventListener('change', async () => {
   el('profile-file-input').value = '';
   if (file) await loadProfileText(await file.text(), file.name);
 });
-partSelect.addEventListener('change', renderParamPanel);
-// This dropdown only picks which note names to display/edit here - it does
-// NOT push anything to the device (that's what Push Parameters is for,
-// on-demand). See the hint text above: the kit that's actually live is
-// whatever's playing on the Channel selected in the connect bar.
-drumkitSelect.addEventListener('change', () => { populateNoteSelect(); renderParamPanel(); });
+partSelect.addEventListener('change', () => {
+  syncDrumPartFromMultiPart();
+  renderParamPanel();
+});
+// Drum Setup's Part 1-16 picks the same part in Multi Part; Highlighted
+// Part leaves Multi Part where it is.
+drumPartSelect.addEventListener('change', () => {
+  const part = drumPartValue();
+  if (part !== HIGHLIGHTED_PATTERN) {
+    partSelect.value = String(part);
+    syncDrumKitToPart(part);
+  }
+  renderParamPanel();
+  refreshDrumPart();
+});
+// Picking a kit here (a user change only; syncDrumKitToPart sets it without
+// an event) also selects that kit on the QY, which resets the part's drum
+// setup to the kit's own values, like turning the QY's datawheel. With
+// Carry-over Parameters on, the notes edited on the previous kit are copied
+// onto the new kit and pushed again once the QY's reset has settled; off,
+// the new kit starts from its defaults.
+const kitCarryOver = el('kit-carry-over');
+const KIT_CARRY_OVER_KEY = 'qy-kit-carry-over';
+try { if (localStorage.getItem(KIT_CARRY_OVER_KEY) === '0') kitCarryOver.checked = false; } catch { /* keep the default (on) */ }
+kitCarryOver.addEventListener('change', () => {
+  try { localStorage.setItem(KIT_CARRY_OVER_KEY, kitCarryOver.checked ? '1' : '0'); } catch { /* this session only */ }
+});
+drumkitSelect.addEventListener('change', async () => {
+  const prevKit = drumKits[Number(drumkitSelect.dataset.shown)];
+  const kit = drumKits[Number(drumkitSelect.value || 0)];
+  const carried = kitCarryOver.checked && prevKit && kit && prevKit !== kit ? editedKitNotes(kitStoreKey(prevKit)) : {};
+  populateNoteSelect();
+  if (kit) {
+    clearKitStore(kitStoreKey(kit));
+    loadKitParamsIntoStore(kitStoreKey(kit), carried);
+  }
+  renderParamPanel();
+  const highlightedChannel = await sendDrumKitToPart();
+  if (kit && Object.keys(carried).length) await pushCarriedKitEdits(kit, carried, highlightedChannel);
+});
+
+const kitStoreKey = (kit) => `${kit.bankMsb}:${kit.program}`;
+
+// The notes of a kit whose values differ from the defaults, with only the
+// rows that differ, in the shape sendKitNotesToChannel takes.
+function editedKitNotes(kitKey) {
+  const rows = expandRows(parameters.drumSetup.params);
+  const notes = {};
+  for (const [key, store] of Object.entries(paramState.drumSetup)) {
+    if (!key.startsWith(`${kitKey}:`)) continue;
+    const note = Number(key.slice(kitKey.length + 1));
+    const params = {};
+    for (const row of rows) {
+      const value = store[row.name];
+      if (value === undefined) continue;
+      const def = resolveDefault(row, { note }) ?? row.dataMin;
+      if (Math.round(value) !== Math.round(def)) params[row.name] = value;
+    }
+    if (Object.keys(params).length) notes[note] = params;
+  }
+  return notes;
+}
+
+// Forgets a kit's stored note values (the QY has just reset them).
+function clearKitStore(kitKey) {
+  for (const key of Object.keys(paramState.drumSetup)) {
+    if (key.startsWith(`${kitKey}:`)) delete paramState.drumSetup[key];
+  }
+}
+
+// Where a drum note push goes: [drum setup address(es), trigger channel].
+// A part on Ds1/Ds2/Ds3 gets its own setup, with the trigger notes on its
+// channel. Highlighted Part goes the way a live knob edit does, to all 16
+// setup addresses (30-3F), with the trigger notes on the highlighted
+// track's channel so the QY applies them to that track.
+function drumPushTarget(context, highlightedChannel) {
+  if (context.highlightedPattern) {
+    return [Array.from({ length: 16 }, (_, ch) => 0x30 + ch), highlightedChannel];
+  }
+  return [context.drumHigh, partRcvChannel(context.part) ?? undefined];
+}
+
+// Pushes the carried-over notes to the drum setup the part plays, the same
+// way Push Parameters does. A part on a preset kit (Dr/Sfx) has no drum
+// setup to take them, so they only stay in the console.
+async function pushCarriedKitEdits(kit, notes, highlightedChannel) {
+  if (!outputSelect.value) return;
+  const context = currentContext('drumSetup');
+  if (context.drumHigh === null) return;
+  if (context.highlightedPattern && typeof highlightedChannel !== 'number') return;
+  await sleep(VOICE_SETTLE_MS);
+  const count = Object.keys(notes).length;
+  showProgress(`Carrying ${count} edited note${count === 1 ? '' : 's'} over to ${voiceDisplayName(kit)}`, KIT_PUSH_WARNING);
+  try {
+    const [drumHighs, channel] = drumPushTarget(context, highlightedChannel);
+    await sendKitNotesToChannel(drumHighs, notes, updateProgress, channel);
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  } finally {
+    hideProgress();
+  }
+  statusEl.textContent = `${voiceDisplayName(kit)} selected, with ${count} edited note${count === 1 ? '' : 's'} carried over.`;
+}
+
+// A Song part gets the kit as part-addressed XG (Bank Select + Program
+// Number), then its voice is read back so the status line shows what the
+// QY made of it. Highlighted Part asks the QY which channel is highlighted
+// and sends Bank Select + Program Change there, the same messages the QY's
+// own datawheel sends (see sendVoiceSelectToChannel).
+async function sendDrumKitToPart() {
+  const kit = drumKits[Number(drumkitSelect.value || 0)];
+  if (!kit || !outputSelect.value) return;
+  const part = drumPartValue();
+  const kitName = voiceDisplayName(kit);
+  if (part === HIGHLIGHTED_PATTERN) {
+    const ch = await runQySession(() => detectHighlightedChannel());
+    if (typeof ch !== 'number') {
+      await showAlert('Highlighted Part Unavailable', HIGHLIGHT_DETECT_FAILURES[ch.failure]);
+      return;
+    }
+    sendVoiceSelectToChannel(ch, kit);
+    statusEl.textContent = `Sent ${kitName} to the highlighted part (channel ${ch + 1}).`;
+    return ch;
+  }
+  applyVoiceToPart(part, kit);
+  statusEl.textContent = `Sent ${kitName} to ${partLabel(part)}.`;
+  await refreshDrumPart();
+}
 noteSelect.addEventListener('change', renderParamPanel);
-// Drum Setup's address depends on the main Channel selector now.
 channelSelect.addEventListener('change', () => {
-  // Drum Setup and the channel-message sections send on this channel (and
-  // channel sections show its own remembered values); My Controls' pinned
-  // drum rows follow it too.
+  // The channel-message sections send on this channel (and show its own
+  // remembered values), and so do their pinned rows in My Controls.
   const viewKey = sectionSelect.value;
-  if (viewKey === 'drumSetup' || viewKey === 'pinned' || parameters[viewKey]?.kind === 'channel') renderParamPanel();
+  if (viewKey === 'pinned' || parameters[viewKey]?.kind === 'channel') renderParamPanel();
   const displayValue = channelSelect.value === 'all' ? 'All' : Number(channelSelect.value) + 1;
   sendMessageWindow(`MIDI Ch: ${displayValue}`);
 });
@@ -6074,35 +6792,39 @@ channelSelect.addEventListener('change', () => {
 // selected kit across its whole note range - for when live edits didn't
 // land on the device (output wasn't connected yet, a message got dropped)
 // and switching kits away and back isn't convenient or didn't happen. Sends
-// exactly what a manual knob/toggle edit would send for each row (down to
-// fanning out to every Channel when Channel is "All" - see the onChange
-// handler's context.allChannels branch) - it does NOT re-send Bank
+// exactly what a manual knob/toggle edit would send for each row - it does
+// NOT re-send Bank
 // Select/Program Number the way selecting a kit does, since re-selecting a
 // voice on real XG hardware re-initializes that channel's Drum Setup memory
 // to factory defaults, which would race against (and wipe out) the very
 // values being pushed right after. A single knob edit never re-selects the
 // voice either.
-// Drum Setup only has three editable slots on the device itself (Ds1/Ds2
-// Song mode, Ds3 Pattern mode), and each one is hardwired to a fixed MIDI
-// Channel (Ds1->1, Ds2->2, Ds3->3) no matter what Channel a track is
-// actually assigned elsewhere - see README.md. The connect bar's Channel
-// selector can't tell us which one is open on the device (that can only be
-// picked on the device itself), so this asks directly instead of guessing.
+// Goes to the drum setup the selected Part plays (Ds1 or Ds2, see
+// DRUM_SETUP_FOR_PART_MODE); the trigger notes go on that part's channel.
 pushDrumParamsBtn.addEventListener('click', async () => {
   const kit = drumKits[Number(drumkitSelect.value || 0)];
-  if (!kit) return;
-  const ch = await promptDsSlotChannel('Which Drum Setup slot is open on your device?');
-  if (ch === null) return;
+  const context = currentContext('drumSetup');
+  if (!kit || context.drumHigh === null) return;
+  let highlightedChannel;
+  if (context.highlightedPattern) {
+    highlightedChannel = await runQySession(() => detectHighlightedChannel());
+    if (typeof highlightedChannel !== 'number') {
+      await showAlert('Highlighted Part Unavailable', HIGHLIGHT_DETECT_FAILURES[highlightedChannel.failure]);
+      return;
+    }
+  }
+  const where = context.highlightedPattern ? 'the highlighted part' : drumSetupLabel(context.drumHigh);
   const kitName = voiceDisplayName(kit);
   const notes = snapshotKitParams(`${kit.bankMsb}:${kit.program}`);
-  showProgress(`Pushing ${kitName}'s parameters`, KIT_PUSH_WARNING);
+  showProgress(`Pushing ${kitName}'s parameters to ${where}`, KIT_PUSH_WARNING);
   try {
-    await sendKitNotesToChannel(0x30 + ch, notes, updateProgress);
+    const [drumHighs, channel] = drumPushTarget(context, highlightedChannel);
+    await sendKitNotesToChannel(drumHighs, notes, updateProgress, channel);
   } finally {
     hideProgress();
   }
   sendMessageWindow('Kit Pushed');
-  await showAlert('Parameters pushed', `Pushed all of ${kitName}'s drum parameters to Ds${ch + 1} (Channel ${ch + 1}).`);
+  await showAlert('Parameters pushed', `Pushed all of ${kitName}'s drum parameters to ${context.highlightedPattern ? where : `${where} (${partLabel(context.part)})`}.`);
 });
 
 // System/Reverb/Chorus/Variation/Multi Part just resend whatever this app
@@ -6138,6 +6860,32 @@ pushAllPartsBtn.addEventListener('click', async () => {
   }
   statusEl.textContent = 'All parts pushed.';
   sendMessageWindow('All Parts Pushed');
+});
+
+// The reverse of Pull from Highlighted Part: sends the Part picked in the console
+// to the track highlighted on the QY. Part-addressed XG SysEx even with
+// Send as CC/NRPN on (forceSysex, like Push); the probe only finds out
+// which part that is. The target keeps its own Rcv Channel, and the console's copy of
+// the target part is updated to match what was sent.
+pushHighlightedBtn.addEventListener('click', async () => {
+  if (!requirePullInput('Push to Highlighted Part', 'find out which track is highlighted')) return;
+  const source = Number(partSelect.value || 0);
+  const values = paramState.multiPart[String(source)];
+  if (!values || !Object.keys(values).length) {
+    statusEl.textContent = `${partLabel(source)} has no parameters to push yet.`;
+    return;
+  }
+  const target = await runQySession(() => resolveHighlightedTarget('', { fromLabel: partLabel(source) }));
+  if (target === null) return;
+  const copying = source !== target;
+  const sent = { ...values };
+  if (copying) delete sent['Rcv Channel'];
+  resendSectionContext('multiPart', { part: target, forceSysex: true }, sent, { ignoredFrom: { part: source } });
+  if (copying) Object.assign(getParamStore('multiPart', String(target)), sent);
+  statusEl.textContent = copying
+    ? `Pushed ${partLabel(source)} to ${partLabel(target)} (highlighted on the QY), keeping its Rcv Channel.`
+    : `Pushed ${partLabel(source)} (highlighted on the QY).`;
+  sendMessageWindow('Part Pushed');
 });
 
 // ---- Data Filer ----
@@ -6281,7 +7029,7 @@ probeBtn.addEventListener('click', async () => {
   }
 });
 
-// ---- Pull from QY ----
+// ---- Pull Parameters (read from the QY) ----
 // Reads the QY's current XG settings back into the console. Confirmed on
 // the user's QY100 (2026-10-04): an XG Dump Request (F0 43 2n 4C hh mm ll
 // F7) is answered with an XG Bulk Dump (F0 43 0n 4C cnt cnt hh mm ll data
@@ -6376,9 +7124,9 @@ async function pullSectionContext(sectionKey, context, { into = context, skip = 
   return { got, missing };
 }
 
-function requirePullInput() {
+function requirePullInput(title = 'Pull Parameters', why = 'ask the QY and hear its answer') {
   if (outputSelect.value && inputSelect.value) return true;
-  showAlert('Pull from QY', 'Pull needs both MIDI Out and MIDI In selected at the top of the page, so the console can ask the QY and hear its answer.');
+  showAlert(title, `${title} needs both MIDI Out and MIDI In selected at the top of the page, so the console can ${why}.`);
   return false;
 }
 
@@ -6413,12 +7161,9 @@ pullParamsBtn.addEventListener('click', async () => {
   if (!requirePullInput()) return;
   const sectionKey = sectionSelect.value;
   const context = currentContext(sectionKey);
-  if (sectionKey === 'drumSetup' && context.allChannels) {
-    await showAlert('Pull from QY', 'Pick one Channel at the top of the page (not All): Drum Setup is read from the kit playing on that channel.');
-    return;
-  }
+  if (sectionKey === 'drumSetup' && context.drumHigh === null) return;
   const label = sectionKey === 'multiPart' ? partLabel(context.part)
-    : sectionKey === 'drumSetup' ? `${noteName(context.note)} of the kit on Channel ${context.drumHigh - 0x2f}`
+    : sectionKey === 'drumSetup' ? `${noteName(context.note)} of ${drumSetupLabel(context.drumHigh)}`
       : parameters[sectionKey].label;
   const result = await withPullButtons(() => pullSectionContext(sectionKey, context));
   if (!result) return;
@@ -6475,10 +7220,7 @@ pullHighlightedBtn.addEventListener('click', async () => {
 pullKitBtn.addEventListener('click', async () => {
   if (!requirePullInput()) return;
   const context = currentContext('drumSetup');
-  if (context.allChannels) {
-    await showAlert('Pull Kit', 'Pick one Channel at the top of the page (not All): the kit is read from that channel.');
-    return;
-  }
+  if (context.drumHigh === null) return;
   const [lo, hi] = parameters.drumSetup.noteRange;
   showProgress('Pulling the kit', 'Reading every drum note\'s settings from the QY. Nothing on the QY changes.');
   let total = { got: 0, missing: 0 };
@@ -6493,7 +7235,7 @@ pullKitBtn.addEventListener('click', async () => {
   } finally {
     hideProgress();
   }
-  statusEl.textContent = pullResultMessage(`every note of the kit on Channel ${context.drumHigh - 0x2f}`, total);
+  statusEl.textContent = pullResultMessage(`every note of ${drumSetupLabel(context.drumHigh)}`, total);
   renderParamPanel();
 });
 
@@ -7555,6 +8297,7 @@ updateDataFilerPullNumberVisibility();
   refreshCategoryOptions();
   renderVoiceList();
   populatePartSelect(partSelect);
+  populateDrumPartSelect();
   populatePartSelect(voicePartSelect);
   voicePartSelect.insertAdjacentHTML('afterbegin', `<optgroup label="Any Mode"><option value="${HIGHLIGHTED_PART}">Highlighted Part (on the QY)</option></optgroup>`);
   // Highlighted Part is the default target: it follows the QY's own cursor.

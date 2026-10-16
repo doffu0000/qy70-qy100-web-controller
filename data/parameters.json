@@ -739,9 +739,9 @@
         "size": 1,
         "name": "Part Mode",
         "dataMin": 0,
-        "dataMax": 2,
+        "dataMax": 4,
         "default": 0,
-        "description": "0:normal, 1-3: drum thru/drum1/drum2"
+        "description": "0:normal, 1:drum (preset kit), 2:Ds1 (Drum Setup 1), 3:Ds2 (Drum Setup 2), 4:Ds3 (read from Pattern drum tracks)"
       },
       {
         "offset": 8,

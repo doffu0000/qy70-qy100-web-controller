@@ -6385,7 +6385,7 @@
   },
   {
     "id": "sfx-64-0-49-raw-dog",
-    "name": "Raw Dog",
+    "name": "Underdog",
     "voice": {
       "bank": "sfx",
       "bankMsb": 64,
@@ -6764,6 +6764,222 @@
       {
         "name": "Dry Level",
         "value": 102
+      }
+    ]
+  },
+  {
+    "id": "sfx-64-0-84-machine-room",
+    "name": "Machine Room",
+    "voice": {
+      "bank": "sfx",
+      "bankMsb": 64,
+      "bankLsb": 0,
+      "program": 85
+    },
+    "params": [
+      {
+        "name": "Element Reserve",
+        "value": 2
+      },
+      {
+        "name": "Bank Select MSB",
+        "value": 64
+      },
+      {
+        "name": "Bank Select LSB",
+        "value": 0
+      },
+      {
+        "name": "Program Number",
+        "value": 84
+      },
+      {
+        "name": "Mono/Poly Mode",
+        "value": 1
+      },
+      {
+        "name": "Portamento Switch",
+        "value": 0
+      },
+      {
+        "name": "Portamento Time",
+        "value": 0
+      },
+      {
+        "name": "Same Note Number Key On Assign",
+        "value": 1
+      },
+      {
+        "name": "Part Mode",
+        "value": 0
+      },
+      {
+        "name": "Note Shift",
+        "value": 64
+      },
+      {
+        "name": "Detune",
+        "value": 128
+      },
+      {
+        "name": "Volume",
+        "value": 100
+      },
+      {
+        "name": "Velocity Sense Depth",
+        "value": 64
+      },
+      {
+        "name": "Velocity Sense Offset",
+        "value": 64
+      },
+      {
+        "name": "Pan",
+        "value": 0
+      },
+      {
+        "name": "Note Limit Low",
+        "value": 0
+      },
+      {
+        "name": "Note Limit High",
+        "value": 127
+      },
+      {
+        "name": "Dry Level",
+        "value": 127
+      },
+      {
+        "name": "Chorus Send",
+        "value": 0
+      },
+      {
+        "name": "Reverb Send",
+        "value": 40
+      },
+      {
+        "name": "Variation Send",
+        "value": 0
+      },
+      {
+        "name": "Vibrato Rate",
+        "value": 5.080043601989743
+      },
+      {
+        "name": "Vibrato Depth",
+        "value": 3.8099903106689452
+      },
+      {
+        "name": "Vibrato Delay",
+        "value": 77.33503875732421
+      },
+      {
+        "name": "Filter Cutoff Frequency",
+        "value": 58.28496608734132
+      },
+      {
+        "name": "Filter Resonance",
+        "value": 19.05002422332761
+      },
+      {
+        "name": "EG Attack Time",
+        "value": 66.53998546600342
+      },
+      {
+        "name": "EG Decay Time",
+        "value": 100.19495639801025
+      },
+      {
+        "name": "EG Release Time",
+        "value": 109.72002906799315
+      },
+      {
+        "name": "MW Pitch Control",
+        "value": 64
+      },
+      {
+        "name": "MW Filter Control",
+        "value": 64
+      },
+      {
+        "name": "MW Amplitude Control",
+        "value": 64
+      },
+      {
+        "name": "MW LFO PMod Depth",
+        "value": 10
+      },
+      {
+        "name": "MW LFO FMod Depth",
+        "value": 0
+      },
+      {
+        "name": "MW LFO AMod Depth",
+        "value": 0
+      },
+      {
+        "name": "Bend Pitch Control",
+        "value": 66
+      },
+      {
+        "name": "Bend Filter Control",
+        "value": 64
+      },
+      {
+        "name": "Bend Amplitude Control",
+        "value": 64
+      },
+      {
+        "name": "Bend LFO PMod Depth",
+        "value": 0
+      },
+      {
+        "name": "Bend LFO FMod Depth",
+        "value": 0
+      },
+      {
+        "name": "Bend LFO AMod Depth",
+        "value": 0
+      },
+      {
+        "name": "Pitch EG Initial Level",
+        "value": 126.86500968933106
+      },
+      {
+        "name": "Pitch EG Attack Time",
+        "value": 113.02999515533448
+      },
+      {
+        "name": "Pitch EG Release Level",
+        "value": 64
+      },
+      {
+        "name": "Pitch EG Release Time",
+        "value": 64
+      },
+      {
+        "name": "Ch's AT Pitch Control",
+        "value": 64
+      },
+      {
+        "name": "Ch's AT Filter Control",
+        "value": 64
+      },
+      {
+        "name": "Ch's AT Amp Control",
+        "value": 64
+      },
+      {
+        "name": "Ch's AT LFO PMod Depth",
+        "value": 0
+      },
+      {
+        "name": "Ch's AT LFO FMod Depth",
+        "value": 0
+      },
+      {
+        "name": "Ch's AT LFO AMod Depth",
+        "value": 0
       }
     ]
   },

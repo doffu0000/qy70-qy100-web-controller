@@ -4,21 +4,24 @@ A browser-based Web MIDI app for controlling Yamaha QY70/QY100 hardware synthesi
 
 ## Hardware quirks
 
-- **Drum Setup only has three editable slots, each hardwired to a fixed MIDI channel.**
-  The QY70/QY100's Drum Setup screen can only ever be showing one of three slots - Ds1
-  and Ds2 (Song mode) or Ds3 (Pattern mode) - and each slot always corresponds to the
-  same MIDI channel regardless of what channel a track is actually assigned to elsewhere:
+- **Drum settings belong to two shared drum setups, not to parts or channels.**
+  The QY100 has three editable drum setups: Ds1 (address `30`) and Ds2 (`31`) in Song
+  mode, and Ds3 (`32`) for Pattern drum tracks. Ds3 takes edits but never answers a read
+  request, so the console can push it but not pull it (the Data List calls `32` reserved).
+  A part plays one of them through its Part Mode (Multi Part `08 nn 07`), read from a
+  QY100 on 2026-10-14:
 
-  | Slot | MIDI Channel |
-  | ---- | ------------ |
-  | Ds1  | 1            |
-  | Ds2  | 2            |
-  | Ds3  | 3            |
+  | Part Mode | Track voice on the QY | Drum Setup |
+  | --------- | --------------------- | ---------- |
+  | 0         | normal voice          | none       |
+  | 1         | preset kit (StdKit1...) | none, not editable |
+  | 2         | Ds1                   | `30`       |
+  | 3         | Ds2                   | `31`       |
+  | 4         | Ds3 (Pattern drum tracks) | `32`, write only |
 
-  There's no way to select Ds1/Ds2/Ds3 over MIDI - it has to be selected on the device
-  itself (open its Drum Edit screen) before any live Drum Setup edits from the web
-  console will land anywhere. This is why "Push Parameters" asks which of Ds1/Ds2/Ds3 is
-  currently open on the device rather than using the connect bar's Channel selector.
+  The console's Drum Setup section therefore uses the same Part dropdown as Multi Part,
+  reads that part's Part Mode from the QY, and edits the setup it points to. Every part
+  on the same setup changes together.
 
 - **Most parameters don't survive a song/pattern reload unless they're recorded as an
   actual event in the track.** The QY70/QY100 keeps one small persistent per-song/pattern

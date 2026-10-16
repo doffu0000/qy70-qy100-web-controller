@@ -16,6 +16,7 @@ const MULTI_PART = {
   0x01: { type: 'bankProgram' }, // Bank Select MSB -> CC 0
   0x02: { type: 'bankProgram' }, // Bank Select LSB -> CC 32
   0x03: { type: 'bankProgram' }, // Program Number -> Program Change
+  0x05: { type: 'monoPoly' }, // Mono/Poly Mode (0 Mono, 1 Poly) -> CC 126 / CC 127
   0x0b: { type: 'cc', cc: 7 },
   // XG Pan 0 means Random, which CC 10 can't express (0 is hard left there).
   0x0e: { type: 'cc', cc: 10, sysexWhen: (v) => v === 0 },
@@ -79,6 +80,7 @@ export function controllerLabel(desc) {
   if (!desc) return '';
   if (desc.type === 'cc') return `CC ${desc.cc}`;
   if (desc.type === 'bankProgram') return 'Bank Select + Program Change';
+  if (desc.type === 'monoPoly') return 'CC 126 Mono On / CC 127 Poly On';
   if (desc.type === 'rpn') return `RPN ${hex(desc.msb)} ${hex(desc.lsb)}`;
   return `NRPN ${hex(desc.msb)} ${desc.lsbIsNote ? 'note' : hex(desc.lsb)}`;
 }
@@ -100,6 +102,9 @@ export function buildControllerMessages(desc, channel, value, { note, bankProgra
   switch (desc.type) {
     case 'cc':
       return [new Uint8Array([status, desc.cc, v])];
+    case 'monoPoly':
+      // Mono On's value is the channel count; 0 means "as many as there are".
+      return [new Uint8Array([status, value ? 127 : 126, 0])];
     case 'bankProgram':
       if (!bankProgram) return null;
       return [

@@ -64,6 +64,49 @@ export function createKnob({ min, max, value, step = 1, onChange, onInput, reset
   indicator.setAttribute('class', 'knob-indicator');
   svg.appendChild(indicator);
 
+  // Optional dots on the rim marking values of note, e.g. the ends of the
+  // QY's own range when the knob goes further for external XG gear.
+  // setMarks([{ value, title }], [[from, to]]) replaces them, plus arcs
+  // over the track for value spans to flag (the part of the range the QY
+  // ignores); empty lists clear them.
+  const marks = document.createElementNS(svgNS, 'g');
+  svg.insertBefore(marks, indicator);
+
+  function rimPoint(deg) {
+    const rad = (deg * Math.PI) / 180;
+    return `${(20 + 17 * Math.sin(rad)).toFixed(3)} ${(20 - 17 * Math.cos(rad)).toFixed(3)}`;
+  }
+
+  function setMarks(list = [], spans = []) {
+    marks.replaceChildren();
+    for (const [from, to] of spans) {
+      const a = valueToAngle(clamp(from, min, max), min, max);
+      const b = valueToAngle(clamp(to, min, max), min, max);
+      if (b <= a) continue;
+      const arc = document.createElementNS(svgNS, 'path');
+      arc.setAttribute('d', `M ${rimPoint(a)} A 17 17 0 ${b - a > 180 ? 1 : 0} 1 ${rimPoint(b)}`);
+      arc.setAttribute('class', 'knob-mark-span');
+      marks.appendChild(arc);
+    }
+    for (const { value: v, title } of list) {
+      // A notch across the rim, pointing at the knob's centre.
+      const mark = document.createElementNS(svgNS, 'rect');
+      mark.setAttribute('x', '18.5');
+      mark.setAttribute('y', '0');
+      mark.setAttribute('width', '3');
+      mark.setAttribute('height', '8');
+      mark.setAttribute('rx', '0.75');
+      mark.setAttribute('class', 'knob-mark');
+      mark.setAttribute('transform', `rotate(${valueToAngle(clamp(v, min, max), min, max)} 20 20)`);
+      if (title) {
+        const t = document.createElementNS(svgNS, 'title');
+        t.textContent = title;
+        mark.appendChild(t);
+      }
+      marks.appendChild(mark);
+    }
+  }
+
   const controls = document.createElement('div');
   controls.className = 'knob-controls';
 
@@ -181,7 +224,7 @@ export function createKnob({ min, max, value, step = 1, onChange, onInput, reset
 
   render();
 
-  return { element: wrap, setValue, getValue: () => current };
+  return { element: wrap, setValue, getValue: () => current, setMarks, min, max };
 }
 
 // A binary on/off switch for params that are a hard flag on real hardware

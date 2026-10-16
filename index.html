@@ -152,10 +152,10 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
         </div>
         <div class="connect-field connect-divider">
           <span class="label-row">Send as CC/NRPN
-            <button type="button" class="label-info-icon" data-tooltip="Sends every Multi Part and Drum Setup parameter that has a controller form (Volume = CC 7, Filter Cutoff = CC 74, EG Decay = NRPN 01 64, drum Level = NRPN 1A + note, voice = Bank Select + Program Change, and so on) as that channel message instead of SysEx. Controllers are shorter, can be recorded onto a song track, and don't need XG System On. They go to the part's Rcv Channel, so every part listening on that channel changes, but in every mode (Song, Pattern or Voice) the QY70/QY100 play incoming channel messages on whichever track is highlighted on the device, so highlight the track you're editing. Voice, preset and User Voice changes, Push and Push All Parts always go out as part-addressed SysEx so they reach the part you picked. Parameters with no controller form, parts on channel 17-32 or Off, and values a controller can't express (Pan Random, negative Pitch Bend range) still go out as SysEx. Rows with a controller form show a CC, NRPN, RPN or PC badge while this is on, and an XG badge (sent as XG SysEx) while it's off.">i</button>
+            <button type="button" class="label-info-icon" data-tooltip="Off by default. Turning this on speeds up messaging, but on the QY70/QY100 your Multi Part and Drum Setup edits then land on whichever track is highlighted on the device instead of the part picked here. When on, it sends every Multi Part and Drum Setup parameter that has a controller form (Volume = CC 7, Filter Cutoff = CC 74, EG Decay = NRPN 01 64, drum Level = NRPN 1A + note, voice = Bank Select + Program Change, and so on) as that channel message instead of SysEx. Controllers are shorter, can be recorded onto a song track, and don't need XG System On. They go to the part's Rcv Channel, so every part listening on that channel changes, but in every mode (Song, Pattern or Voice) the QY70/QY100 play incoming channel messages on whichever track is highlighted on the device, so highlight the track you're editing. Voice, preset and User Voice changes, Push and Push All Parts always go out as part-addressed SysEx so they reach the part you picked. Parameters with no controller form, parts on channel 17-32 or Off, and values a controller can't express (Pan Random, negative Pitch Bend range) still go out as SysEx. Rows with a controller form show a CC, NRPN, RPN or PC badge while this is on, and an XG badge (sent as XG SysEx) while it's off.">i</button>
           </span>
           <label class="toggle-switch">
-            <input type="checkbox" id="controller-send-enabled" checked>
+            <input type="checkbox" id="controller-send-enabled">
             <span class="toggle-track"></span>
           </label>
         </div>
@@ -230,14 +230,18 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
       <input id="search-box" type="text" placeholder="Search voice name...">
     </div>
     <p id="voice-filter-active" hidden>Results are filtered - clear the search or set category to "All categories" to see everything.</p>
-    <p class="hint">Click a voice, preset, or kit to select it (for editing/saving) - use its Push button to actually apply it.</p>
+    <p class="hint">Click a voice, preset, or kit to select it (for editing/saving) - use its Push button to actually apply it. You must be in Song Mode or Pattern Mode on the QY to push voices to its parts.</p>
     <div id="voice-file-controls">
       <input type="file" id="voice-file-input" accept=".qyvoice" multiple hidden>
-      <button id="save-voice-btn" disabled>Save Voice</button>
-      <button id="load-voice-btn">Load Voice</button>
+      <span class="save-load-pair">
+        <button id="save-voice-btn">Save Voice</button>
+        <button id="load-voice-btn">Load Voice</button>
+      </span>
       <input type="file" id="kit-file-input" accept=".qykit" multiple hidden>
-      <button id="save-kit-btn" disabled>Save Kit</button>
-      <button id="load-kit-btn">Load Kit</button>
+      <span class="save-load-pair">
+        <button id="save-kit-btn">Save Kit</button>
+        <button id="load-kit-btn">Load Kit</button>
+      </span>
     </div>
     <ul id="voice-list"></ul>
   </section>
@@ -247,8 +251,10 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
     <div id="param-file-controls">
       <input type="file" id="patch-file-input" accept=".qyparam" hidden>
       <button type="button" class="info-icon header-info-icon" data-tooltip="Saves every value in the System, Reverb, Chorus, and Variation sections of the Parameters panel - including each row's Active/Ignored state. Doesn't include Multi Part, Drum Setup, or Voice Browser selections. Only one parameter set can be loaded at a time.">i</button>
-      <button id="load-patch-btn">Load Parameters</button>
-      <button id="save-patch-btn">Save Parameters</button>
+      <span class="save-load-pair">
+        <button id="save-patch-btn">Save All Parameters</button>
+        <button id="load-patch-btn">Load All Parameters</button>
+      </span>
     </div>
     <hr>
 
@@ -277,26 +283,56 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
         </optgroup>
       </select>
       <select id="part-select" class="context-select" hidden></select>
-      <select id="drumkit-select" class="context-select" hidden></select>
+      <select id="drum-part-select" class="context-select" hidden aria-label="Drum Setup part"></select>
+      <!-- Drum kit picker with the Carry-over Parameters toggle (kit-carry-over in app.js). -->
+      <span id="drumkit-wrap" class="user-drum-set" hidden>
+        <select id="drumkit-select" class="context-select" aria-label="Drum kit"></select>
+        <span class="user-drum-set-label">Carry-over Parameters
+          <button type="button" class="label-info-icon" data-tooltip="On: switching kits keeps the drum parameters edited on the current kit. They are copied onto the new kit and sent to the QY after the kit change.
+
+Off: switching swaps to the new kit with its own default parameters, the same as picking it on the QY, without retaining the current parameters.">i</button>
+        </span>
+        <label class="toggle-switch toggle-switch--sm">
+          <input type="checkbox" id="kit-carry-over" checked aria-label="Carry-over Parameters">
+          <span class="toggle-track"></span>
+        </label>
+      </span>
       <select id="note-select" class="context-select" hidden></select>
+      <button id="refresh-drum-parts-btn" hidden title="Reads every part's voice from the QY to see which ones play Ds1, Ds2 or Ds3. Read-only, nothing on the QY changes. Needs MIDI In." aria-label="Refresh Parts">&#x21bb;</button>
+      <!-- User Drum Set: puts the Drum Setup Part on Ds1/Ds2/Ds3 (data-ds-set in app.js). -->
+      <span id="ds-set-btns" class="user-drum-set" hidden>
+        <span class="user-drum-set-label">User Drum Set
+          <button type="button" class="label-info-icon" data-tooltip="Makes any part play a user drum set: Ds1, Ds2 or Ds3, the QY's own editable drum kits. It applies to the part picked in the Part dropdown: a Song part, or the track highlighted on the QY.
+
+Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data because it falls outside of the XG Level 1 protocol (meaning the entire song/pattern must be pulled, altered, and pushed back to the QY when making this change). Expect that applying Ds3 to a track can take significantly longer. It is faster to set a voice to Ds3 directly on the device where possible.">i</button>
+        </span>
+        <button type="button" data-ds-set="2" title="Puts the part picked in the Part dropdown on Ds1.">Ds1</button>
+        <button type="button" data-ds-set="3" title="Puts the part picked in the Part dropdown on Ds2.">Ds2</button>
+        <button type="button" data-ds-set="4" class="ds3-btn" title="Puts the part picked in the Part dropdown on Ds3, by rewriting the selected song or pattern on the QY. Needs MIDI In.">Ds3</button>
+      </span>
       <div id="param-search-wrap">
         <input type="text" id="param-search" placeholder="Search all parameters..." autocomplete="off" aria-label="Search all parameters">
         <ul id="param-search-results" hidden></ul>
       </div>
       <button id="reset-section-btn" class="btn-warning">Reset All to Default</button>
-      <button id="push-params-btn" hidden>Push Parameters</button>
-      <button id="push-all-parts-btn" hidden>Push All Parts</button>
-      <button id="push-drum-params-btn" hidden>Push Parameters</button>
-      <button id="pull-params-btn" hidden>Pull from QY</button>
-      <button id="pull-all-parts-btn" hidden>Pull All Parts</button>
-      <button id="pull-highlighted-btn" hidden>Pull Highlighted Part</button>
-      <button id="pull-kit-btn" hidden>Pull Kit</button>
-      <button type="button" class="info-icon" id="pull-info" hidden data-tooltip="Pull reads the QY's current settings into these knobs without changing anything on the QY: the part, effect or drum note on screen, every part (Pull All Parts), the track highlighted on the QY into the Part picked here, e.g. to copy one part to another and then Push it (Pull Highlighted Part, needs ECHO BACK on RecMontr), or every note of the kit (Pull Kit). It reads what the QY's tone generator has loaded right now: the song or pattern's settings plus any edits. Needs MIDI In.">i</button>
-      <p class="hint" id="drum-setup-hint" hidden>
-        Drum Setup edits whatever kit is currently playing on the
-        <strong>Channel</strong> selected above, not the kit picker here -
-        that dropdown only picks which note <em>names</em> to display.
-      </p>
+      <!-- Each Push sits with the Pull that reads the same thing back. -->
+      <span class="push-pull-pair">
+        <button id="push-params-btn" hidden>Push Parameters</button>
+        <button id="pull-params-btn" hidden title="Reads the part, effect or drum note on screen from the QY into these knobs. Reads what the QY's tone generator has loaded right now (the song or pattern's settings plus any edits) without changing anything on the QY. Needs MIDI In.">Pull Parameters</button>
+      </span>
+      <span class="push-pull-pair">
+        <button id="push-all-parts-btn" hidden>Push All Parts</button>
+        <button id="pull-all-parts-btn" hidden title="Reads every part from the QY into the console. Reads what the QY's tone generator has loaded right now (the song or pattern's settings plus any edits) without changing anything on the QY. Needs MIDI In.">Pull All Parts</button>
+      </span>
+      <span class="push-pull-pair">
+        <button id="push-highlighted-btn" hidden title="Sends the Part picked here to the track highlighted on the QY (it keeps its own Rcv Channel). Needs MIDI In and ECHO BACK on RecMontr.">Push to Highlighted Part</button>
+        <button id="pull-highlighted-btn" hidden title="Reads the track highlighted on the QY into the Part picked here, e.g. to copy one part to another and then Push it. Needs ECHO BACK on RecMontr. Reads what the QY's tone generator has loaded right now (the song or pattern's settings plus any edits) without changing anything on the QY. Needs MIDI In.">Pull from Highlighted Part</button>
+      </span>
+      <span class="push-pull-pair">
+        <button id="push-drum-params-btn" hidden title="Sends every note of the kit picked here to the drum setup (Ds1 or Ds2) the selected Part plays.">Push Kit</button>
+        <button id="pull-kit-btn" hidden title="Reads every note of the drum setup (Ds1 or Ds2) the selected Part plays from the QY. Reads what the QY's tone generator has loaded right now (the song or pattern's settings plus any edits) without changing anything on the QY. Needs MIDI In.">Pull Kit</button>
+      </span>
+      <p class="hint" id="drum-setup-hint" hidden></p>
       <p class="hint" id="channel-section-hint" hidden>
         These are sent on the <strong>Channel</strong> selected at the top of
         the page (All sends to every channel). Values are remembered per channel.
@@ -304,20 +340,24 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
       <p class="hint" id="section-note" hidden></p>
       <div id="pinned-controls" hidden>
         <input type="file" id="profile-file-input" accept=".qyprofile" hidden>
-        <button id="save-profile-btn">Save Profile</button>
-        <button id="load-profile-btn">Load Profile</button>
+        <span class="save-load-pair">
+          <button id="save-profile-btn">Save Profile</button>
+          <button id="load-profile-btn">Load Profile</button>
+        </span>
         <button type="button" class="info-icon" data-tooltip="A profile holds your pinned controls and any custom names you gave parameters (for example naming CC 16 after what it does on your MU2000). Save it to keep a setup for a particular piece of gear, and load it on another computer or browser.">i</button>
       </div>
     </div>
 
     <div id="fx-file-controls" hidden>
       <input type="file" id="fx-file-input" hidden>
-      <button id="save-fx-btn">Save</button>
-      <button id="load-fx-btn">Load</button>
+      <span class="save-load-pair">
+        <button id="save-fx-btn">Save</button>
+        <button id="load-fx-btn">Load</button>
+      </span>
     </div>
 
     <div id="fx-preset-browser" hidden>
-      <p class="hint">Click a preset to select it - use its Push button to actually apply it.</p>
+      <p class="hint">When starting to create a preset, it's recommended to "Push/Pull Parameters" first to ensure the web console matches the QY.</p>
       <div class="segmented-control" id="fx-preset-source-toggle">
         <button type="button" class="segment-btn active" data-source="builtin">Presets</button>
         <button type="button" class="segment-btn" data-source="user">User</button>
@@ -379,12 +419,12 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
         <span id="qy-memory-status" class="hint"></span>
       </div>
       <div id="qy-backup-controls">
-        <button type="button" id="qy-backup-save-blk">Save Device as .BLK</button>
-        <button type="button" id="qy-backup-save-q1a">Save Device as .Q1A</button>
-        <button type="button" class="info-icon" data-tooltip="Backs up the device's entire memory (every song, user style/pattern, the effect data and setup) to one file. .BLK is the format of Yamaha's PC Data Filer and works for both the QY70 and QY100. .Q1A is the QY100's own SmartMedia backup format: copy it to a SmartMedia card to load it on the QY100 itself. The QY70 has no .Q1A format.">i</button>
-        <span class="qy-backup-divider" aria-hidden="true"></span>
-        <button type="button" id="qy-backup-load" class="btn-warning">Load Backup to Device</button>
-        <button type="button" class="info-icon" data-tooltip="Replaces the device's entire memory with a .BLK or .Q1A backup. Everything on it now is erased first, including slots the backup leaves empty. Loading another model's backup (QY100 onto QY70 or the reverse) transfers the songs and patterns only.">i</button>
+        <span class="save-load-pair">
+          <button type="button" id="qy-backup-save-blk">Save Device as .BLK</button>
+          <button type="button" id="qy-backup-save-q1a">Save Device as .Q1A</button>
+          <button type="button" id="qy-backup-load" class="btn-warning">Load Backup to Device</button>
+        </span>
+        <button type="button" class="info-icon" data-tooltip="Save: Backs up the device's entire memory (every song, user style/pattern, the effect data and setup) to one file. .BLK is the format of Yamaha's PC Data Filer and works for both the QY70 and QY100. .Q1A is the QY100's own SmartMedia backup format: copy it to a SmartMedia card to load it on the QY100 itself. The QY70 has no .Q1A format. Load: Replaces the device's entire memory with a .BLK or .Q1A backup. Everything on it now is erased first, including slots the backup leaves empty. Loading another model's backup (QY100 onto QY70 or the reverse) transfers the songs and patterns only.">i</button>
         <input type="file" id="qy-backup-file-input" accept=".blk,.q1a" hidden>
         <span id="qy-backup-status" class="hint"></span>
       </div>
@@ -605,10 +645,14 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
         <div id="graphics-library-buttons">
           <input type="file" id="graphics-file-input" accept=".bmp" multiple hidden>
           <input type="file" id="graphics-animation-file-input" accept=".gif" multiple hidden>
-          <button type="button" id="graphics-load-btn">Load Image</button>
-          <button type="button" id="graphics-save-btn">Save Image</button>
-          <button type="button" id="graphics-load-animation-btn">Load Animation</button>
-          <button type="button" id="graphics-save-animation-btn">Save Animation</button>
+          <span class="save-load-pair">
+            <button type="button" id="graphics-save-btn">Save Image</button>
+            <button type="button" id="graphics-load-btn">Load Image</button>
+          </span>
+          <span class="save-load-pair">
+            <button type="button" id="graphics-save-animation-btn">Save Animation</button>
+            <button type="button" id="graphics-load-animation-btn">Load Animation</button>
+          </span>
         </div>
       </div>
       <div id="graphics-load-progress-row" hidden>
@@ -807,7 +851,7 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
       <p>Entries with a <span class="qy100-badge">QY100</span> badge aren&rsquo;t available on the QY70. Voices with a ▸ toggle have saved presets underneath them - full parameter setups you can push the same way. <strong>Save/Load Voice</strong> and <strong>Save/Load Kit</strong> write and read your own <code>.qyvoice</code>/<code>.qykit</code> files for reuse later or sharing.</p>
     </div>
     <div class="dialog-tab-panel" data-panel="params" hidden>
-      <p>Pick a section - System, Reverb, Chorus, Variation, Multi Part, or Drum Setup - from the dropdown. Drag a knob or type directly into its value field to edit; <strong>Push Parameters</strong> sends the section to the device. Each row has an <strong>Active/Ignored</strong> toggle on the right - Ignored keeps the value tracked and saved, it just stops sending it. <strong>Save/Load Parameters</strong> captures System, Reverb, Chorus, and Variation together as one <code>.qyparam</code> file.</p>
+      <p>Pick a section - System, Reverb, Chorus, Variation, Multi Part, or Drum Setup - from the dropdown. Drag a knob or type directly into its value field to edit; <strong>Push Parameters</strong> sends the section to the device. Each row has an <strong>Active/Ignored</strong> toggle on the right - Ignored keeps the value tracked and saved, it just stops sending it. <strong>Save/Load All Parameters</strong> captures System, Reverb, Chorus, and Variation together as one <code>.qyparam</code> file.</p>
       <p><strong>Drum Setup</strong> always edits whatever kit is currently playing on the Channel selected at the top, not the kit picker in that section - that dropdown only chooses which note names to display. Ds1/Ds2/Ds3 slots can only be selected on the device itself, never over MIDI - select one there and open its Drum Edit screen before editing it here.</p>
       <p><strong>Reverb, Chorus, and Variation</strong> each have their own preset browser and <code>.qyrev</code>/<code>.qycho</code>/<code>.qyvar</code> save/load, working the same way as the Voice Browser - click a preset to select it, use its <strong>Push</strong> button to apply it, and <strong>Save</strong>/<strong>Load</strong> to keep your own setups as files.</p>
     </div>

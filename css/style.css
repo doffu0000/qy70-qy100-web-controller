@@ -901,6 +901,42 @@ section {
   gap: 0.5rem;
   margin: 0.75rem 0;
 }
+/* A Push button and the Pull that reads the same thing back (or a Save and
+   its Load), boxed together on the Blank section button's slate background
+   so the pairs read as units. The box disappears when it shows no button. */
+.push-pull-pair,
+.save-load-pair {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  background: var(--muted);
+  border-radius: 6px;
+}
+.push-pull-pair:not(:has(> button:not([hidden]))),
+.save-load-pair:not(:has(> button:not([hidden]))) { display: none; }
+/* User Drum Set: a labeled box holding the Ds1/Ds2/Ds3 buttons. */
+.user-drum-set {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.2rem 0.2rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.user-drum-set[hidden] { display: none; }
+.user-drum-set-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* Ds3 goes through a bulk rewrite of the song or pattern, unlike Ds1/Ds2. */
+#ds-set-btns .ds3-btn { background: #2a7f86; border-color: #2a7f86; color: #fff; }
 
 
 #param-list {
@@ -1238,6 +1274,14 @@ section {
 }
 
 .knob-wrap.dragging .knob-track { stroke: var(--accent); }
+
+.knob-mark { fill: var(--qy100); }
+/* The stretch of a knob's track outside the QY's own range. */
+.knob-mark-span {
+  fill: none;
+  stroke: var(--qy100);
+  stroke-width: 2;
+}
 
 .knob-indicator {
   stroke: var(--accent);
@@ -2164,13 +2208,6 @@ section {
   margin: 0.5rem 0;
 }
 
-.qy-backup-divider {
-  align-self: stretch;
-  width: 1px;
-  min-height: 1.75rem;
-  background: var(--border);
-}
-
 #qy-memory-lists:not([hidden]) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
@@ -2656,6 +2693,9 @@ section {
     flex-direction: column;
     align-items: stretch;
   }
+  /* Side by side within the stacked column, each half the width. */
+  .push-pull-pair > button,
+  .save-load-pair > button { flex: 1 1 0; }
 
   #connect-bar label, #connect-bar .connect-field {
     width: 100%;
@@ -3196,4 +3236,24 @@ section {
   .param-row { column-gap: 0.25rem; }
   .param-row .insert-btn,
   .param-row .ignore-toggle { padding: 0.2rem 0.25rem; }
+}
+
+/* Refresh Parts' list under the Drum Setup status line: part names that
+   pick that part when clicked. */
+.drum-parts-summary .link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The Drum Setup refresh button is just the ↻ symbol. */
+#refresh-drum-parts-btn {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
 }

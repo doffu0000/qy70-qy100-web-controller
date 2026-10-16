@@ -145,6 +145,10 @@ window.addEventListener('appinstalled', () => {
 const isInstalledApp = () => window.navigator.standalone === true ||
   ['standalone', 'minimal-ui', 'fullscreen', 'window-controls-overlay'].some((m) => window.matchMedia(`(display-mode: ${m})`).matches);
 
+// The page title is worded for search results ("Free Online Editor"); the
+// installed app's window gets a plainer one.
+if (isInstalledApp()) document.title = 'Yamaha QY70 / QY100 Web Console: Parameter Editor & Data Filer';
+
 function waitForInstallPrompt(ms) {
   if (deferredPrompt) return Promise.resolve(deferredPrompt);
   return new Promise((resolve) => {

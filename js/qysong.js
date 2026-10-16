@@ -24,6 +24,7 @@
 // song/pattern number (7E = "currently selected"), AL is the track.
 
 import { MODEL_ID_QY, checksum, buildQyBulkModeOn, buildQyBulkModeOff } from './sysex.js';
+import { packQyBlock } from './smf.js';
 
 export const QY_KIND_SONG = 1;
 export const QY_KIND_PATTERN = 2;
@@ -74,6 +75,37 @@ export function retargetBlock(m, model, slot) {
   r[7] = slot & 0x7f;
   r[r.length - 2] = checksum(Array.from(r.slice(4, -2)));
   return r;
+}
+
+// Each track's Part Mode (0 Normal, 1 Drum, 2 Ds1, 3 Ds2, 4 Ds3) is a
+// plain byte in the song's or pattern's info record (track 7F): a song's
+// 16 tracks at 0x50-0x5F of its first block (the same info[0x50 + p]
+// buildXgHeader reads), a pattern's 8 tracks (D1 first) at 34-41 of its
+// second. Mapped on a real QY100 (2026-10-16) by diffing dumps with tracks
+// set to Ds1/Ds2/Ds3. This is the only way to reach Ds3: an XG Part Mode
+// write of 4 is clamped to 3 (Ds2), and the QY's own screens only offer
+// Ds3 on pattern tracks, while a song track loaded this way plays it too.
+const PART_MODE_IN_INFO = {
+  [QY_KIND_SONG]: { block: 0, offset: 0x50, tracks: 16 },
+  [QY_KIND_PATTERN]: { block: 1, offset: 34, tracks: 8 },
+};
+
+// A copy of `messages` with one track's Part Mode set to `mode`, or null if
+// the dump has no such info block. Returns { messages, previous }.
+export function setTrackPartMode(messages, kind, track, mode) {
+  const at = PART_MODE_IN_INFO[kind];
+  if (!at || track < 0 || track >= at.tracks) return null;
+  const infoIndexes = [];
+  messages.forEach((m, i) => { if (isQyDataBlock(m) && blockKind(m) === kind && m[8] === 0x7f) infoIndexes.push(i); });
+  const i = infoIndexes[at.block];
+  if (i === undefined) return null;
+  const data = unpackQyBlock(messages[i]);
+  const previous = data[at.offset + track];
+  data[at.offset + track] = mode;
+  const body = [...messages[i].slice(4, 9), ...packQyBlock(data)];
+  const out = [...messages];
+  out[i] = new Uint8Array([0xf0, 0x43, 0x00, MODEL_ID_QY, ...body, checksum(body), 0xf7]);
+  return { messages: out, previous };
 }
 
 // --------------------------------------------------------------- .blk files
