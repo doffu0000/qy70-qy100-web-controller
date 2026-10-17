@@ -318,6 +318,7 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
       <!-- Each Push sits with the Pull that reads the same thing back. -->
       <span class="push-pull-pair">
         <button id="push-params-btn" hidden>Push Parameters</button>
+        <button id="push-piece-btn" hidden title="Sends the drum note picked in the note dropdown to the QY (it plays once so the QY takes the edit).">Push Piece</button>
         <button id="pull-params-btn" hidden title="Reads the part, effect or drum note on screen from the QY into these knobs. Reads what the QY's tone generator has loaded right now (the song or pattern's settings plus any edits) without changing anything on the QY. Needs MIDI In.">Pull Parameters</button>
       </span>
       <span class="push-pull-pair">
@@ -329,8 +330,8 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
         <button id="pull-highlighted-btn" hidden title="Reads the track highlighted on the QY into the Part picked here, e.g. to copy one part to another and then Push it. Needs ECHO BACK on RecMontr. Reads what the QY's tone generator has loaded right now (the song or pattern's settings plus any edits) without changing anything on the QY. Needs MIDI In.">Pull from Highlighted Part</button>
       </span>
       <span class="push-pull-pair">
-        <button id="push-drum-params-btn" hidden title="Sends every note of the kit picked here to the drum setup (Ds1 or Ds2) the selected Part plays.">Push Kit</button>
-        <button id="pull-kit-btn" hidden title="Reads every note of the drum setup (Ds1 or Ds2) the selected Part plays from the QY. Reads what the QY's tone generator has loaded right now (the song or pattern's settings plus any edits) without changing anything on the QY. Needs MIDI In.">Pull Kit</button>
+        <button id="push-drum-params-btn" hidden title="Sends every drum note's parameters in the console to the drum set (Ds1, Ds2 or Ds3) the selected Part plays, so the QY matches the console. On Highlighted Part it goes to the track highlighted on the QY.">Push Parameters</button>
+        <button id="pull-kit-btn" hidden title="Reads every drum note's parameters from the drum set (Ds1 or Ds2) the selected Part plays into the console, so the console matches the QY. On Highlighted Part it first finds the highlighted track and the drum set it plays. Ds3 can't be read back. Reads what the QY's tone generator has loaded right now without changing anything on the QY. Needs MIDI In.">Pull Parameters</button>
       </span>
       <p class="hint" id="drum-setup-hint" hidden></p>
       <p class="hint" id="channel-section-hint" hidden>

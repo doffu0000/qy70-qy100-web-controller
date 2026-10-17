@@ -4431,9 +4431,9 @@ document.querySelectorAll('[data-ds-set]').forEach((btn) => btn.addEventListener
 // The part the Drum Setup Part dropdown points at: a Song part as is, Any
 // Mode's Highlighted Part asks the QY and the user (Song or Pattern),
 // Pattern Mode's Highlighted Part asks the QY only.
-async function resolveDrumSetTarget(label) {
+async function resolveDrumSetTarget(label, highlightOptions) {
   const v = drumPartSelect.value;
-  if (v === HIGHLIGHTED_PATTERN) return resolveHighlightedTarget(label);
+  if (v === HIGHLIGHTED_PATTERN) return resolveHighlightedTarget(label, highlightOptions);
   if (v === HIGHLIGHTED_PATTERN_MODE) {
     const ch = await detectHighlightedChannel();
     if (typeof ch === 'number') return 16 + (ch % 8);
@@ -5604,6 +5604,10 @@ function renderParamPanel() {
   // sections only (channel messages can't be read back).
   const canPull = !!section && section.kind !== 'channel';
   pullParamsBtn.hidden = !canPull;
+  // In Drum Setup the single-note pair is Push Piece / Pull Piece, beside
+  // Push/Pull Parameters for the whole kit.
+  pullParamsBtn.textContent = sectionKey === 'drumSetup' ? 'Pull Piece' : 'Pull Parameters';
+  el('push-piece-btn').hidden = sectionKey !== 'drumSetup';
   pullAllPartsBtn.hidden = sectionKey !== 'multiPart';
   pullHighlightedBtn.hidden = sectionKey !== 'multiPart';
   pullKitBtn.hidden = sectionKey !== 'drumSetup';
@@ -5621,10 +5625,12 @@ function renderParamPanel() {
   if (sectionKey === 'drumSetup') {
     renderDrumPartStatus(context);
     const editable = context.drumHigh !== null;
-    for (const elx of [drumkitSelect, noteSelect, resetSectionBtn, pullParamsBtn, pushDrumParamsBtn, pullKitBtn]) elx.hidden = !editable;
+    for (const elx of [el('drumkit-wrap'), noteSelect, resetSectionBtn, el('push-piece-btn'), pullParamsBtn, pushDrumParamsBtn, pullKitBtn]) elx.hidden = !editable;
     if (!editable) { currentSectionResetFns = []; return; }
     // Nothing comes back from a write-only setup (Ds3), so no Pull buttons.
-    if (context.highlightedPattern || WRITE_ONLY_DRUM_SETUPS.has(context.drumHigh)) pullParamsBtn.hidden = pullKitBtn.hidden = true;
+    // Highlighted Part keeps them: they find out at click time which drum
+    // set the highlighted track plays (highlightedDrumPullContext).
+    if (!context.highlightedPattern && WRITE_ONLY_DRUM_SETUPS.has(context.drumHigh)) pullParamsBtn.hidden = pullKitBtn.hidden = true;
   }
   if (isPinnedView && !items.length) {
     paramListEl.innerHTML = '<p class="hint param-list-empty">Nothing pinned yet. Click the ☆ next to any parameter, in any section, to pin it here.</p>';
@@ -6801,7 +6807,9 @@ channelSelect.addEventListener('change', () => {
 // voice either.
 // Goes to the drum setup the selected Part plays (Ds1 or Ds2, see
 // DRUM_SETUP_FOR_PART_MODE); the trigger notes go on that part's channel.
-pushDrumParamsBtn.addEventListener('click', async () => {
+// Push Parameters sends every note of the kit; Push Piece only the note
+// on screen. Both go where a live edit would (see drumPushTarget).
+async function pushDrumNotes({ onlyNote = null } = {}) {
   const kit = drumKits[Number(drumkitSelect.value || 0)];
   const context = currentContext('drumSetup');
   if (!kit || context.drumHigh === null) return;
@@ -6813,19 +6821,28 @@ pushDrumParamsBtn.addEventListener('click', async () => {
       return;
     }
   }
-  const where = context.highlightedPattern ? 'the highlighted part' : drumSetupLabel(context.drumHigh);
+  const where = context.highlightedPattern ? 'the highlighted part' : `${drumSetupLabel(context.drumHigh)} (${partLabel(context.part)})`;
   const kitName = voiceDisplayName(kit);
-  const notes = snapshotKitParams(`${kit.bankMsb}:${kit.program}`);
+  const allNotes = snapshotKitParams(`${kit.bankMsb}:${kit.program}`);
+  const notes = onlyNote === null ? allNotes : { [onlyNote]: allNotes[onlyNote] };
+  const [drumHighs, channel] = drumPushTarget(context, highlightedChannel);
+  if (onlyNote !== null) {
+    await sendKitNotesToChannel(drumHighs, notes, null, channel);
+    statusEl.textContent = `Pushed ${noteName(onlyNote)} of ${kitName} to ${where}.`;
+    return;
+  }
   showProgress(`Pushing ${kitName}'s parameters to ${where}`, KIT_PUSH_WARNING);
   try {
-    const [drumHighs, channel] = drumPushTarget(context, highlightedChannel);
     await sendKitNotesToChannel(drumHighs, notes, updateProgress, channel);
   } finally {
     hideProgress();
   }
   sendMessageWindow('Kit Pushed');
-  await showAlert('Parameters pushed', `Pushed all of ${kitName}'s drum parameters to ${context.highlightedPattern ? where : `${where} (${partLabel(context.part)})`}.`);
-});
+  await showAlert('Parameters pushed', `Pushed all of ${kitName}'s drum parameters to ${where}.`);
+}
+pushDrumParamsBtn.addEventListener('click', () => pushDrumNotes());
+const pushPieceBtn = el('push-piece-btn');
+pushPieceBtn.addEventListener('click', () => pushDrumNotes({ onlyNote: Number(noteSelect.value || 0) }));
 
 // System/Reverb/Chorus/Variation/Multi Part just resend whatever this app
 // currently has stored for the section/context on screen - unlike Drum
@@ -7157,10 +7174,39 @@ async function withPullButtons(fn) {
   }
 }
 
+// Pulling Drum Setup on Highlighted Part: finds the highlighted track
+// (resolveDrumSetTarget), reads its Part Mode and kit, and pulls from the
+// drum set it plays. Resolves the context to pull, or null after telling
+// the user why there's nothing to read (Ds3 never answers a read).
+async function highlightedDrumPullContext() {
+  const part = await resolveDrumSetTarget('', { pull: true, intoLabel: 'Drum Setup' });
+  if (part === null) return null;
+  const data = await runQySession(() => requestXgBlock([0x08, part, 0x00])).catch(() => null);
+  if (!data) {
+    await showAlert('Nothing pulled', `${partLabel(part)} didn't answer. Check MIDI In, or run Probe.`);
+    return null;
+  }
+  storeDrumPartVoice(part, data);
+  syncDrumKitToPart(part);
+  const mode = data[7];
+  if (mode === 4) {
+    await showAlert("Ds3 can't be pulled", `${partLabel(part)} plays Ds3, which the QY never sends back, so it can't be pulled. Push Parameters still sends the console's values to it.`);
+    return null;
+  }
+  const drumHigh = DRUM_SETUP_FOR_PART_MODE[mode];
+  if (drumHigh === undefined) {
+    await showAlert('No drum set to pull', `${partLabel(part)} plays ${mode === 1 ? 'a preset kit' : 'a normal voice'}, so it has no editable drum parameters to pull.`);
+    return null;
+  }
+  return { ...currentContext('drumSetup'), part, partMode: mode, highlightedPattern: false, drumHigh };
+}
+
 pullParamsBtn.addEventListener('click', async () => {
   if (!requirePullInput()) return;
   const sectionKey = sectionSelect.value;
-  const context = currentContext(sectionKey);
+  let context = currentContext(sectionKey);
+  if (sectionKey === 'drumSetup' && context.highlightedPattern) context = await highlightedDrumPullContext();
+  if (!context) return;
   if (sectionKey === 'drumSetup' && context.drumHigh === null) return;
   const label = sectionKey === 'multiPart' ? partLabel(context.part)
     : sectionKey === 'drumSetup' ? `${noteName(context.note)} of ${drumSetupLabel(context.drumHigh)}`
@@ -7219,8 +7265,9 @@ pullHighlightedBtn.addEventListener('click', async () => {
 
 pullKitBtn.addEventListener('click', async () => {
   if (!requirePullInput()) return;
-  const context = currentContext('drumSetup');
-  if (context.drumHigh === null) return;
+  let context = currentContext('drumSetup');
+  if (context.highlightedPattern) context = await highlightedDrumPullContext();
+  if (!context || context.drumHigh === null) return;
   const [lo, hi] = parameters.drumSetup.noteRange;
   showProgress('Pulling the kit', 'Reading every drum note\'s settings from the QY. Nothing on the QY changes.');
   let total = { got: 0, missing: 0 };
@@ -7235,7 +7282,7 @@ pullKitBtn.addEventListener('click', async () => {
   } finally {
     hideProgress();
   }
-  statusEl.textContent = pullResultMessage(`every note of ${drumSetupLabel(context.drumHigh)}`, total);
+  statusEl.textContent = pullResultMessage(`every note of ${drumSetupLabel(context.drumHigh)}${context.part === drumPartValue() ? '' : ` (${partLabel(context.part)}, highlighted on the QY)`}`, total);
   renderParamPanel();
 });
 
