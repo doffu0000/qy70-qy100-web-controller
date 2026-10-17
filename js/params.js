@@ -82,7 +82,7 @@ export function isControllerSendEnabled() {
   return controllerSend.enabled;
 }
 
-// context.forceSysex keeps a send part-addressed even with Send as CC/NRPN
+// context.forceSysex keeps a send part-addressed even with Send as non-XG
 // on: the QY70/QY100 play incoming channel messages on whichever track is
 // highlighted on the device, whatever channel they arrive on, so a CC or
 // Program Change meant for Part 3 lands on the highlighted part instead.
@@ -133,7 +133,7 @@ export function buildChannelMessages(msg, channel, value, lookup) {
       const data = msg.wide
         ? [cc(0x06, value >> 7), cc(0x26, value)]
         : [cc(0x06, value)];
-      // Closed with a null RPN afterwards, same as Send as CC/NRPN, so a
+      // Closed with a null RPN afterwards, same as Send as non-XG, so a
       // stray Data Entry later can't keep editing this parameter.
       return [...select(msg.type === 'rpn', msg.msb, lsb), ...data, ...nullSelect()];
     }

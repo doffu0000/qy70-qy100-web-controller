@@ -816,6 +816,17 @@ section {
   border-color: var(--accent);
 }
 
+.remove-user-btn {
+  flex-shrink: 0;
+  margin-left: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+  border: 1px solid var(--qy100);
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
 .qy100-badge {
   display: inline-block;
   margin-left: 0.5rem;
@@ -1225,6 +1236,9 @@ section {
   opacity: 1;
   visibility: visible;
 }
+
+/* For the few long, multi paragraph explanations (data-tooltip-wide). */
+#global-tooltip.wide { max-width: min(38rem, calc(100vw - 3rem)); }
 
 .effect-type-select {
   width: 100%;

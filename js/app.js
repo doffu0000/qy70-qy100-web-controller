@@ -2433,6 +2433,9 @@ function positionGlobalTooltip(target) {
   if (top + tipRect.height > window.innerHeight - margin) {
     top = iconRect.top - margin - tipRect.height;
   }
+  // A long tooltip can be taller than the space on either side of its
+  // icon; keep its top on screen so the start of it is always readable.
+  top = Math.max(margin, top);
   globalTooltip.style.left = `${left}px`;
   globalTooltip.style.top = `${top}px`;
 }
@@ -2447,6 +2450,7 @@ function showGlobalTooltip(target) {
   const host = target.closest('dialog[open]') || document.body;
   if (globalTooltip.parentElement !== host) host.appendChild(globalTooltip);
   globalTooltip.textContent = text;
+  globalTooltip.classList.toggle('wide', 'tooltipWide' in target.dataset);
   globalTooltip.classList.add('visible');
   positionGlobalTooltip(target);
 }
@@ -2627,7 +2631,7 @@ async function resolveHighlightedTarget(name, { pull = false, intoLabel = '', fr
 // Number XG Parameter Change rows (part-addressed) rather than plain MIDI
 // Bank Select/Program Change (channel-addressed), so it works identically
 // for all 32 parts, not just the 16 that map to a live channel. It stays
-// SysEx even with Send as CC/NRPN on (forceSysex): a Program Change goes to
+// SysEx even with Send as non-XG on (forceSysex): a Program Change goes to
 // the track highlighted on the QY, not the part picked here.
 function applyVoiceToPart(part, voice) {
   const section = parameters.multiPart;
@@ -2990,6 +2994,11 @@ function renderUserVoiceList() {
         sendMessageWindow(entry.name);
       }
     });
+    li.appendChild(userRemoveButton(entry.name, 'User Voice', () => {
+      userVoices.splice(userVoices.indexOf(entry), 1);
+      if (selectedVoiceKey === key) { selectedVoiceKey = null; selectedVoiceLabel = null; }
+      renderVoiceList();
+    }));
     voiceListEl.appendChild(li);
   }
   updateSaveButtonsState();
@@ -3054,6 +3063,11 @@ function renderUserKitList() {
         `${entry.name} is on ${partLabel(target.part)} as ${partModeLabel(target.mode)}.`
       );
     });
+    li.appendChild(userRemoveButton(entry.name, 'User Kit', () => {
+      userKits.splice(userKits.indexOf(entry), 1);
+      if (selectedVoiceKey === key) { selectedVoiceKey = null; selectedVoiceLabel = null; selectedVoiceObj = null; }
+      renderVoiceList();
+    }));
     voiceListEl.appendChild(li);
   }
   updateSaveButtonsState();
@@ -3309,6 +3323,8 @@ saveVoiceBtn.addEventListener('click', async () => {
   const savedDesc = partLabel(part);
   try {
     const savedName = await writeFile(`${voiceFile.name}.qyvoice`, JSON.stringify(voiceFile, null, 1), 'QY70/QY100 Voice', '.qyvoice');
+    addSavedToUserList(userVoices, { id: newLoadedFileId(), name: savedFileBaseName(savedName, '.qyvoice'), params: voiceFile.params });
+    if (bankSelect.value === 'userVoice') renderVoiceList();
     await showAlert('Voice saved', `Saved ${savedDesc} as ${savedName}.`);
   } catch (err) {
     if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
@@ -3320,6 +3336,34 @@ saveVoiceBtn.addEventListener('click', async () => {
 // once - see loadVoiceFiles/loadKitFiles below - can easily hit that).
 function newLoadedFileId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Adds a just-saved file to its User list, replacing an entry of the same
+// name so saving twice doesn't list it twice.
+function addSavedToUserList(list, entry) {
+  const existingIndex = list.findIndex((x) => x.name === entry.name);
+  if (existingIndex === -1) list.push(entry);
+  else list.splice(existingIndex, 1, entry);
+}
+
+function savedFileBaseName(savedName, ext) {
+  return savedName.toLowerCase().endsWith(ext) ? savedName.slice(0, -ext.length) : savedName;
+}
+
+// Builds the small Remove button on a User list row. It only removes the
+// entry from the console's list; the file on the computer stays.
+function userRemoveButton(name, listLabel, onDelete) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'remove-user-btn btn-warning';
+  btn.textContent = 'Remove';
+  btn.title = `Remove from ${listLabel} (the file on your computer is kept)`;
+  btn.addEventListener('click', async (evt) => {
+    evt.stopPropagation();
+    const ok = await showConfirm('Remove from list?', `Remove "${name}" from ${listLabel}? The file on your computer is kept.`, 'Remove');
+    if (ok) onDelete();
+  });
+  return btn;
 }
 
 // silent skips this file's own list refresh/alert - used by loadVoiceFiles
@@ -3441,6 +3485,8 @@ saveKitBtn.addEventListener('click', async () => {
   };
   try {
     const savedName = await writeFile(`${kitName}.qykit`, JSON.stringify(kitFile, null, 1), 'QY70/QY100 Drum Kit', '.qykit');
+    addSavedToUserList(userKits, { id: newLoadedFileId(), name: savedFileBaseName(savedName, '.qykit'), voice: kitFile.voice, notes: kitFile.notes });
+    if (bankSelect.value === 'userKit') renderVoiceList();
     await showAlert('Kit saved', `Saved ${kitName}'s drum parameters as ${savedName}.`);
   } catch (err) {
     if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
@@ -3579,8 +3625,8 @@ function showConfirm(title, message, okLabel = 'Send', { html = false, checkbox 
 // Parameters, but only when it actually holds some (files saved before
 // they existed, and the curated presets, don't). paramSets is the list of
 // per-part param objects being applied. Resolves { ok, includeExternal }.
-const EXTERNAL_XG_LOAD_INFO = 'Sends the External XG Parameters saved with this voice (velocity limits, receive switches, scale tuning, poly aftertouch and assignable controller settings). '
-  + 'Tick it when the same external XG tone generator, such as an MU2000, is connected and you want its setup restored. '
+const EXTERNAL_XG_LOAD_INFO = 'Sends the External XG Parameters saved with this voice (velocity limits, receive switches, scale tuning, poly aftertouch and assignable controller settings).\n\n'
+  + 'Tick it when the same external XG tone generator, such as an MU2000, is connected and you want its setup restored.\n\n'
   + 'Leave it unticked to keep that module\'s current setup, or when no external module is connected, since the QY70 and QY100 ignore these settings anyway.';
 async function confirmApplyVoice(name, target, paramSets) {
   const externalNames = new Set(parameters.multiPart.params.filter(isExternalRow).map((r) => r.name));
@@ -3853,7 +3899,7 @@ knobSendRateSlider.addEventListener('change', () => applySendRate(knobSendRateSl
 // briefly apply 1 ms on the way.
 knobSendRateInput.addEventListener('change', () => applySendRate(knobSendRateInput.value, { save: true }));
 
-// Send as CC/NRPN (see controllers.js and configureControllerSend in
+// Send as non-XG (see controllers.js and configureControllerSend in
 // params.js). Off by default (live edits then always reach the part picked
 // here, since the QY plays channel messages on its highlighted track) and
 // remembered per browser like the send rate. The key is renamed whenever
@@ -4261,7 +4307,7 @@ function currentContext(sectionKey) {
       // Song or Pattern mode (pattern drum tracks on Ds3 can't be addressed
       // directly: their setup at 32 ignores XG edits). This works the way
       // the live console always has: every edit goes to all 16 Drum Setup addresses
-      // (30-3F), and with Send as CC/NRPN on, as drum NRPN on all 16
+      // (30-3F), and with Send as non-XG on, as drum NRPN on all 16
       // channels, which the QY (ECHO BACK RecMontr) applies to the
       // highlighted track. drumHigh 32 is the base for Push Kit and labels.
       return {
@@ -4530,7 +4576,7 @@ function renderDrumPartStatus(context) {
   drumSetupHint.replaceChildren();
   if (context.highlightedPattern) {
     drumSetupHint.append('Edits go to the drum track highlighted on the QY, in Song or Pattern mode, so highlight it there first (ECHO BACK on RecMontr). '
-      + 'Each edit is sent to every Drum Setup address, and as NRPN on every channel while Send as CC/NRPN is on, so other Ds kits may change too. '
+      + 'Each edit is sent to every Drum Setup address, and as NRPN on every channel while Send as non-XG is on, so other Ds kits may change too. '
       + 'Pick a Song part instead to edit just its kit, or to Pull.');
     renderDrumPartsSummary();
     return;
@@ -4764,7 +4810,7 @@ const PARAM_INFO = {
   'Send Chorus To Reverb': 'How much of the chorus\'s output is additionally fed into the reverb, for a chorus-then-reverb effect chain.',
   'Send Variation To Reverb': 'How much of the variation effect\'s output is additionally fed into the reverb, when Variation is in System mode.',
   'Send Variation To Chorus': 'How much of the variation effect\'s output is additionally fed into the chorus, when Variation is in System mode.',
-  VariMode: 'Whether Variation acts as a shared bus effect like Reverb/Chorus (System, where any part can send into it) or is patched directly into one specific part\'s signal path (Insertion, see Variation Part below). Insertion only works in Song Mode: in Pattern Mode, VariMode must be set to System or the Variation effect will not sound.',
+  VariMode: 'Whether Variation acts as a shared bus effect like Reverb/Chorus (System, where any part can send into it) or is patched directly into one specific part\'s signal path (Insertion, see Variation Part below).\n\nInsertion only works in Song Mode: in Pattern Mode, VariMode must be set to System or the Variation effect will not sound.',
   'Variation Part': 'Which part receives the Variation effect directly in its signal chain, when VariMode is set to Insertion. Only works in Song Mode.',
   'MW Variation Ctrl Depth': 'How much the Modulation Wheel affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
   'PB Variation Ctrl Depth': 'How much the Pitch Bend Wheel affects the Variation effect\'s depth, when Variation is in Insertion mode and its type supports control.',
@@ -5895,7 +5941,7 @@ function renderParamPanel() {
     }
     // How the row is sent: the channel message type (outlined CC/PC/PB/CAT/
     // PAT/RPN/NRPN) in channel-message sections and for Multi Part / Drum
-    // Setup rows with a controller form while Send as CC/NRPN is on,
+    // Setup rows with a controller form while Send as non-XG is on,
     // otherwise teal XG on every row of an XG section (an XG Parameter
     // Change). Whether the QY responds to a channel message is in the
     // badge's tooltip.
@@ -5918,7 +5964,7 @@ function renderParamPanel() {
       badge.className = 'tag-badge tag-badge--xg';
       badge.textContent = 'XG';
       badge.title = controllerDesc
-        ? `Sent as XG SysEx. Turn on Send as CC/NRPN to send it as ${controllerLabel(controllerDesc)}.`
+        ? `Sent as XG SysEx. Turn on Send as non-XG to send it as ${controllerLabel(controllerDesc)}.`
         : isExternalRow(firstRow)
           ? 'Sent as XG SysEx. The QY70/QY100 ignore this parameter; it\'s for external XG gear such as an MU2000.'
           : 'Sent as XG SysEx (an XG Parameter Change).';
@@ -6151,7 +6197,7 @@ function renderParamPanel() {
     playInsertInfoIcon.type = 'button';
     playInsertInfoIcon.className = 'info-icon insert-info-icon';
     playInsertInfoIcon.textContent = 'i';
-    playInsertInfoIcon.dataset.tooltip = "Arm your QY70/QY100 to record in REPL, OVER, or MULTI mode (but don't begin the recording on the device). Click the REC-ARM INSERT button to trigger recording to initiate, and insert the corresponding parameter value. Useful for inserting parameter changes at the beginning of a song/pattern.";
+    playInsertInfoIcon.dataset.tooltip = "Arm your QY70/QY100 to record in REPL, OVER, or MULTI mode (but don't begin the recording on the device). Click the REC-ARM INSERT button to trigger recording to initiate, and insert the corresponding parameter value.\n\nUseful for inserting parameter changes at the beginning of a song/pattern.";
 
     const playInsertBtn = document.createElement('button');
     playInsertBtn.type = 'button';
@@ -6255,7 +6301,7 @@ function renderFxPresetList(sectionKey) {
     const li = document.createElement('li');
     li.className = 'fx-preset-empty';
     li.textContent = fxPresetSource === 'user'
-      ? `No ${cfg.label} presets loaded yet - use Load above.`
+      ? `No ${cfg.label} presets yet - use Save or Load above.`
       : `No ${cfg.label} presets.`;
     fxPresetListEl.appendChild(li);
     return;
@@ -6287,6 +6333,12 @@ function renderFxPresetList(sectionKey) {
       renderParamPanel();
       sendMessageWindow(preset.name);
     });
+    if (fxPresetSource === 'user') {
+      li.appendChild(userRemoveButton(preset.name, `the User ${cfg.label} list`, () => {
+        list.splice(list.indexOf(preset), 1);
+        renderFxPresetList(sectionKey);
+      }));
+    }
     fxPresetListEl.appendChild(li);
   }
 }
@@ -6312,6 +6364,8 @@ saveFxBtn.addEventListener('click', async () => {
   const file = { format: cfg.format, version: 1, savedAt: new Date().toISOString(), name, params: snapshotSection(sectionKey) };
   try {
     const savedName = await writeFile(`${name}${cfg.ext}`, JSON.stringify(file, null, 1), cfg.description, cfg.ext);
+    addSavedToUserList(userFxPresets[sectionKey], { id: newLoadedFileId(), name: savedFileBaseName(savedName, cfg.ext), params: file.params });
+    renderFxPresetList(sectionKey);
     await showAlert(`${cfg.label} saved`, `Saved the current ${cfg.label} settings as ${savedName}.`);
   } catch (err) {
     if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
@@ -6853,7 +6907,7 @@ pushParamsBtn.addEventListener('click', () => {
   const context = currentContext(sectionKey);
   const values = getParamStore(sectionKey, paramContextKey(sectionKey, context));
   // Multi Part pushes target a specific part, so they stay part-addressed
-  // SysEx even with Send as CC/NRPN on (see applyVoiceToPart).
+  // SysEx even with Send as non-XG on (see applyVoiceToPart).
   resendSectionContext(sectionKey, sectionKey === 'multiPart' ? { ...context, forceSysex: true } : context, values);
   statusEl.textContent = 'Parameters pushed.';
   sendMessageWindow(`${parameters[sectionKey]?.label || 'Params'} Pushed`);
@@ -6881,7 +6935,7 @@ pushAllPartsBtn.addEventListener('click', async () => {
 
 // The reverse of Pull from Highlighted Part: sends the Part picked in the console
 // to the track highlighted on the QY. Part-addressed XG SysEx even with
-// Send as CC/NRPN on (forceSysex, like Push); the probe only finds out
+// Send as non-XG on (forceSysex, like Push); the probe only finds out
 // which part that is. The target keeps its own Rcv Channel, and the console's copy of
 // the target part is updated to match what was sent.
 pushHighlightedBtn.addEventListener('click', async () => {

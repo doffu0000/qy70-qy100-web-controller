@@ -67,7 +67,7 @@ It also lets the web console follow the device's own Drum Kit/SFX Kit voice chan
     <div id="connection-check">
       <div class="connection-check-row">
         <button type="button" id="probe-btn">Probe</button>
-        <button type="button" class="info-icon" data-tooltip="Checks your MIDI connection and the QY's MIDI settings in one go: both cables, which model answers, the UTILITY > MIDI ECHO BACK setting (Highlighted Part needs RecMontr), and which channel the highlighted track is on. It only sends harmless messages and changes nothing on the QY.">i</button>
+        <button type="button" class="info-icon" data-tooltip="Checks your MIDI connection and the QY's MIDI settings in one go: both cables, which model answers, the UTILITY > MIDI ECHO BACK setting (Highlighted Part needs RecMontr), and which channel the highlighted track is on.&#10;&#10;It only sends harmless messages and changes nothing on the QY.">i</button>
         <span class="connection-check-label">Connection Check</span>
       </div>
       <ul id="probe-results" hidden></ul>
@@ -151,8 +151,8 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
           </div>
         </div>
         <div class="connect-field connect-divider">
-          <span class="label-row">Send as CC/NRPN
-            <button type="button" class="label-info-icon" data-tooltip="Off by default. Turning this on speeds up messaging, but on the QY70/QY100 your Multi Part and Drum Setup edits then land on whichever track is highlighted on the device instead of the part picked here. When on, it sends every Multi Part and Drum Setup parameter that has a controller form (Volume = CC 7, Filter Cutoff = CC 74, EG Decay = NRPN 01 64, drum Level = NRPN 1A + note, voice = Bank Select + Program Change, and so on) as that channel message instead of SysEx. Controllers are shorter, can be recorded onto a song track, and don't need XG System On. They go to the part's Rcv Channel, so every part listening on that channel changes, but in every mode (Song, Pattern or Voice) the QY70/QY100 play incoming channel messages on whichever track is highlighted on the device, so highlight the track you're editing. Voice, preset and User Voice changes, Push and Push All Parts always go out as part-addressed SysEx so they reach the part you picked. Parameters with no controller form, parts on channel 17-32 or Off, and values a controller can't express (Pan Random, negative Pitch Bend range) still go out as SysEx. Rows with a controller form show a CC, NRPN, RPN or PC badge while this is on, and an XG badge (sent as XG SysEx) while it's off.">i</button>
+          <span class="label-row">Send as non-XG
+            <button type="button" class="label-info-icon" data-tooltip-wide data-tooltip="Off by default. When on, the console sends your edits as standard MIDI channel messages (CC, NRPN, RPN and Program Change) instead of Yamaha XG SysEx. For example, Volume goes out as CC 7, Filter Cutoff as CC 74, EG Decay as NRPN 01 64, a drum note&#39;s Level as NRPN 1A plus the note, and a voice as Bank Select plus Program Change.&#10;&#10;Why turn it on:&#10;&#10;• Recordable: the QY70/QY100 can record channel messages onto a song track, so you can capture filter sweeps, volume moves and drum edits as part of a performance (for example with Punch Insert while the QY is recording).&#10;• Lighter: each edit is shorter on the wire, so fast knob moves keep up better.&#10;• No XG System On needed.&#10;• Other gear: any GM device or DAW understands CC and NRPN, while XG SysEx only means something to Yamaha XG gear.&#10;&#10;The catch:&#10;&#10;• Edits follow the highlighted track. In every mode (Song, Pattern or Voice) the QY70/QY100 play incoming channel messages on whichever track is highlighted on the device, not the part picked here, so highlight the track you&#39;re editing.&#10;• Messages go to the part&#39;s Rcv Channel, so every part listening on that channel changes too.&#10;• Not everything converts. Parameters with no controller form, parts on channel 17 to 32 or Off, and values a controller can&#39;t express (Pan Random, a negative Pitch Bend range) still go out as SysEx.&#10;&#10;Always SysEx: voice, preset and User Voice changes, Push and Push All Parts still go out as part addressed SysEx so they reach the part you picked.&#10;&#10;Leave it off for normal editing, where SysEx is precise and reaches exactly the part you picked. Turn it on when recording parameter changes into a song or driving other gear.&#10;&#10;Rows with a controller form show a CC, NRPN, RPN or PC badge while this is on, and an XG badge (sent as XG SysEx) while it&#39;s off.">i</button>
           </span>
           <label class="toggle-switch">
             <input type="checkbox" id="controller-send-enabled">
@@ -250,7 +250,7 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
     <h2>Parameters</h2>
     <div id="param-file-controls">
       <input type="file" id="patch-file-input" accept=".qyparam" hidden>
-      <button type="button" class="info-icon header-info-icon" data-tooltip="Saves every value in the System, Reverb, Chorus, and Variation sections of the Parameters panel - including each row's Active/Ignored state. Doesn't include Multi Part, Drum Setup, or Voice Browser selections. Only one parameter set can be loaded at a time.">i</button>
+      <button type="button" class="info-icon header-info-icon" data-tooltip="Saves every value in the System, Reverb, Chorus, and Variation sections of the Parameters panel - including each row's Active/Ignored state.&#10;&#10;Doesn't include Multi Part, Drum Setup, or Voice Browser selections. Only one parameter set can be loaded at a time.">i</button>
       <span class="save-load-pair">
         <button id="save-patch-btn">Save All Parameters</button>
         <button id="load-patch-btn">Load All Parameters</button>
@@ -425,7 +425,7 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
           <button type="button" id="qy-backup-save-q1a">Save Device as .Q1A</button>
           <button type="button" id="qy-backup-load" class="btn-warning">Load Backup to Device</button>
         </span>
-        <button type="button" class="info-icon" data-tooltip="Save: Backs up the device's entire memory (every song, user style/pattern, the effect data and setup) to one file. .BLK is the format of Yamaha's PC Data Filer and works for both the QY70 and QY100. .Q1A is the QY100's own SmartMedia backup format: copy it to a SmartMedia card to load it on the QY100 itself. The QY70 has no .Q1A format. Load: Replaces the device's entire memory with a .BLK or .Q1A backup. Everything on it now is erased first, including slots the backup leaves empty. Loading another model's backup (QY100 onto QY70 or the reverse) transfers the songs and patterns only.">i</button>
+        <button type="button" class="info-icon" data-tooltip="Save: Backs up the device's entire memory (every song, user style/pattern, the effect data and setup) to one file.&#10;&#10;.BLK is the format of Yamaha's PC Data Filer and works for both the QY70 and QY100. .Q1A is the QY100's own SmartMedia backup format: copy it to a SmartMedia card to load it on the QY100 itself. The QY70 has no .Q1A format.&#10;&#10;Load: Replaces the device's entire memory with a .BLK or .Q1A backup. Everything on it now is erased first, including slots the backup leaves empty.&#10;&#10;Loading another model's backup (QY100 onto QY70 or the reverse) transfers the songs and patterns only.">i</button>
         <input type="file" id="qy-backup-file-input" accept=".blk,.q1a" hidden>
         <span id="qy-backup-status" class="hint"></span>
       </div>
@@ -465,7 +465,7 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
 
       <div id="xg-address-controls">
         <span class="label-row">XG Address
-          <button type="button" class="label-info-icon" data-tooltip="Sends an XG Parameter Change (F0 43 10 4C High Mid Low Data F7) to any XG address, including ones the Parameters panel doesn't list, using the addresses in your QY or MU module's Data List. Request asks the device to send the value back (watch the MIDI Log or Diagnostics).">i</button>
+          <button type="button" class="label-info-icon" data-tooltip="Sends an XG Parameter Change (F0 43 10 4C High Mid Low Data F7) to any XG address, including ones the Parameters panel doesn't list, using the addresses in your QY or MU module's Data List.&#10;&#10;Request asks the device to send the value back (watch the MIDI Log or Diagnostics).">i</button>
         </span>
         <div id="xg-address-row">
           <label>High <input type="text" id="xg-addr-high" maxlength="2" placeholder="08"></label>
