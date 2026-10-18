@@ -116,6 +116,68 @@ function songCountOffset(track) {
   return null;
 }
 
+// One pattern's YQ1PAT section: a header with each track's block count,
+// then every block of that slot unpacked. A .Q1A holds one per pattern; a
+// .Q1P is exactly one.
+function patternSection(messages, slot) {
+  const blocks = blocksOf(messages, QY_KIND_PATTERN, slot);
+  const head = new Array(CHUNK).fill(0);
+  magic('PAT').forEach((b, i) => { head[i] = b; });
+  head[16] = slot;
+  for (const { id, count } of runs(blocks)) {
+    if (id === PATTERN_TRAILER || id >= 48) continue;
+    head[18 + 2 * id] = (count >> 8) & 0xff;
+    head[19 + 2 * id] = count & 0xff;
+  }
+  head[114] = 0x02;
+  head[115] = 0x22;
+  return [Uint8Array.from(head), ...blocks.map((m) => Uint8Array.from(unpacked(m)))];
+}
+
+// One song's YQ1SNG section, laid out like patternSection (.Q1S is one).
+function songSection(messages, slot) {
+  const blocks = blocksOf(messages, QY_KIND_SONG, slot);
+  const head = new Array(CHUNK).fill(0);
+  magic('SNG').forEach((b, i) => { head[i] = b; });
+  head[16] = slot;
+  for (const { id, count } of runs(blocks)) {
+    const off = songCountOffset(id);
+    if (off === null) continue;
+    head[16 + off] = (count >> 8) & 0xff;
+    head[17 + off] = count & 0xff;
+  }
+  head[72] = 0x02;
+  head[73] = 0x8e;
+  return [Uint8Array.from(head), ...blocks.map((m) => Uint8Array.from(unpacked(m)))];
+}
+
+// Reads the YQ1PAT/YQ1SNG section whose header starts at `off`. Returns
+// { blocks, end } (end: the offset just past the section).
+function readItemSection(bytes, off, model) {
+  const tag = String.fromCharCode(...bytes.slice(off, off + 6));
+  const head = bytes.slice(off, off + CHUNK);
+  const at = (o) => bytes.slice(o, o + CHUNK);
+  const blocks = [];
+  const slot = head[16];
+  off += CHUNK;
+  if (tag === 'YQ1PAT') {
+    for (let id = 0; id < 48; id++) {
+      const count = (head[18 + 2 * id] << 8) | head[19 + 2 * id];
+      for (let k = 0; k < count; k++, off += CHUNK) blocks.push(buildBlock(model, QY_KIND_PATTERN, slot, id, at(off)));
+    }
+    for (let k = 0; k < PATTERN_TRAILER_BLOCKS; k++, off += CHUNK) blocks.push(buildBlock(model, QY_KIND_PATTERN, slot, PATTERN_TRAILER, at(off)));
+  } else {
+    const tracks = [...Array(16).keys(), 0x19, 0x1a, 0x1b, 0x1c];
+    for (const track of tracks) {
+      const o = songCountOffset(track);
+      const count = (head[16 + o] << 8) | head[17 + o];
+      for (let k = 0; k < count; k++, off += CHUNK) blocks.push(buildBlock(model, QY_KIND_SONG, slot, track, at(off)));
+    }
+    for (let k = 0; k < SONG_INFO_BLOCKS; k++, off += CHUNK) blocks.push(buildBlock(model, QY_KIND_SONG, slot, SONG_INFO_TRACK, at(off)));
+  }
+  return { blocks, end: off };
+}
+
 // ------------------------------------------------------------------- .Q1A
 
 export function isQ1aFile(name, bytes) {
@@ -140,36 +202,8 @@ export function buildQ1a(messages) {
   effHead[16] = effects.length;
   parts.push(Uint8Array.from(effHead), ...effects.map((m) => Uint8Array.from(unpacked(m))));
 
-  for (const slot of slotsOf(messages, QY_KIND_PATTERN)) {
-    const blocks = blocksOf(messages, QY_KIND_PATTERN, slot);
-    const head = new Array(CHUNK).fill(0);
-    magic('PAT').forEach((b, i) => { head[i] = b; });
-    head[16] = slot;
-    for (const { id, count } of runs(blocks)) {
-      if (id === PATTERN_TRAILER || id >= 48) continue;
-      head[18 + 2 * id] = (count >> 8) & 0xff;
-      head[19 + 2 * id] = count & 0xff;
-    }
-    head[114] = 0x02;
-    head[115] = 0x22;
-    parts.push(Uint8Array.from(head), ...blocks.map((m) => Uint8Array.from(unpacked(m))));
-  }
-
-  for (const slot of slotsOf(messages, QY_KIND_SONG)) {
-    const blocks = blocksOf(messages, QY_KIND_SONG, slot);
-    const head = new Array(CHUNK).fill(0);
-    magic('SNG').forEach((b, i) => { head[i] = b; });
-    head[16] = slot;
-    for (const { id, count } of runs(blocks)) {
-      const off = songCountOffset(id);
-      if (off === null) continue;
-      head[16 + off] = (count >> 8) & 0xff;
-      head[17 + off] = count & 0xff;
-    }
-    head[72] = 0x02;
-    head[73] = 0x8e;
-    parts.push(Uint8Array.from(head), ...blocks.map((m) => Uint8Array.from(unpacked(m))));
-  }
+  for (const slot of slotsOf(messages, QY_KIND_PATTERN)) parts.push(...patternSection(messages, slot));
+  for (const slot of slotsOf(messages, QY_KIND_SONG)) parts.push(...songSection(messages, slot));
 
   const end = new Array(CHUNK).fill(0);
   magic('END').forEach((b, i) => { end[i] = b; });
@@ -195,22 +229,10 @@ export function parseQ1a(bytes, model = 'QY100') {
       setup = buildBlock(model, QY_KIND_SETUP, 0, 0, head.slice(16, 16 + WIRE[QY_KIND_SETUP].bytes));
     } else if (t === 'YQ1EFF') {
       for (let k = 0; k < head[16]; k++, off += CHUNK) effects.push(buildBlock(model, QY_KIND_EFFECT, k, 0, at(off)));
-    } else if (t === 'YQ1PAT') {
-      const slot = head[16];
-      for (let id = 0; id < 48; id++) {
-        const count = (head[18 + 2 * id] << 8) | head[19 + 2 * id];
-        for (let k = 0; k < count; k++, off += CHUNK) patterns.push(buildBlock(model, QY_KIND_PATTERN, slot, id, at(off)));
-      }
-      for (let k = 0; k < PATTERN_TRAILER_BLOCKS; k++, off += CHUNK) patterns.push(buildBlock(model, QY_KIND_PATTERN, slot, PATTERN_TRAILER, at(off)));
-    } else if (t === 'YQ1SNG') {
-      const slot = head[16];
-      const tracks = [...Array(16).keys(), 0x19, 0x1a, 0x1b, 0x1c];
-      for (const track of tracks) {
-        const o = songCountOffset(track);
-        const count = (head[16 + o] << 8) | head[17 + o];
-        for (let k = 0; k < count; k++, off += CHUNK) songs.push(buildBlock(model, QY_KIND_SONG, slot, track, at(off)));
-      }
-      for (let k = 0; k < SONG_INFO_BLOCKS; k++, off += CHUNK) songs.push(buildBlock(model, QY_KIND_SONG, slot, SONG_INFO_TRACK, at(off)));
+    } else if (t === 'YQ1PAT' || t === 'YQ1SNG') {
+      const { blocks, end } = readItemSection(bytes, off - CHUNK, model);
+      (t === 'YQ1PAT' ? patterns : songs).push(...blocks);
+      off = end;
     } else if (t === 'YQ1END') {
       break;
     } else {
@@ -219,6 +241,35 @@ export function parseQ1a(bytes, model = 'QY100') {
   }
   if (off > bytes.length) throw new Error('This .Q1A file is truncated.');
   return [...songs, ...patterns, ...effects, ...(setup ? [setup] : [])];
+}
+
+// ------------------------------------------------------- .Q1S and .Q1P
+
+// The QY100's SmartMedia files for one song (.Q1S) or one pattern (.Q1P):
+// a single YQ1SNG/YQ1PAT section, as in a .Q1A, with no END marker.
+// Returns QY_KIND_SONG, QY_KIND_PATTERN or null.
+export function q1ItemFileKind(name, bytes) {
+  const tag = bytes.length >= CHUNK ? String.fromCharCode(...bytes.slice(0, 6)) : '';
+  if (tag === 'YQ1SNG') return QY_KIND_SONG;
+  if (tag === 'YQ1PAT') return QY_KIND_PATTERN;
+  if (/\.q1s$/i.test(name)) return QY_KIND_SONG;
+  if (/\.q1p$/i.test(name)) return QY_KIND_PATTERN;
+  return null;
+}
+
+// One song or pattern (`kind`, 0-based `slot`) of a dump -> .Q1S/.Q1P bytes.
+export function buildQ1Item(messages, kind, slot) {
+  if (!blocksOf(messages, kind, slot).length) throw new Error('That song/pattern holds no data.');
+  return concat(kind === QY_KIND_PATTERN ? patternSection(messages, slot) : songSection(messages, slot));
+}
+
+// .Q1S/.Q1P bytes -> its Bulk Dump blocks for `model`, in its own slot.
+export function parseQ1Item(bytes, model = 'QY100') {
+  const tag = bytes.length >= CHUNK ? String.fromCharCode(...bytes.slice(0, 6)) : '';
+  if (tag !== 'YQ1SNG' && tag !== 'YQ1PAT') throw new Error('Not a .Q1S or .Q1P file (no YQ1SNG/YQ1PAT header).');
+  const { blocks, end } = readItemSection(bytes, 0, model);
+  if (end > bytes.length) throw new Error('This file is truncated.');
+  return blocks;
 }
 
 // ------------------------------------------------------------------- .BLK

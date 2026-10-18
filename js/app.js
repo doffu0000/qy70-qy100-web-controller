@@ -12,8 +12,8 @@ import { loadParameters, expandRows, sendParam, sendParamGroup, configureControl
 import { controllerFor, controllerLabel } from './controllers.js';
 import { createKnob, createToggle, createMultiToggle, setContinuousSendMs } from './knob.js';
 import { isStandardMidiFile, unwrapMidiFile, convertMidiToQySong } from './smf.js';
-import { splitSysex, listDumpItems, itemLabel, buildItemTransfer, setTrackPartMode, exportSongToMidi, isDataFilerBulkFile, extractBulkFileMessages, isQyDataBlock, retargetBlock, blockKind, blockModel, QY_KIND_SONG, QY_KIND_PATTERN } from './qysong.js';
-import { buildQ1a, parseQ1a, buildBlk, orderForRestore, buildClearAllCommand, isQ1aFile } from './qyfiles.js';
+import { splitSysex, listDumpItems, itemLabel, buildItemTransfer, setTrackPartMode, exportSongToMidi, isDataFilerBulkFile, extractBulkFileMessages, isQyDataBlock, unpackQyBlock, retargetBlock, blockKind, blockModel, QY_KIND_SONG, QY_KIND_PATTERN } from './qysong.js';
+import { buildQ1a, parseQ1a, buildBlk, orderForRestore, buildClearAllCommand, isQ1aFile, q1ItemFileKind, buildQ1Item, parseQ1Item } from './qyfiles.js';
 import { detectQyModel, enterBulkMode, exitBulkMode, readMemoryList, buildClearCommand, formatTenths } from './qydevice.js';
 
 const link = new MidiLink();
@@ -2423,19 +2423,35 @@ function findTooltipTarget(node) {
 
 function positionGlobalTooltip(target) {
   const margin = 6;
+  // clientWidth/Height leave out the page's scrollbar, which innerWidth
+  // and innerHeight include.
+  const viewW = document.documentElement.clientWidth;
+  const viewH = document.documentElement.clientHeight;
+  const roomH = viewH - 2 * margin;
+  globalTooltip.style.maxWidth = '';
+  globalTooltip.style.maxHeight = '';
+  globalTooltip.scrollTop = 0;
+  // Too tall for the window (a long tooltip in a short window): widen it,
+  // and if it still doesn't fit, cap its height so it scrolls instead of
+  // running off screen (the mouse wheel over its icon scrolls it).
+  if (globalTooltip.getBoundingClientRect().height > roomH) {
+    globalTooltip.style.maxWidth = `${Math.min(viewW - 2 * margin, 56 * 16)}px`;
+  }
+  if (globalTooltip.getBoundingClientRect().height > roomH) {
+    globalTooltip.style.maxHeight = `${roomH}px`;
+  }
   const iconRect = target.getBoundingClientRect();
   const tipRect = globalTooltip.getBoundingClientRect();
   let left = iconRect.left;
-  if (left + tipRect.width > window.innerWidth - margin) {
-    left = Math.max(margin, window.innerWidth - margin - tipRect.width);
+  if (left + tipRect.width > viewW - margin) {
+    left = Math.max(margin, viewW - margin - tipRect.width);
   }
   let top = iconRect.bottom + margin;
-  if (top + tipRect.height > window.innerHeight - margin) {
+  if (top + tipRect.height > viewH - margin) {
     top = iconRect.top - margin - tipRect.height;
   }
-  // A long tooltip can be taller than the space on either side of its
-  // icon; keep its top on screen so the start of it is always readable.
-  top = Math.max(margin, top);
+  // Neither side of the icon has room: keep it inside the window, top first.
+  top = Math.max(margin, Math.min(top, viewH - margin - tipRect.height));
   globalTooltip.style.left = `${left}px`;
   globalTooltip.style.top = `${top}px`;
 }
@@ -2467,7 +2483,16 @@ function hideGlobalTooltip() {
 // simplest fix is to dismiss it, same as most tooltip implementations do
 // on scroll. `capture: true` catches scrolling on any scrollable
 // ancestor, not just the window, since scroll events don't bubble.
-window.addEventListener('scroll', hideGlobalTooltip, true);
+window.addEventListener('scroll', (evt) => { if (evt.target !== globalTooltip) hideGlobalTooltip(); }, true);
+
+// A tooltip capped to the window's height scrolls: the wheel over its
+// icon scrolls the tooltip rather than the page.
+document.addEventListener('wheel', (evt) => {
+  if (!globalTooltipTarget || !globalTooltipTarget.contains(evt.target)) return;
+  if (globalTooltip.scrollHeight <= globalTooltip.clientHeight) return;
+  evt.preventDefault();
+  globalTooltip.scrollTop += evt.deltaY;
+}, { passive: false });
 
 document.addEventListener('mouseover', (evt) => {
   const target = findTooltipTarget(evt.target);
@@ -7524,7 +7549,7 @@ function renderDataFilerList() {
   if (dataFilerEntries.length === 0) {
     const li = document.createElement('li');
     li.className = 'data-filer-empty';
-    li.textContent = 'No files loaded yet. Use Load File(s) for .syx, .blk or MIDI files, or Pull From Device below.';
+    li.textContent = 'No files loaded yet. Use Load File(s) for .syx, .blk, .Q1S, .Q1P or MIDI files, or Pull From Device below.';
     dataFilerListEl.appendChild(li);
     return;
   }
@@ -7555,7 +7580,11 @@ function renderDataFilerList() {
           : "Send this file's SysEx messages to the device, one at a time", () => dataFilerPush(entry)),
     ];
     if (!entry.midi && entry.items.some((i) => i.kind === QY_KIND_SONG)) {
-      buttons.push(makeRowButton('Export MIDI', 'Save a song from this file as a Standard MIDI File', () => dataFilerExportMidi(entry)));
+      buttons.push(makeRowButton('Export MIDI', 'Save a song from this file as a Standard MIDI File', () => dataFilerExportMidi(entry), 'btn-teal'));
+    }
+    const q1Label = q1SaveLabel(entry);
+    if (q1Label) {
+      buttons.push(makeRowButton(q1Label, 'Save a song as .Q1S or a pattern as .Q1P, the QY100 SmartMedia format, to load from a card on the QY100 itself', () => dataFilerSaveQ1Item(entry)));
     }
     buttons.push(
       makeRowButton('Rename', 'Rename this entry (does not touch any copy already saved to disk)', async () => {
@@ -7591,6 +7620,10 @@ async function dataFilerLoadFiles(files) {
       } else if (MIDI_FILE_EXTENSIONS.test(file.name)) {
         problems.push(`${file.name} is not a valid MIDI file`);
         continue;
+      } else if (q1ItemFileKind(file.name, raw) !== null) {
+        // A QY100 SmartMedia song (.Q1S) or pattern (.Q1P): its blocks
+        // become a normal one-item .syx entry, so Push asks for the slot.
+        dataFilerAddEntry(file.name.replace(/\.q1[sp]$/i, '.syx'), concatSysexMessages(parseQ1Item(raw)));
       } else if (isDataFilerBulkFile(file.name, raw)) {
         // An original QY Data Filer .blk backup: its messages become a
         // normal .syx entry.
@@ -7882,6 +7915,65 @@ async function dataFilerSave(entry) {
       return;
     }
     await writeBinaryFile(entry.name, entry.bytes, 'SysEx file', '.syx', 'application/octet-stream');
+  } catch (err) {
+    if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
+  }
+}
+
+// ---- Save as .Q1S / .Q1P (QY100 SmartMedia song / pattern files) ----
+
+// The row button's label, or null when the entry holds no song/pattern.
+// A MIDI file entry is converted to a song first, so it saves as .Q1S.
+function q1SaveLabel(entry) {
+  if (entry.midi) return 'Save .Q1S';
+  const kinds = new Set(entry.items.map((i) => i.kind));
+  if (!kinds.size) return null;
+  if (kinds.size === 2) return 'Save .Q1S/.Q1P';
+  return kinds.has(QY_KIND_PATTERN) ? 'Save .Q1P' : 'Save .Q1S';
+}
+
+// An 8.3 name the QY100 can list off a SmartMedia card.
+function smartMediaBaseName(name, fallback) {
+  const clean = (text) => (text || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 8);
+  return clean(name) || clean(fallback) || 'QYDATA';
+}
+
+// A pattern's name sits in its first trailer block (track 7F), bytes 6-13.
+function patternName(messages, slot) {
+  const trailer = messages.find((m) => isQyDataBlock(m) && blockKind(m) === QY_KIND_PATTERN && m[7] === slot && m[8] === 0x7f);
+  return trailer ? String.fromCharCode(...unpackQyBlock(trailer).slice(6, 14)).trim() : '';
+}
+
+async function dataFilerSaveQ1Item(entry) {
+  try {
+    let messages;
+    let item;
+    if (entry.midi) {
+      messages = convertMidiToQySong(entry.midi.source, { model: 'QY100', songNumber: 1 }).messages;
+      item = { kind: QY_KIND_SONG, slot: 0, name: null };
+    } else {
+      messages = splitSysexMessages(entry.bytes);
+      item = entry.items[0];
+      if (entry.items.length > 1) {
+        const picked = await showSaveAsDialog({
+          title: `Save from "${entry.name}"`,
+          targetLabelText: 'Song or pattern',
+          populateTarget: (select) => {
+            select.innerHTML = entry.items.map((it, k) => `<option value="${k}">${escapeHtml(itemLabel(it))}</option>`).join('');
+          },
+          defaultTarget: '0',
+          message: (k) => `Saves this ${entry.items[Number(k)].kind === QY_KIND_PATTERN ? 'pattern as a .Q1P' : 'song as a .Q1S'} file.`,
+        });
+        if (picked === null) return;
+        item = entry.items[Number(picked)];
+      }
+    }
+    const isPattern = item.kind === QY_KIND_PATTERN;
+    const ext = isPattern ? '.Q1P' : '.Q1S';
+    const bytes = buildQ1Item(messages, item.kind, item.slot);
+    const base = smartMediaBaseName(isPattern ? patternName(messages, item.slot) : item.name, entry.name.replace(/\.[^.]*$/, ''));
+    const saved = await writeBinaryFile(`${base}${ext}`, bytes, isPattern ? 'QY100 pattern file' : 'QY100 song file', ext.toLowerCase(), 'application/octet-stream');
+    statusEl.textContent = `Saved ${entry.midi ? `"${entry.name}" as a song` : itemLabel(item)} to ${saved}.`;
   } catch (err) {
     if (err.name !== 'AbortError') statusEl.textContent = `Error: ${err.message}`;
   }

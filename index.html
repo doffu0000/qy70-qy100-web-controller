@@ -373,7 +373,7 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
   <div class="tab-panel" id="tab-panel-data-filer" role="tabpanel">
     <section id="data-filer">
       <h2>Data Filer</h2>
-      <p class="hint">Save and load raw .syx SysEx files to/from your computer, and push or pull them to/from the QY100 - a simple file librarian for whatever Bulk Dump data the device sends or accepts. MIDI files (.mid, .midi, .smf, .kar, .rmi) are converted into a QY song when pushed, and original QY Data Filer .blk backups load as regular bulk data. Pushing a single song or pattern asks which slot to write it to; Export MIDI saves a song as a MIDI file.</p>
+      <p class="hint">Save and load raw .syx SysEx files to/from your computer, and push or pull them to/from the QY100 - a simple file librarian for whatever Bulk Dump data the device sends or accepts. MIDI files (.mid, .midi, .smf, .kar, .rmi) are converted into a QY song when pushed, original QY Data Filer .blk backups load as regular bulk data, and QY100 SmartMedia .Q1S songs and .Q1P patterns load as a single song or pattern. Save .Q1S/.Q1P writes a song or pattern in that SmartMedia format, for loading from a card on the QY100 itself. Pushing a single song or pattern asks which slot to write it to; Export MIDI saves a song as a MIDI file.</p>
 
       <div id="data-filer-device-row">
         <span class="label-row">Connected device
@@ -385,7 +385,7 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
       </div>
 
       <div id="data-filer-controls">
-        <input type="file" id="data-filer-file-input" accept=".syx,.blk,.mid,.midi,.smf,.kar,.rmi" multiple hidden>
+        <input type="file" id="data-filer-file-input" accept=".syx,.blk,.q1s,.q1p,.mid,.midi,.smf,.kar,.rmi" multiple hidden>
         <button type="button" id="data-filer-load-btn">Load File(s)</button>
       </div>
       <ul id="data-filer-list"></ul>

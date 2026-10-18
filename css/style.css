@@ -498,6 +498,13 @@ button:disabled {
   border-color: var(--qy100);
 }
 
+/* The teal of the Ds3 button and the XG badges. */
+.btn-teal {
+  background: #2a7f86;
+  border-color: #2a7f86;
+  color: #fff;
+}
+
 /* Matches #join-btn's own look (the header's "Support Future Projects"
    button) - same soft white glow and accent-blue background, rather
    than the orange .btn-warning family every other System On/reset-style
@@ -1225,6 +1232,7 @@ section {
   line-height: 1.4;
   text-align: left;
   white-space: pre-line;
+  overflow-y: auto;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   opacity: 0;
   visibility: hidden;
