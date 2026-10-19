@@ -7392,7 +7392,6 @@ function renderDetectedDevice() {
   else if (!detectedDevice || detectedDevice.portKey !== currentPortKey()) dataFilerDeviceEl.textContent = 'Not checked yet';
   else if (!detectedDevice.model) dataFilerDeviceEl.textContent = 'No QY70/QY100 answered';
   else dataFilerDeviceEl.textContent = detectedDevice.model;
-  el('data-filer-echo-hint').hidden = !(detectedDevice && detectedDevice.portKey === currentPortKey() && detectedDevice.echo);
 }
 
 async function detectDevice() {
