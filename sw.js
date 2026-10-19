@@ -9,6 +9,10 @@
 // offline. Bump CACHE when the file list below changes (a file added or
 // renamed); edits to existing files need no bump. Only caches named
 // qy-console-* are ever deleted, so nothing else stored on the site is touched.
+// Only a response that really is the console counts as the network
+// answering (see isConsoleResponse): if the site later goes down, starts
+// showing a host error page, redirects elsewhere, or the domain ends up
+// parked, the saved copy keeps running instead.
 // v2: replaces a v1 cache that a stray copy of this worker at the site root
 // had filled with WordPress files.
 const CACHE_PREFIX = 'qy-console-';
@@ -53,11 +57,34 @@ const FILES = [
   '/wp-content/uploads/2024/09/SM-Card-30.jpg',
 ];
 
+// Marker index.html carries (<meta name="qy-console">), so a page that
+// merely answers 200 (a host's error or parking page) isn't taken for it.
+const CONSOLE_MARKER = 'name="qy-console"';
+
+const expectsHtml = (req, url) => req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
+
+// True if `res` is a real copy of the file `req` asked for: a 200 from
+// this site (not a redirect away or an error page), not an HTML page where
+// a script, stylesheet, font, image or data file was expected, and for
+// the page itself, the console's own HTML.
+async function isConsoleResponse(req, res) {
+  if (!res || !res.ok || res.type === 'opaqueredirect' || res.redirected) return false;
+  const url = new URL(req.url);
+  const isHtml = (res.headers.get('content-type') || '').includes('text/html');
+  if (!expectsHtml(req, url)) return !isHtml;
+  if (!isHtml) return false;
+  return (await res.clone().text()).includes(CONSOLE_MARKER);
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     // One file failing (e.g. an image) shouldn't stop the rest being saved.
-    await Promise.all(FILES.map((f) => cache.add(new Request(f, { cache: 'reload' })).catch(() => {})));
+    await Promise.all(FILES.map(async (f) => {
+      const req = new Request(f, { cache: 'reload' });
+      const res = await fetch(req);
+      if (await isConsoleResponse(req, res)) await cache.put(req, res);
+    }).map((p) => p.catch(() => {})));
     await self.skipWaiting();
   })());
 });
@@ -87,15 +114,20 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
+    const saved = async () => (await cache.match(req, { ignoreSearch: true })) ||
+      (req.mode === 'navigate' ? cache.match('index.html') : undefined);
+    let res;
     try {
-      const res = await fetch(req, { cache: 'no-cache' });
-      if (res.ok) cache.put(req, res.clone());
-      return res;
+      res = await fetch(req, { cache: 'no-cache' });
     } catch {
-      const hit = await cache.match(req, { ignoreSearch: true });
-      if (hit) return hit;
-      if (req.mode === 'navigate') return (await cache.match('index.html')) || Response.error();
-      return Response.error();
+      return (await saved()) || Response.error();
     }
+    if (await isConsoleResponse(req, res)) {
+      cache.put(req, res.clone());
+      return res;
+    }
+    // The site answered, but not with the console (an error or parking
+    // page, a redirect away): the saved copy wins whenever there is one.
+    return (await saved()) || res;
   })());
 });

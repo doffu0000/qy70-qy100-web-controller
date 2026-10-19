@@ -22,10 +22,13 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"Yamaha QY70 / QY100 Web Console","url":"https://qy100.doffu.net/yamaha-qy70-qy100-web-console/","applicationCategory":"MultimediaApplication","operatingSystem":"Chrome, Edge or Opera with Web MIDI","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free browser-based editor and data filer for the Yamaha QY70 and QY100 sequencers."}
 </script>
+<!-- Lets sw.js tell this page from a host error or parking page. -->
+<meta name="qy-console" content="1">
 <meta name="theme-color" content="#475260">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="./css/fonts.css">
 <link rel="stylesheet" href="./css/style.css">
+<script>try { if (localStorage.getItem('qyDarkMode') === '1') document.documentElement.dataset.theme = 'dark'; } catch { /* light */ }</script>
 </head>
 <body>
 <div id="brand-bar"></div>
@@ -156,6 +159,15 @@ Note: 'Blank' section only applies in Song Mode.">i</button>
           </span>
           <label class="toggle-switch">
             <input type="checkbox" id="controller-send-enabled">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="connect-field connect-divider">
+          <span class="label-row">Dark Mode
+            <button type="button" class="label-info-icon" data-tooltip="Switches the console to a dark color scheme.">i</button>
+          </span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="dark-mode-enabled">
             <span class="toggle-track"></span>
           </label>
         </div>

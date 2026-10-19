@@ -3965,6 +3965,17 @@ controllerSendCheckbox.addEventListener('change', () => {
   if (parameters) renderParamPanel();
 });
 
+// Dark Mode: index.html's head script applies the saved choice before the
+// page draws, so this only syncs the toggle and saves changes.
+const DARK_MODE_KEY = 'qyDarkMode';
+const darkModeCheckbox = el('dark-mode-enabled');
+darkModeCheckbox.checked = document.documentElement.dataset.theme === 'dark';
+darkModeCheckbox.addEventListener('change', () => {
+  if (darkModeCheckbox.checked) document.documentElement.dataset.theme = 'dark';
+  else delete document.documentElement.dataset.theme;
+  try { localStorage.setItem(DARK_MODE_KEY, darkModeCheckbox.checked ? '1' : '0'); } catch { /* this session only */ }
+});
+
 // Bypasses sendMessageWindow's own checked-state guard: toggling messaging
 // off should still show that one last "Messaging Off" confirmation before
 // it goes silent, rather than being silently skipped by the same guard it's
