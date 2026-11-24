@@ -16,7 +16,7 @@
 // v2: replaces a v1 cache that a stray copy of this worker at the site root
 // had filled with WordPress files.
 const CACHE_PREFIX = 'qy-console-';
-const CACHE = `${CACHE_PREFIX}v3`;
+const CACHE = `${CACHE_PREFIX}v4`;
 
 const FILES = [
   './',
