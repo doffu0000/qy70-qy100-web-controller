@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   QY70/QY100 Web Console
-  Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+  Copyright (C) 2026 Doffu <https://qyexplorer.doffu.net/>
   Licensed under the GNU General Public License v3.0 or later. See LICENSE.
   Support future development: <https://www.patreon.com/doffu>
 -->
@@ -11,16 +11,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Yamaha QY70 / QY100 Web Console: Free Online Editor &amp; Data Filer</title>
 <meta name="description" content="Free browser editor for the Yamaha QY70 and QY100. Edit voices, effects and drum kits live over Web MIDI, and back up songs and styles (.BLK/.Q1A).">
-<link rel="canonical" href="https://qy100.doffu.net/yamaha-qy70-qy100-web-console/">
+<link rel="canonical" href="https://qyexplorer.doffu.net/yamaha-qy70-qy100-web-console/">
 <link rel="icon" href="icons/icon-192.png">
 <meta property="og:title" content="Yamaha QY70 / QY100 Web Console">
 <meta property="og:description" content="Free browser-based editor for the Yamaha QY70 and QY100: live voice, effect and drum kit editing, song and style backup/restore, and MIDI file import.">
-<meta property="og:image" content="https://qy100.doffu.net/wp-content/uploads/2025/10/100-2-1-scaled-e1787804388155.jpg">
-<meta property="og:url" content="https://qy100.doffu.net/yamaha-qy70-qy100-web-console/">
+<meta property="og:image" content="https://qyexplorer.doffu.net/wp-content/uploads/2025/10/100-2-1-scaled-e1787804388155.jpg">
+<meta property="og:url" content="https://qyexplorer.doffu.net/yamaha-qy70-qy100-web-console/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"Yamaha QY70 / QY100 Web Console","url":"https://qy100.doffu.net/yamaha-qy70-qy100-web-console/","applicationCategory":"MultimediaApplication","operatingSystem":"Chrome, Edge or Opera with Web MIDI","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free browser-based editor and data filer for the Yamaha QY70 and QY100 sequencers."}
+{"@context":"https://schema.org","@type":"WebApplication","name":"Yamaha QY70 / QY100 Web Console","url":"https://qyexplorer.doffu.net/yamaha-qy70-qy100-web-console/","applicationCategory":"MultimediaApplication","operatingSystem":"Chrome, Edge or Opera with Web MIDI","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free browser-based editor and data filer for the Yamaha QY70 and QY100 sequencers."}
 </script>
 <!-- Lets sw.js tell this page from a host error or parking page. -->
 <meta name="qy-console" content="1">
@@ -35,8 +35,8 @@
 <header>
   <div id="header-top">
     <div id="header-brand">
-      <a href="https://qy100.doffu.net/" target="_blank" rel="noopener" id="site-logo-link">
-        <img src="https://qy100.doffu.net/wp-content/uploads/2024/09/QY-Mounting-Banner.png" alt="QY100 Explorer" id="site-logo">
+      <a href="https://qyexplorer.doffu.net/" target="_blank" rel="noopener" id="site-logo-link">
+        <img src="https://qyexplorer.doffu.net/wp-content/uploads/2026/11/QY-Explorer-Banner.png" alt="QY Explorer" id="site-logo">
       </a>
       <h1>QY70 / QY100 Web Console</h1>
     </div>
@@ -838,19 +838,34 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
 
 <footer id="site-footer">
   <button type="button" id="help-btn">Instructions</button>
-  <a href="https://qy100.doffu.net/contact/" target="_blank" rel="noopener" id="contact-btn">Report a Bug / Suggest Something</a>
+  <a href="https://qyexplorer.doffu.net/contact/" target="_blank" rel="noopener" id="contact-btn">Report a Bug / Suggest Something</a>
 </footer>
 
 <dialog id="help-dialog" class="app-dialog wide-dialog">
   <h3 class="app-dialog-title">Instructions</h3>
   <div class="dialog-tabs" role="tablist">
-    <button type="button" class="dialog-tab active" data-tab="connect">Connect</button>
+    <button type="button" class="dialog-tab active" data-tab="video">Video</button>
+    <button type="button" class="dialog-tab" data-tab="connect">Connect</button>
     <button type="button" class="dialog-tab" data-tab="voices">Voice Browser</button>
     <button type="button" class="dialog-tab" data-tab="params">Parameters</button>
+    <button type="button" class="dialog-tab" data-tab="datafiler">Data Filer</button>
+    <button type="button" class="dialog-tab" data-tab="diagnostics">Diagnostics + Raw SysEx</button>
+    <button type="button" class="dialog-tab" data-tab="graphics">Graphics</button>
+    <button type="button" class="dialog-tab" data-tab="displaytext">Display Text</button>
     <button type="button" class="dialog-tab" data-tab="log">MIDI Log</button>
   </div>
   <div class="dialog-body">
-    <div class="dialog-tab-panel" data-panel="connect">
+    <div class="dialog-tab-panel" data-panel="video">
+      <p>This overview video shows how to use the web console from start to finish.</p>
+      <div id="help-video" class="help-video" data-video-id="Ygn1oRXxFHE" data-video-title="Yamaha QY70 and QY100 Web Console Overview Tutorial">
+        <button type="button" id="help-video-play" class="help-video-play" aria-label="Play the web console overview tutorial video">
+          <span class="help-video-play-icon" aria-hidden="true">&#9654;</span>
+          <span class="help-video-play-label">Play video tutorial</span>
+        </button>
+      </div>
+      <p class="help-video-note">The video loads from YouTube only when you press play. <a href="https://www.youtube.com/watch?v=Ygn1oRXxFHE" target="_blank" rel="noopener">Watch it on YouTube</a> instead.</p>
+    </div>
+    <div class="dialog-tab-panel" data-panel="connect" hidden>
       <p>Your browser will prompt for <strong>MIDI device access</strong> the first time you connect - this page needs that permission allowed, or it can&rsquo;t see any MIDI interface at all. If you accidentally blocked it, allow MIDI access again from your browser&rsquo;s site settings (usually the padlock/info icon next to the address bar) and reload the page.</p>
       <p>Click <strong>Find Devices</strong> to grant this page MIDI access, then pick your interface from <strong>MIDI In</strong> and <strong>MIDI Out</strong>. Leave MIDI In set to <strong>(none)</strong> for most tasks - incoming messages while an action is in progress can trigger unexpected changes on the device. Turn it on only when editing Drum Setup, where it lets the console follow what you play or select on the device itself.</p>
       <p>If parameter edits don&rsquo;t seem to be taking effect, click <strong>Send XG System On</strong> once - the QY70/QY100 may ignore Parameter Change messages until it receives this. This can also be used to reset all voices to default. Be careful to save your work on the device often to avoid accidental data loss.</p>
@@ -866,6 +881,60 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
       <p>Pick a section - System, Reverb, Chorus, Variation, Multi Part, or Drum Setup - from the dropdown. Drag a knob or type directly into its value field to edit; <strong>Push Parameters</strong> sends the section to the device. Each row has an <strong>Active/Ignored</strong> toggle on the right - Ignored keeps the value tracked and saved, it just stops sending it. <strong>Save/Load All Parameters</strong> captures System, Reverb, Chorus, and Variation together as one <code>.qyparam</code> file.</p>
       <p><strong>Drum Setup</strong> always edits whatever kit is currently playing on the Channel selected at the top, not the kit picker in that section - that dropdown only chooses which note names to display. Ds1/Ds2/Ds3 slots can only be selected on the device itself, never over MIDI - select one there and open its Drum Edit screen before editing it here.</p>
       <p><strong>Reverb, Chorus, and Variation</strong> each have their own preset browser and <code>.qyrev</code>/<code>.qycho</code>/<code>.qyvar</code> save/load, working the same way as the Voice Browser - click a preset to select it, use its <strong>Push</strong> button to apply it, and <strong>Save</strong>/<strong>Load</strong> to keep your own setups as files.</p>
+    </div>
+    <div class="dialog-tab-panel" data-panel="datafiler" hidden>
+      <p>The <strong>Data Filer</strong> tab is a file librarian for the QY70/QY100. It saves the device&rsquo;s songs, patterns and backups to your computer, and sends them back to the device. It works with raw Bulk Dump data, so connect first (see the Connect tab) with both <strong>MIDI In</strong> and <strong>MIDI Out</strong> selected.</p>
+      <h4>Connected device</h4>
+      <p>Click <strong>Detect</strong> to identify whether a QY70 or QY100 is connected. The console uses the right addressing for each model automatically. If it only hears its own messages echoed back, an on-screen hint explains which Echo Back setting to change on the device.</p>
+      <h4>Loading files</h4>
+      <p><strong>Load File(s)</strong> adds files to the list. It accepts <code>.syx</code> SysEx files, <code>.blk</code> backups from Yamaha&rsquo;s original QY Data Filer, QY100 SmartMedia <code>.q1s</code> songs and <code>.q1p</code> patterns, and standard MIDI files (<code>.mid</code>, <code>.midi</code>, <code>.smf</code>, <code>.kar</code>, <code>.rmi</code>). A MIDI file is converted into a QY song when you push it. Each entry in the list has its own <strong>Push</strong>, <strong>Rename</strong>, <strong>Save</strong> and <strong>Remove</strong> buttons. Pushing a single song or pattern asks which slot to write it to. <strong>Export MIDI</strong> saves a song as a MIDI file, and <strong>Save .Q1S/.Q1P</strong> writes a song or pattern in the SmartMedia format for loading from a card on the QY100 itself.</p>
+      <h4>Pull From Device</h4>
+      <p>Choose a <strong>Type</strong> (Song, Pattern or All Data), choose the number, and click <strong>Pull From Device</strong>. The console puts the QY into bulk mode, requests the data, records the reply as a new entry in the list, and then switches bulk mode off again. <strong>All Data</strong> is large and can take a minute or two, and the status line shows the messages received so far. Don&rsquo;t touch the device while a pull or push is running.</p>
+      <h4>Device Memory</h4>
+      <p><strong>Read Memory</strong> lists the songs and user styles stored on the device, with their names and how much memory each uses. From that list you can pull a song into the file list or clear a slot. <strong>Clearing permanently erases the slot</strong>, so save a backup first.</p>
+      <p><strong>Save Device as .BLK</strong> backs up the device&rsquo;s whole memory (songs, user styles, effects and setup) to one file, and it works for both the QY70 and QY100. <strong>Save Device as .Q1A</strong> is the QY100&rsquo;s own SmartMedia backup format (the QY70 has none). <strong>Load Backup to Device</strong> replaces everything in the device&rsquo;s memory with a .BLK or .Q1A backup, <strong>erasing all of it first</strong>, including slots the backup leaves empty. Loading another model&rsquo;s backup transfers songs and patterns only.</p>
+      <p>Pushes and pulls stop playback first, because the device ignores data while it plays. After a push, the console reads the memory list back to check that the slots really filled.</p>
+    </div>
+    <div class="dialog-tab-panel" data-panel="diagnostics" hidden>
+      <p>The <strong>Diagnostics + Raw SysEx</strong> tab is for checking what the device and the console send each other, and for sending messages the other panels don&rsquo;t cover.</p>
+      <h4>Raw SysEx</h4>
+      <p>Type hex bytes into the box (separated by spaces, commas, periods, or nothing at all) and click <strong>Send Raw SysEx</strong>. The starting <code>F0</code> and ending <code>F7</code> are added for you, so leave them out. Sending the wrong bytes can change settings on your device, so save your work on it first.</p>
+      <h4>XG Address</h4>
+      <p>Enter an XG address (<strong>High</strong>, <strong>Mid</strong>, <strong>Low</strong>) and a <strong>Data</strong> value in hex, and click <strong>Send</strong> to send an XG Parameter Change to that address. This reaches parameters the Parameters panel doesn&rsquo;t list, using the addresses from your QY or MU module&rsquo;s Data List. <strong>Request</strong> asks the device to send the current value back, which you can read in the log below. The preview line shows the exact bytes before you send.</p>
+      <h4>Log filters</h4>
+      <p><strong>Message Types</strong> switches whole kinds of messages on or off in the log: notes, control changes, program changes, pitch bend, aftertouch, System Exclusive, transport, song position and select, and Clock/Active Sensing (off by default, because it floods the log). <strong>Channels</strong> hides channel messages from the channels you switch off. System messages have no channel and always show. Filtered messages are still sent and received, just not logged.</p>
+      <p>The log keeps the last 100 messages. <strong>Clear</strong> empties it.</p>
+    </div>
+    <div class="dialog-tab-panel" data-panel="graphics" hidden>
+      <p>The <strong>Graphics</strong> tab draws to the QY70/QY100&rsquo;s Bitmap Window, a <strong>16 &times; 16 pixel</strong> display that only shows while the device is in <strong>Song Mode</strong>.</p>
+      <h4>Drawing</h4>
+      <p>Click or drag on the grid to draw or erase pixels with the <strong>Pencil</strong>. The <strong>Bucket</strong> fills every connected pixel of the same state. <strong>Undo</strong> and <strong>Redo</strong> step through your changes. The arrow buttons flip the image horizontally or vertically, or rotate it 90&deg; either way, and <strong>Clear</strong> empties the canvas. <strong>Play Frame</strong> sends the current canvas to the device, and the exact SysEx message shown under it updates live as you draw.</p>
+      <h4>Animations</h4>
+      <p>Click <strong>+ Add Frame</strong> to capture the canvas as a frame. You can build an animation of up to 128 frames, and each frame has its own Load button to bring it back to the canvas for editing. The <strong>Wait</strong> knob sets the delay between frames, which is applied only when the animation is played. <strong>Play Animation</strong> sends the frames in order, <strong>Loop</strong> repeats until you click <strong>Stop Animation</strong>, and <strong>Ping-Pong</strong> plays forward and then backward instead of restarting from frame 1. <strong>Clear All Frames</strong> deletes every frame.</p>
+      <p><strong>Onion Skin</strong> shows a faint ghost of the previous frames (gray) and, if you turn on the Future toggle, the next frames (light orange), so you can line up a new frame. The slider sets how many frames are ghosted, and <strong>Loop Onion Skin</strong> wraps the ghosting around the ends of the sequence, which helps with the seam of a looping animation.</p>
+      <h4>Graphics Library</h4>
+      <p><strong>Save Image</strong> and <strong>Load Image</strong> use <code>.bmp</code> files. <strong>Save Animation</strong> and <strong>Load Animation</strong> use <code>.gif</code> files. Below them, switch between <strong>Image Presets</strong>, <strong>User Images</strong>, <strong>Animation Presets</strong> and <strong>User Animations</strong> to browse built-in and your own items, then click one to load it onto the canvas.</p>
+    </div>
+    <div class="dialog-tab-panel" data-panel="displaytext" hidden>
+      <p>The <strong>Display Text</strong> tab writes messages to the QY70/QY100&rsquo;s <strong>32-character LCD Message Window</strong>, which only shows while the device is in <strong>Song Mode</strong>. Characters outside plain ASCII appear as blank spaces.</p>
+      <h4>Whole Message</h4>
+      <p>Type up to 32 characters under <strong>Message</strong> and click <strong>Display Message</strong>. The SysEx shown under it updates as you type.</p>
+      <p><strong>Animated Message</strong> is for longer text or moving effects. Pick a mode, then click <strong>Play Message</strong>:</p>
+      <ul>
+        <li><strong>Marquee</strong> scrolls the text across the display once.</li>
+        <li><strong>Ping-Pong</strong> scrolls across and then back again.</li>
+        <li><strong>Blink</strong> flashes the message on and off in place. Text beyond 32 characters is cut off.</li>
+        <li><strong>Orbit</strong> rotates the characters around the border of the two stacked lines. The toggle beside it switches between clockwise and counter-clockwise. Text beyond 32 characters is cut off.</li>
+      </ul>
+      <p>The <strong>Wait</strong> knob sets the delay between steps, <strong>Loop</strong> repeats until you click <strong>Stop Message</strong>, and an animated message can be up to 1000 characters long.</p>
+      <h4>Split Message</h4>
+      <p>The display is really two stacked lines of 16 characters, and this subtab lets you control them separately. Type <strong>Line 1</strong> and <strong>Line 2</strong>, then pick a mode:</p>
+      <ul>
+        <li><strong>Flip-Flop</strong> swaps the two lines back and forth.</li>
+        <li><strong>Alternate Blink</strong> lights one line while the other is blank, then switches.</li>
+        <li><strong>Marquee</strong> scrolls each line on its own. Use the <strong>Reverse</strong> and <strong>Ping-Pong</strong> toggles for each line so they drift apart instead of moving together.</li>
+      </ul>
+      <p>One shared <strong>Wait</strong> knob sets the speed for both lines. Click <strong>Play Split Message</strong> to start, use <strong>Loop</strong> to repeat, and <strong>Stop Split Message</strong> to end it.</p>
     </div>
     <div class="dialog-tab-panel" data-panel="log" hidden>
       <p>Shows the last 30 messages sent and received, useful for confirming something actually went out. Toggle it off or clear it from the MIDI Log panel at any time.</p>
@@ -898,11 +967,11 @@ Ds1 and Ds2 are sent as a normal parameter change. Ds3 must be sent as bulk data
 <dialog id="support-dialog" class="app-dialog wide-dialog">
   <h3 class="app-dialog-title">Support Future Projects</h3>
   <div class="dialog-body">
-    <p>The QY100 Explorer web console, the QY70 and QY100 protocol reverse-engineering behind it, and the custom style files available on this site are all projects I develop and maintain on my own time.</p>
+    <p>The QY Explorer web console, the QY70 and QY100 protocol reverse-engineering behind it, and the custom style files available on this site are all projects I develop and maintain on my own time.</p>
     <p>If you&rsquo;ve found these resources useful, becoming a Patreon supporter directly helps fund the hours that go into reverse-engineering more of the QY70 and QY100&rsquo;s hidden capabilities, creating new files and resources, and developing tools like this web console.</p>
-    <img src="https://qy100.doffu.net/wp-content/uploads/2024/09/SM-Card-30.jpg" alt="A QY70/QY100 SmartMedia card loaded with custom style files" id="support-dialog-image">
+    <img src="https://qyexplorer.doffu.net/wp-content/uploads/2024/09/SM-Card-30.jpg" alt="A QY70/QY100 SmartMedia card loaded with custom style files" id="support-dialog-image">
     <h4>What&rsquo;s already available</h4>
-    <p>As a QY100 Explorer supporter, you&rsquo;ll gain access to specialized files and starter material designed to expand what you can do with the Yamaha QY70 and QY100.</p>
+    <p>As a QY Explorer supporter, you&rsquo;ll gain access to specialized files and starter material designed to expand what you can do with the Yamaha QY70 and QY100.</p>
     <p>There&rsquo;s already a growing collection of resources available, including:</p>
     <ul>
       <li>70+ starter templates for the Yamaha QY100, plus 40+ for the QY70, designed to provide useful starting points and inspiration.</li>

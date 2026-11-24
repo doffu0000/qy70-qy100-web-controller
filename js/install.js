@@ -1,5 +1,5 @@
 // QY70/QY100 Web Console
-// Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+// Copyright (C) 2026 Doffu <https://qyexplorer.doffu.net/>
 // Licensed under the GNU General Public License v3.0 or later. See LICENSE.
 // Support future development: <https://www.patreon.com/doffu>
 
@@ -171,11 +171,22 @@ async function onInstallClick() {
   // A verified Explorer whose browser is already offering the app goes
   // straight to the install window: Chrome only opens it within a few
   // seconds of a real click, so there's no time for another online check.
-  const { level } = (membership?.level === 'explorer' && deferredPrompt) ? membership : await checkMembership();
+  const ready = membership?.level === 'explorer' && deferredPrompt;
+  // Otherwise the online check and the wait for the browser's install window
+  // can take a few seconds, so say what is happening straight away.
+  if (!ready) {
+    showDialog({
+      title: 'Checking installation',
+      body: '<p class="install-checking"><span class="install-spinner" aria-hidden="true"></span>Checking your membership and whether the app can be installed&hellip;</p>',
+      actions: [],
+    });
+  }
+  const { level } = ready ? membership : await checkMembership();
   if (level === 'explorer') {
     const prompt = await waitForInstallPrompt(3000);
     if (prompt) {
       try {
+        $('install-dialog').close();
         await prompt.prompt();
         await prompt.userChoice;
         deferredPrompt = null;
@@ -211,7 +222,7 @@ async function onInstallClick() {
   if (level === 'unknown') {
     showDialog({
       title: 'Couldn\'t check your membership',
-      body: '<p>Install App checks your Patreon membership on qy100.doffu.net, which couldn\'t be reached just now. Check your internet connection and try again.</p>',
+      body: '<p>Install App checks your Patreon membership on qyexplorer.doffu.net, which couldn\'t be reached just now. Check your internet connection and try again.</p>',
       actions: [{ label: 'OK', primary: true }],
     });
     return;

@@ -1,5 +1,5 @@
 // QY70/QY100 Web Console
-// Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+// Copyright (C) 2026 Doffu <https://qyexplorer.doffu.net/>
 // Licensed under the GNU General Public License v3.0 or later. See LICENSE.
 // Support future development: <https://www.patreon.com/doffu>
 
@@ -16,7 +16,7 @@
 // v2: replaces a v1 cache that a stray copy of this worker at the site root
 // had filled with WordPress files.
 const CACHE_PREFIX = 'qy-console-';
-const CACHE = `${CACHE_PREFIX}v2`;
+const CACHE = `${CACHE_PREFIX}v3`;
 
 const FILES = [
   './',
@@ -53,7 +53,7 @@ const FILES = [
   'data/presets.json',
   'data/voices.json',
   // Site images the console shows (same site, so they can be saved too).
-  '/wp-content/uploads/2024/09/QY-Mounting-Banner.png',
+  '/wp-content/uploads/2026/11/QY-Explorer-Banner.png',
   '/wp-content/uploads/2024/09/SM-Card-30.jpg',
 ];
 

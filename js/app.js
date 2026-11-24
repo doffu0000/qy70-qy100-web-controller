@@ -1,5 +1,5 @@
 // QY70/QY100 Web Console
-// Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+// Copyright (C) 2026 Doffu <https://qyexplorer.doffu.net/>
 // Licensed under the GNU General Public License v3.0 or later. See LICENSE.
 // Support future development: <https://www.patreon.com/doffu>
 
@@ -4049,6 +4049,30 @@ helpTabs.forEach((tab) => {
     helpDialog.querySelector('.dialog-body').scrollTop = 0;
   });
 });
+// The tutorial video is only requested from YouTube after the user presses
+// play (no third-party traffic when the dialog merely opens, and nothing to
+// fail while offline). Closing the dialog puts the play button back, which
+// also stops the video.
+const helpVideo = el('help-video');
+const helpVideoPlayHtml = helpVideo.innerHTML;
+function resetHelpVideo() {
+  helpVideo.innerHTML = helpVideoPlayHtml;
+  helpVideo.classList.remove('playing');
+}
+helpVideo.addEventListener('click', (evt) => {
+  if (!evt.target.closest('#help-video-play')) return;
+  const frame = document.createElement('iframe');
+  frame.src = `https://www.youtube-nocookie.com/embed/${helpVideo.dataset.videoId}?autoplay=1&rel=0`;
+  frame.title = helpVideo.dataset.videoTitle;
+  frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+  frame.referrerPolicy = 'strict-origin-when-cross-origin';
+  helpVideo.replaceChildren(frame);
+  helpVideo.classList.add('playing');
+});
+helpDialog.addEventListener('close', resetHelpVideo);
+helpTabs.forEach((tab) => tab.addEventListener('click', () => {
+  if (tab.dataset.tab !== 'video') resetHelpVideo();
+}));
 el('help-btn').addEventListener('click', () => {
   helpTabs[0]?.click();
   helpDialog.showModal();

@@ -1,6 +1,6 @@
 /*
  * QY70/QY100 Web Console
- * Copyright (C) 2026 Doffu <https://qy100.doffu.net/>
+ * Copyright (C) 2026 Doffu <https://qyexplorer.doffu.net/>
  * Licensed under the GNU General Public License v3.0 or later. See LICENSE.
  * Support future development: <https://www.patreon.com/doffu>
  */
@@ -100,7 +100,7 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
   background: #f6f7f8;
 }
 
-/* Matches qy100.doffu.net's own "Join the exploration" button (same accent
+/* Matches qyexplorer.doffu.net's own "Join the exploration" button (same accent
    color, font, and radius the rest of this app already uses, plus its
    site's soft white glow) so the header reads as one piece with the site
    it's embedded in rather than a foreign widget. */
@@ -189,6 +189,30 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
   margin: 0 0 0.65rem;
 }
 
+#install-dialog-body .install-checking {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.install-spinner {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: install-spin 0.8s linear infinite;
+}
+
+@keyframes install-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-spinner { animation-duration: 3s; }
+}
+
 #install-dialog-body ul {
   margin: 0 0 0.65rem;
   padding-left: 1.2rem;
@@ -203,7 +227,7 @@ h3:not(.app-dialog-title) { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight:
   color: inherit;
 }
 
-/* Patreon dialogs get the rainbow frame qy100.doffu.net uses for its
+/* Patreon dialogs get the rainbow frame qyexplorer.doffu.net uses for its
    console card and its Patreon pop-up. */
 #install-dialog.patreon-dialog {
   border: 4px solid transparent;
@@ -2407,8 +2431,14 @@ section {
    the dialog steady; a shorter panel just leaves blank space below, and a
    panel that somehow exceeds it scrolls within this box instead of
    growing it. */
+/* The Instructions dialog is wider and taller than the other dialogs so the
+   tutorial video on its Video tab can be a comfortable size. */
+#help-dialog.wide-dialog {
+  max-width: 46rem;
+}
+
 #help-dialog .dialog-body {
-  height: 22.5rem;
+  height: 30rem;
   max-height: 60vh;
 }
 
@@ -2469,6 +2499,69 @@ section {
 
 .dialog-tab-panel p:last-child {
   margin-bottom: 0;
+}
+
+/* Instructions > Video: a 16:9 box that holds the play button until pressed,
+   then the YouTube player. */
+.help-video {
+  position: relative;
+  /* As wide as the dialog allows, but never taller than what fits in the
+     dialog body (60vh) next to the intro line and the YouTube link, so a
+     short window shrinks the video instead of adding a scrollbar. */
+  width: min(100%, calc((60vh - 7rem) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  margin: 0 auto 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.help-video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.help-video-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--heading);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.help-video-play-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  padding-left: 0.2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 1.3rem;
+}
+
+.help-video-play:hover .help-video-play-icon,
+.help-video-play:focus-visible .help-video-play-icon {
+  filter: brightness(1.15);
+}
+
+.help-video-note {
+  font-size: 0.78rem;
 }
 
 .dialog-body code {

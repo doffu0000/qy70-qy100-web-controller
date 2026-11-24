@@ -71,7 +71,7 @@ A browser-based Web MIDI app for controlling Yamaha QY70/QY100 hardware synthesi
 
 ## License
 
-Copyright (C) 2026 Doffu (<https://qy100.doffu.net/>)
+Copyright (C) 2026 Doffu (<https://qyexplorer.doffu.net/>)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
